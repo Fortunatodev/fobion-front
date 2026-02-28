@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Sem rewrites, redirects ou basePath que interfiram com /dashboard
 };
 
 export default nextConfig;
