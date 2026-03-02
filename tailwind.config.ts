@@ -1,1 +1,33 @@
-import type { Config } from "tailwindcss";const config: Config = {  darkMode: "class",  content: [    "./pages/**/*.{js,ts,jsx,tsx,mdx}",    "./components/**/*.{js,ts,jsx,tsx,mdx}",    "./app/**/*.{js,ts,jsx,tsx,mdx}",    "./contexts/**/*.{js,ts,jsx,tsx}",    "./lib/**/*.{js,ts,jsx,tsx}",  ],  theme: {    extend: {      colors: {        primary: {          DEFAULT: "#0066FF",          foreground: "#FFFFFF",        },        background: "#0A0A0A",        card: {          DEFAULT: "#111111",          elevated: "#161616",          foreground: "#FFFFFF",        },        border: {          DEFAULT: "#1F1F1F",          hover: "#2a2a2a",        },        foreground: "#FFFFFF",        muted: {          DEFAULT: "#A1A1AA",          foreground: "#A1A1AA",          disabled: "#525252",        },        success: "#22C55E",        warning: "#F59E0B",        danger: "#EF4444",        destructive: {          DEFAULT: "#EF4444",          foreground: "#FFFFFF",        },        purple: "#A855F7",        input: "#1F1F1F",        ring: "#0066FF",        popover: {          DEFAULT: "#111111",          foreground: "#FFFFFF",        },        secondary: {          DEFAULT: "#1F1F1F",          foreground: "#FFFFFF",        },        accent: {          DEFAULT: "#161616",          foreground: "#FFFFFF",        },      },      fontFamily: {        sans: ["Inter", "sans-serif"],      },      borderRadius: {        sm: "8px",        DEFAULT: "12px",        lg: "16px",        xl: "20px",        "2xl": "24px",      },      boxShadow: {        card: "0 0 0 1px #1F1F1F",        glow: "0 0 20px rgba(0,102,255,0.12)",        "glow-lg": "0 0 40px rgba(0,102,255,0.2)",      },      backgroundImage: {        "gradient-primary": "linear-gradient(135deg, #0066FF, #0044CC)",        "gradient-card": "linear-gradient(135deg, #111111, #161616)",      },      transitionDuration: {        DEFAULT: "200ms",      },      transitionTimingFunction: {        DEFAULT: "ease",      },    },  },  plugins: [],};export default config;
+import type { Config } from "tailwindcss"
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./app/**/*.{ts,tsx,js,jsx,mdx}",
+    "./components/**/*.{ts,tsx,js,jsx}",
+    "./contexts/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "#0A0A0A",
+        surface:    "#111111",
+        "surface-2": "#161616",
+        border:     "#1F1F1F",
+        "border-2": "#2F2F2F",
+        muted:      "#A1A1AA",
+        primary:    "#0066FF",
+        success:    "#10B981",
+        warning:    "#F59E0B",
+        danger:     "#EF4444",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
+    },
+  },
+  plugins: [],
+}
+
+export default config
