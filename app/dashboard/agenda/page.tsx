@@ -11,22 +11,29 @@ import { apiGet } from "@/lib/api"
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Schedule {
-  id: string
+  id:          string
   scheduledAt: string
-  status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
-  totalPrice: number
-  customer: { name: string }
-  vehicle: { plate: string; model?: string }
-  scheduleServices: Array<{ service: { name: string } }>
+  status:      string
+  totalPrice:  number
+  customer:    { name: string }
+  vehicle:     { plate: string; brand: string; model: string }
+  scheduleServices: { service: { name: string } }[]
+  employee?:   { id: string; name: string; avatarUrl: string | null } | null
 }
 
 interface DayData {
-  date: Date
-  dateStr: string
+  date:           Date
+  dateStr:        string
   isCurrentMonth: boolean
-  isToday: boolean
-  isSelected: boolean
-  schedules: Schedule[]
+  isToday:        boolean
+  isSelected:     boolean
+  schedules:      Schedule[]
+}
+
+interface Employee {
+  id:        string
+  name:      string
+  avatarUrl: string | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -36,25 +43,25 @@ function todayStr(): string {
 }
 
 function getStatusColor(status: string): string {
-  const map: Record<string, string> = {
-    PENDING:     "#F59E0B",
-    CONFIRMED:   "#3B82F6",
-    IN_PROGRESS: "#8B5CF6",
-    DONE:        "#10B981",
-    CANCELLED:   "#EF4444",
+  switch (status) {
+    case "PENDING":     return "#F59E0B"
+    case "CONFIRMED":   return "#3B82F6"
+    case "IN_PROGRESS": return "#8B5CF6"
+    case "DONE":        return "#10B981"
+    case "CANCELLED":   return "#EF4444"
+    default:            return "#71717A"
   }
-  return map[status] ?? "#A1A1AA"
 }
 
 function getStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    PENDING:     "Pendente",
-    CONFIRMED:   "Confirmado",
-    IN_PROGRESS: "Em andamento",
-    DONE:        "Concluído",
-    CANCELLED:   "Cancelado",
+  switch (status) {
+    case "PENDING":     return "Pendente"
+    case "CONFIRMED":   return "Confirmado"
+    case "IN_PROGRESS": return "Em andamento"
+    case "DONE":        return "Concluído"
+    case "CANCELLED":   return "Cancelado"
+    default:            return status
   }
-  return map[status] ?? status
 }
 
 function formatTime(iso: string): string {
@@ -66,46 +73,58 @@ function formatCurrency(cents: number): string {
 }
 
 function formatMonthYear(date: Date): string {
-  const s = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-  return s.charAt(0).toUpperCase() + s.slice(1)
+  return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    .replace(/^\w/, c => c.toUpperCase())
 }
 
 function formatDayHeader(dateStr: string): string {
-  const s = new Date(dateStr + "T12:00:00").toLocaleDateString("pt-BR", {
-    weekday: "long", day: "numeric", month: "long",
-  })
-  return s.charAt(0).toUpperCase() + s.slice(1)
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const date = new Date(y, m - 1, d)
+  return date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })
+    .replace(/^\w/, c => c.toUpperCase())
 }
 
 function buildCalendarDays(month: Date, schedules: Schedule[], selectedDate: string): DayData[] {
-  const year = month.getFullYear()
-  const mon  = month.getMonth()
-  const firstDay = new Date(year, mon, 1)
-  const today = todayStr()
-
-  const startDay = new Date(firstDay)
-  const dow = firstDay.getDay()
-  const offset = dow === 0 ? 6 : dow - 1
-  startDay.setDate(startDay.getDate() - offset)
+  const today    = todayStr()
+  const year     = month.getFullYear()
+  const mon      = month.getMonth()
+  const firstDay = new Date(year, mon, 1).getDay()
+  const lastDay  = new Date(year, mon + 1, 0).getDate()
 
   const days: DayData[] = []
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(startDay)
-    d.setDate(startDay.getDate() + i)
-    const dateStr = d.toISOString().split("T")[0]
+
+  // dias do mês anterior
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d    = new Date(year, mon, -i)
+    const dStr = d.toISOString().split("T")[0]
+    days.push({ date: d, dateStr: dStr, isCurrentMonth: false, isToday: false, isSelected: false, schedules: [] })
+  }
+
+  // dias do mês atual
+  for (let d = 1; d <= lastDay; d++) {
+    const date = new Date(year, mon, d)
+    const dStr = date.toISOString().split("T")[0]
     days.push({
-      date: d,
-      dateStr,
-      isCurrentMonth: d.getMonth() === mon,
-      isToday: dateStr === today,
-      isSelected: dateStr === selectedDate,
-      schedules: schedules.filter((s) => s.scheduledAt.startsWith(dateStr)),
+      date,
+      dateStr:        dStr,
+      isCurrentMonth: true,
+      isToday:        dStr === today,
+      isSelected:     dStr === selectedDate,
+      schedules:      schedules.filter(s => s.scheduledAt.startsWith(dStr)),
     })
   }
+
+  // completar grid 42 células
+  while (days.length < 42) {
+    const d    = new Date(year, mon + 1, days.length - firstDay - lastDay + 1)
+    const dStr = d.toISOString().split("T")[0]
+    days.push({ date: d, dateStr: dStr, isCurrentMonth: false, isToday: false, isSelected: false, schedules: [] })
+  }
+
   return days
 }
 
-// ── Calendar grid skeleton (somente o grid interno) ───────────────────────────
+// ── Calendar grid skeleton ────────────────────────────────────────────────────
 
 function CalendarGridSkeleton() {
   return (
@@ -124,9 +143,9 @@ function CalendarGridSkeleton() {
           }} />
           {(i === 3 || i === 8 || i === 15 || i === 22 || i === 30) && (
             <div style={{
-              height: 12, borderRadius: 3, backgroundColor: "#1A1A1A",
-              animation: `skeletonPulse 1.5s ease ${i * 0.03}s infinite`,
-              marginTop: 4,
+              height: 14, borderRadius: 4,
+              backgroundColor: "#161616",
+              animation: `skeletonPulse 1.5s ease ${(i % 7) * 0.07}s infinite`,
             }} />
           )}
         </div>
@@ -140,21 +159,36 @@ function CalendarGridSkeleton() {
 export default function AgendaPage() {
   const router = useRouter()
 
-  const [schedules,    setSchedules]    = useState<Schedule[]>([])
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState<string | null>(null)
-  const [currentMonth, setCurrentMonth] = useState(() => {
+  const [schedules,        setSchedules]        = useState<Schedule[]>([])
+  const [loading,          setLoading]          = useState(true)
+  const [error,            setError]            = useState<string | null>(null)
+  const [currentMonth,     setCurrentMonth]     = useState(() => {
     const d = new Date(); d.setDate(1); return d
   })
-  const [selectedDate, setSelectedDate] = useState(todayStr)
-  const [daySchedules, setDaySchedules] = useState<Schedule[]>([])
-  const [loadingDay,   setLoadingDay]   = useState(false)
-  const [hoveredDay,   setHoveredDay]   = useState<string | null>(null)
+  const [selectedDate,     setSelectedDate]     = useState(todayStr)
+  const [daySchedules,     setDaySchedules]     = useState<Schedule[]>([])
+  const [loadingDay,       setLoadingDay]       = useState(false)
+  const [hoveredDay,       setHoveredDay]       = useState<string | null>(null)
 
+  // ── Funcionários ──────────────────────────────────────────────────────────
+  const [employees,         setEmployees]         = useState<Employee[]>([])
+  const [selectedEmployee,  setSelectedEmployee]  = useState<string>("all")
+
+  // ── Fetch employees ───────────────────────────────────────────────────────
+  useEffect(() => {
+    apiGet<{ employees: Employee[] }>("/employees")
+      .then(res => setEmployees(res.employees ?? []))
+      .catch(() => setEmployees([]))
+  }, [])
+
+  // ── Fetch month schedules ─────────────────────────────────────────────────
   const fetchMonthSchedules = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await apiGet<{ schedules: Schedule[] }>("/schedules")
+      const params = new URLSearchParams()
+      if (selectedEmployee !== "all") params.set("employeeId", selectedEmployee)
+      const query = params.toString() ? `?${params}` : ""
+      const res = await apiGet<{ schedules: Schedule[] }>(`/schedules${query}`)
       setSchedules(res.schedules ?? [])
       setError(null)
     } catch {
@@ -162,21 +196,24 @@ export default function AgendaPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedEmployee])
 
   useEffect(() => { fetchMonthSchedules() }, [fetchMonthSchedules, currentMonth])
 
+  // ── Fetch day schedules ───────────────────────────────────────────────────
   const fetchDaySchedules = useCallback(async (dateStr: string) => {
     setLoadingDay(true)
     try {
-      const res = await apiGet<{ schedules: Schedule[] }>(`/schedules?date=${dateStr}`)
+      const params = new URLSearchParams({ date: dateStr })
+      if (selectedEmployee !== "all") params.set("employeeId", selectedEmployee)
+      const res = await apiGet<{ schedules: Schedule[] }>(`/schedules?${params}`)
       setDaySchedules(res.schedules ?? [])
     } catch {
       setDaySchedules([])
     } finally {
       setLoadingDay(false)
     }
-  }, [])
+  }, [selectedEmployee])
 
   useEffect(() => { fetchDaySchedules(selectedDate) }, [selectedDate, fetchDaySchedules])
 
@@ -191,8 +228,21 @@ export default function AgendaPage() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
   }
 
-  const calDays  = buildCalendarDays(currentMonth, schedules, selectedDate)
-  const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+  const calDays   = buildCalendarDays(currentMonth, schedules, selectedDate)
+  const WEEKDAYS  = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+  // ── Estilos de botão do seletor ───────────────────────────────────────────
+  function empBtnStyle(active: boolean): React.CSSProperties {
+    return {
+      height: 34, padding: "0 14px", borderRadius: 10,
+      fontSize: 13, fontWeight: 500, cursor: "pointer",
+      transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
+      backgroundColor: active ? "#0066FF" : "transparent",
+      border: `1px solid ${active ? "transparent" : "#1F1F1F"}`,
+      color: active ? "#fff" : "#71717A",
+      fontFamily: "inherit", flexShrink: 0,
+    }
+  }
 
   return (
     <>
@@ -213,6 +263,7 @@ export default function AgendaPage() {
         .ag-new-btn:hover { background: rgba(0,102,255,0.1) !important; }
         .ag-schedule-card:hover { background: #111111 !important; border-color: #252525 !important; }
         .ag-empty-create:hover { background: rgba(0,102,255,0.1) !important; }
+        .ag-emp-btn:hover { opacity: 0.8; }
       `}</style>
 
       <div style={{
@@ -224,7 +275,7 @@ export default function AgendaPage() {
         {/* ── HEADER ─────────────────────────────────────────────────── */}
         <div style={{
           display: "flex", justifyContent: "space-between",
-          alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 24,
+          alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 0,
         }}>
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
@@ -237,6 +288,53 @@ export default function AgendaPage() {
           <NewAgBtn onClick={() => router.push("/dashboard/agendamentos")} />
         </div>
 
+        {/* ── SELETOR DE FUNCIONÁRIO ──────────────────────────────────── */}
+        <div style={{
+          display: "flex", gap: 8, flexWrap: "wrap",
+          marginTop: 16, marginBottom: 8,
+        }}>
+          {/* Todos */}
+          <button
+            className="ag-emp-btn"
+            onClick={() => setSelectedEmployee("all")}
+            style={empBtnStyle(selectedEmployee === "all")}
+          >
+            Todos
+          </button>
+
+          {/* Proprietário */}
+          <button
+            className="ag-emp-btn"
+            onClick={() => setSelectedEmployee("owner")}
+            style={empBtnStyle(selectedEmployee === "owner")}
+          >
+            Proprietário
+          </button>
+
+          {/* Funcionários */}
+          {employees.map(emp => {
+            const active = selectedEmployee === emp.id
+            return (
+              <button
+                key={emp.id}
+                className="ag-emp-btn"
+                onClick={() => setSelectedEmployee(emp.id)}
+                style={empBtnStyle(active)}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                  background: "linear-gradient(135deg, #0066FF, #7C3AED)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 700, color: "#fff",
+                }}>
+                  {emp.name.charAt(0).toUpperCase()}
+                </div>
+                <span>{emp.name}</span>
+              </button>
+            )
+          })}
+        </div>
+
         {/* ── ERROR ──────────────────────────────────────────────────── */}
         {error && !loading && (
           <div style={{
@@ -244,24 +342,20 @@ export default function AgendaPage() {
             borderRadius: 12, padding: "12px 16px", marginBottom: 20,
             display: "flex", alignItems: "center", gap: 10,
           }}>
-            <AlertCircle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: "#EF4444", flex: 1 }}>{error}</span>
-            <button onClick={fetchMonthSchedules} style={{
-              fontSize: 12, color: "#EF4444", background: "none", border: "none",
-              cursor: "pointer", textDecoration: "underline", padding: 0,
-            }}>Tentar novamente</button>
+            <AlertCircle size={14} color="#EF4444" />
+            <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
           </div>
         )}
 
-        {/* ── MAIN GRID ──────────────────────────────────────────────── */}
+        {/* ── GRID LAYOUT ────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr 320px",
-          gap: 16,
+          gap: 20, marginTop: 16,
           alignItems: "start",
         }}>
 
-          {/* ── CALENDAR ─────────────────────────────────────────────── */}
+          {/* ── CALENDAR ───────────────────────────────────────────── */}
           <div style={{
             backgroundColor: "#111111", border: "1px solid #1F1F1F",
             borderRadius: 20, overflow: "hidden",
@@ -296,7 +390,7 @@ export default function AgendaPage() {
               </button>
             </div>
 
-            {/* Weekday headers — sempre visíveis */}
+            {/* Weekday headers */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #1A1A1A" }}>
               {WEEKDAYS.map((d) => (
                 <div key={d} style={{
@@ -371,20 +465,18 @@ export default function AgendaPage() {
                         </div>
                       )}
 
-                      {/* Dots >2 */}
-                      {day.schedules.length > 2 && (
-                        <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 4 }}>
-                          {day.schedules.slice(0, 3).map((s, i) => (
-                            <div key={i} style={{
-                              width: 6, height: 6, borderRadius: "50%",
-                              backgroundColor: getStatusColor(s.status),
-                            }} />
-                          ))}
-                          {day.schedules.length > 3 && (
-                            <span style={{ fontSize: 9, color: "#52525B" }}>
-                              +{day.schedules.length - 3}
-                            </span>
-                          )}
+                      {/* Badge "+N" quando >2 */}
+                      {day.isCurrentMonth && day.schedules.length > 2 && (
+                        <div style={{ marginTop: 2 }}>
+                          <div style={{
+                            fontSize: 9, color: "#0066FF",
+                            backgroundColor: "rgba(0,102,255,0.1)",
+                            border: "1px solid rgba(0,102,255,0.2)",
+                            borderRadius: 4, padding: "2px 5px",
+                            display: "inline-block",
+                          }}>
+                            +{day.schedules.length}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -392,22 +484,6 @@ export default function AgendaPage() {
                 })}
               </div>
             )}
-
-            {/* Legend — sempre visível */}
-            <div style={{ padding: "14px 20px", borderTop: "1px solid #161616", display: "flex", gap: 16, flexWrap: "wrap" }}>
-              {[
-                { label: "Pendente",     color: "#F59E0B" },
-                { label: "Confirmado",   color: "#3B82F6" },
-                { label: "Em andamento", color: "#8B5CF6" },
-                { label: "Concluído",    color: "#10B981" },
-                { label: "Cancelado",    color: "#EF4444" },
-              ].map((item) => (
-                <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: item.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: "#52525B" }}>{item.label}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* ── DAY DETAIL ────────────────────────────────────────────── */}
@@ -440,7 +516,7 @@ export default function AgendaPage() {
 
             <div style={{ height: 1, backgroundColor: "#1A1A1A", marginBottom: 16 }} />
 
-            {/* Loading skeletons inside day panel */}
+            {/* Loading skeletons */}
             {loadingDay && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[0, 0.1, 0.2].map((delay, i) => (
@@ -499,7 +575,7 @@ export default function AgendaPage() {
                 maxHeight: "calc(100vh - 320px)", overflowY: "auto", paddingRight: 4,
               }}>
                 {daySchedules.map((s) => {
-                  const color = getStatusColor(s.status)
+                  const color    = getStatusColor(s.status)
                   const services = s.scheduleServices.map((ss) => ss.service.name).join(", ")
                   return (
                     <div
@@ -533,24 +609,26 @@ export default function AgendaPage() {
                         </span>
                       </div>
 
-                      <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 8 }}>
-                        <Car size={11} color="#52525B" style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: "#71717A" }}>
-                          {s.vehicle.plate}{s.vehicle.model ? ` · ${s.vehicle.model}` : ""}
-                        </span>
-                      </div>
-
                       {services && (
-                        <p style={{
-                          fontSize: 11, color: "#52525B", margin: "4px 0 0",
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}>
+                        <p style={{ fontSize: 11, color: "#52525B", margin: "6px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {services}
                         </p>
                       )}
 
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+                        <Car size={10} color="#3F3F46" />
+                        <span style={{ fontSize: 11, color: "#3F3F46" }}>
+                          {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · {s.vehicle.plate}
+                        </span>
+                      </div>
+
+                      {/* ── Badge do responsável ── */}
+                      <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0" }}>
+                        Com: {s.employee?.name ?? "Proprietário"}
+                      </p>
+
                       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#A1A1AA" }}>
                           {formatCurrency(s.totalPrice)}
                         </span>
                       </div>
@@ -605,8 +683,7 @@ function NewAgBtn({ onClick }: { onClick: () => void }) {
         transition: "all 0.2s", fontFamily: "inherit",
       }}
     >
-      <Plus size={15} />
-      Novo agendamento
+      <Plus size={15} /> Novo agendamento
     </button>
   )
 }

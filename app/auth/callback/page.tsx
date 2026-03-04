@@ -1,55 +1,97 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { setToken } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function AuthCallback() {
+export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const error = searchParams.get("error");
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("token");
 
-    if (error || !token) {
-      router.replace(`/auth/login?error=${error ?? "auth_failed"}`);
+    console.log("[auth callback] token query:", token?.slice(0, 20));
+
+    if (!token) {
+      setError("Erro na autenticação. Tente novamente.");
       return;
     }
 
-    // setToken salva no localStorage E no cookie (para o middleware)
-    setToken(token);
-    router.replace("/dashboard");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ← VAZIO — roda só uma vez
+    localStorage.setItem("forbion_token", token);
+
+    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
+    fetch(`${API}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("auth_failed");
+        return res.json();
+      })
+      .then(() => {
+        router.replace("/dashboard");
+      })
+      .catch(() => {
+        localStorage.removeItem("forbion_token");
+        setError("Erro na autenticação. Tente novamente.");
+      });
+  }, [router]);
+
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#0A0A0A",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <p style={{ color: "#EF4444", fontSize: 15 }}>{error}</p>
+          <button
+            onClick={() => router.push("/auth/login")}
+            style={{
+              marginTop: 16,
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "1px solid #2A2A2A",
+              background: "none",
+              color: "#A1A1AA",
+              cursor: "pointer",
+            }}
+          >
+            Voltar ao login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#0A0A0A",
+        backgroundColor: "#0A0A0A",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 16,
-        fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div
         style={{
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           borderRadius: "50%",
           border: "3px solid #1F1F1F",
           borderTopColor: "#0066FF",
           animation: "spin 0.7s linear infinite",
         }}
       />
-      <p style={{ color: "#52525B", fontSize: 14 }}>
-        Entrando no painel...
-      </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 }

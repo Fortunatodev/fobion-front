@@ -2,82 +2,113 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import {
-  ChevronLeft, ChevronRight, Car,
-  CheckCircle2, AlertCircle,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react"
+import type { PublicBusiness } from "@/types"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+type PublicService = PublicBusiness["services"][number]
 
-interface PublicService {
-  id: string
-  name: string
-  description: string | null
-  price: number
-  durationMinutes: number
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+const WEEKDAYS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
+const VEHICLE_TYPES = ["CAR","MOTORCYCLE","TRUCK","SUV"]
+const VEHICLE_TYPE_LABELS: Record<string,string> = { CAR:"Carro", MOTORCYCLE:"Moto", TRUCK:"Caminhão", SUV:"SUV" }
+
+function isPastDate(dateStr: string): boolean {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const d = new Date(dateStr + "T00:00:00"); d.setHours(0,0,0,0)
+  return d < today
 }
 
-interface PublicBusiness {
-  id: string
-  name: string
-  slug: string
-  phone: string
-  services: PublicService[]
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatCurrency(cents: number): string {
+function formatCurrency(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 
-function formatDuration(min: number): string {
-  if (min < 60) return `${min} min`
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m > 0 ? `${h}h ${m}min` : `${h}h`
+function formatDuration(min: number) {
+  if (min < 60) return `${min}min`
+  const h = Math.floor(min / 60), m = min % 60
+  return m ? `${h}h${m}min` : `${h}h`
 }
 
-function todayStr(): string {
-  return new Date().toISOString().split("T")[0]
+interface EmployeeOption {
+  id:        string
+  name:      string
+  avatarUrl: string | null
 }
 
-function isPastDate(d: string): boolean {
-  return d < todayStr()
+// ── Calendário ────────────────────────────────────────────────────────────────
+
+function Calendar({
+  month, selectedDate, onSelect, onPrev, onNext,
+}: {
+  month: Date; selectedDate: string
+  onSelect: (d: string) => void; onPrev: () => void; onNext: () => void
+}) {
+  const year  = month.getFullYear()
+  const mon   = month.getMonth()
+  const first = new Date(year, mon, 1).getDay()
+  const days  = new Date(year, mon + 1, 0).getDate()
+  const cells: (number | null)[] = [...Array(first).fill(null), ...Array.from({length: days}, (_,i) => i+1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <button onClick={onPrev} style={{ background:"none", border:"none", cursor:"pointer", color:"#A1A1AA", padding:4 }}><ChevronLeft size={16}/></button>
+        <span style={{ fontSize:14, fontWeight:600, color:"#fff" }}>{MONTHS[mon]} {year}</span>
+        <button onClick={onNext} style={{ background:"none", border:"none", cursor:"pointer", color:"#A1A1AA", padding:4 }}><ChevronRight size={16}/></button>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:6 }}>
+        {WEEKDAYS.map(d => <div key={d} style={{ textAlign:"center", fontSize:10, color:"#52525B", fontWeight:600, padding:"4px 0" }}>{d}</div>)}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />
+          const dateStr = `${year}-${String(mon+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`
+          const past    = isPastDate(dateStr)
+          const sel     = dateStr === selectedDate
+          return (
+            <button
+              key={i}
+              onClick={() => !past && onSelect(dateStr)}
+              disabled={past}
+              style={{
+                height:36, borderRadius:8, fontSize:13, fontWeight: sel ? 700 : 400,
+                border: sel ? "none" : "1px solid transparent",
+                background: sel ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "none",
+                color: past ? "#2A2A2A" : sel ? "#fff" : "#A1A1AA",
+                cursor: past ? "not-allowed" : "pointer",
+                fontFamily:"inherit",
+              }}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
-function formatMonthYear(d: Date): string {
-  const s = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-  return s.charAt(0).toUpperCase() + s.slice(1)
+// ── FInput ────────────────────────────────────────────────────────────────────
+
+function FInput({ label, value, onChange, placeholder, required, type="text" }: {
+  label: string; value: string; onChange: (v: string) => void
+  placeholder?: string; required?: boolean; type?: string
+}) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+      <label style={{ fontSize:11, fontWeight:500, color:"#71717A", letterSpacing:"0.03em" }}>
+        {label}{required && <span style={{ color:"#EF4444" }}> *</span>}
+      </label>
+      <input
+        type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{ height:40, padding:"0 12px", borderRadius:10, border:"1px solid #2A2A2A", backgroundColor:"#161616", color:"#fff", fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box", width:"100%" }}
+      />
+    </div>
+  )
 }
-
-/** Returns 42 cells (6 weeks) for a given month. */
-function buildCalendarDays(month: Date) {
-  const year = month.getFullYear()
-  const mon  = month.getMonth()
-  const firstDay = new Date(year, mon, 1)
-  const start    = new Date(firstDay)
-  start.setDate(start.getDate() - firstDay.getDay()) // week starts Sunday
-
-  const cells: { dateStr: string; day: number; inMonth: boolean }[] = []
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    cells.push({
-      dateStr:  d.toISOString().split("T")[0],
-      day:      d.getDate(),
-      inMonth:  d.getMonth() === mon,
-    })
-  }
-  return cells
-}
-
-const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-const STEPS = [
-  { n: 1, label: "Horário" },
-  { n: 2, label: "Seus dados" },
-  { n: 3, label: "Confirmação" },
-]
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -95,12 +126,17 @@ export default function AgendarPage() {
   // ── Step ──────────────────────────────────────────────────────────────────
   const [step, setStep] = useState<1 | 2 | 3>(1)
 
+  // ── Funcionários ──────────────────────────────────────────────────────────
+  const [employees,        setEmployees]        = useState<EmployeeOption[]>([])
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("owner")
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
+
   // ── Step 1 ────────────────────────────────────────────────────────────────
-  const [calendarMonth,   setCalendarMonth]   = useState(() => { const d = new Date(); d.setDate(1); return d })
-  const [selectedDate,    setSelectedDate]    = useState("")
-  const [selectedSlot,    setSelectedSlot]    = useState("")
-  const [availableSlots,  setAvailableSlots]  = useState<string[]>([])
-  const [loadingSlots,    setLoadingSlots]    = useState(false)
+  const [calendarMonth,  setCalendarMonth]  = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [selectedDate,   setSelectedDate]   = useState("")
+  const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  const [selectedSlot,   setSelectedSlot]   = useState("")
+  const [loadingSlots,   setLoadingSlots]   = useState(false)
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
   const [customerName,  setCustomerName]  = useState("")
@@ -111,46 +147,64 @@ export default function AgendarPage() {
   const [vehicleModel,  setVehicleModel]  = useState("")
   const [vehicleColor,  setVehicleColor]  = useState("")
   const [vehicleType,   setVehicleType]   = useState("CAR")
+  const [submitting,    setSubmitting]    = useState(false)
+  const [submitError,   setSubmitError]   = useState<string | null>(null)
 
-  // ── Submission ────────────────────────────────────────────────────────────
-  const [submitting,  setSubmitting]  = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-
-  // ── Fetch business ────────────────────────────────────────────────────────
+  // ── Load business ─────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!slug) return
     async function load() {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
       try {
         const res  = await fetch(`${API}/api/public/${slug}`)
         if (!res.ok) throw new Error()
         const data = await res.json()
         const biz: PublicBusiness = data.business ?? data
         setBusiness(biz)
-
-        const ids     = searchParams.getAll("services")
-        const filtered = biz.services.filter((s) => ids.includes(s.id))
+        const ids      = searchParams.getAll("services")
+        const filtered = biz.services.filter((s: PublicService) => ids.includes(s.id))
         setSelectedServices(filtered.length > 0 ? filtered : biz.services)
       } catch {
-        // keep loading = true so the spinner keeps showing; navigate away on error
         router.push(`/${slug}`)
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [slug, searchParams, router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug])
 
-  // ── Fetch slots ───────────────────────────────────────────────────────────
+  // ── Load employees ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!business) return
+    setLoadingEmployees(true)
+    fetch(`${API}/api/public/${business.slug}/employees`)
+      .then(r => r.json())
+      .then(d => {
+        const list: EmployeeOption[] = d.employees ?? []
+        setEmployees(list)
+        if (list.length <= 1) setSelectedEmployee("owner")
+      })
+      .catch(() => setEmployees([]))
+      .finally(() => setLoadingEmployees(false))
+  }, [business])
+
+  const showEmployeeStep = employees.length > 1
+
+  // ── fetchSlots ────────────────────────────────────────────────────────────
   const fetchSlots = useCallback(
     async (date: string) => {
-      if (!business || selectedServices.length === 0) return
+      if (!business || selectedServices.length === 0) {
+        setAvailableSlots([]); return
+      }
       setLoadingSlots(true)
       setSelectedSlot("")
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+      const serviceParams = selectedServices.map(s => `serviceIds=${encodeURIComponent(s.id)}`).join("&")
+      const empParam      = selectedEmployee && selectedEmployee !== "owner"
+        ? `&employeeId=${encodeURIComponent(selectedEmployee)}`
+        : ""
       try {
-        const res  = await fetch(
-          `${API}/api/schedules/available-slots?date=${date}&serviceId=${selectedServices[0].id}&businessId=${business.id}`
-        )
+        const res  = await fetch(`${API}/api/schedules/available-slots?date=${date}&businessId=${business.id}&${serviceParams}${empParam}`)
+        if (!res.ok) throw new Error()
         const data = await res.json()
         setAvailableSlots(data.slots ?? [])
       } catch {
@@ -159,7 +213,7 @@ export default function AgendarPage() {
         setLoadingSlots(false)
       }
     },
-    [business, selectedServices]
+    [business, selectedServices, selectedEmployee]
   )
 
   function handleSelectDate(dateStr: string) {
@@ -168,7 +222,12 @@ export default function AgendarPage() {
     fetchSlots(dateStr)
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // Re-busca slots quando funcionário ou serviços mudam
+  useEffect(() => {
+    if (selectedDate && selectedServices.length > 0) fetchSlots(selectedDate)
+  }, [selectedEmployee, selectedDate, selectedServices, fetchSlots])
+
+  // ── handleSubmit ──────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!customerName.trim() || !customerPhone.trim()) {
       setSubmitError("Nome e telefone são obrigatórios."); return
@@ -178,31 +237,28 @@ export default function AgendarPage() {
     }
     setSubmitting(true)
     setSubmitError(null)
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
     try {
       const res = await fetch(`${API}/api/schedules`, {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           businessId:  business!.id,
-          serviceIds:  selectedServices.map((s) => s.id),
+          serviceIds:  selectedServices.map(s => s.id),
           scheduledAt: new Date(`${selectedDate}T${selectedSlot}:00`).toISOString(),
-          customer: {
-            name:  customerName.trim(),
-            phone: customerPhone.trim(),
-            email: customerEmail.trim() || undefined,
-          },
-          vehicle: {
-            plate: vehiclePlate.trim().toUpperCase(),
-            brand: vehicleBrand.trim(),
-            model: vehicleModel.trim(),
-            color: vehicleColor.trim() || undefined,
-            type:  vehicleType,
-          },
+          employeeId:  selectedEmployee,
+          customer: { name: customerName.trim(), phone: customerPhone.trim(), email: customerEmail.trim() || undefined },
+          vehicle:  { plate: vehiclePlate.trim().toUpperCase(), brand: vehicleBrand.trim(), model: vehicleModel.trim(), color: vehicleColor.trim() || undefined, type: vehicleType },
         }),
       })
       if (!res.ok) {
         const err = await res.json()
+        if (res.status === 409 || err.code === "SCHEDULE_CONFLICT") {
+          setSubmitError("⚠️ Este horário foi reservado agora. Escolha outro horário.")
+          setSelectedSlot("")
+          await fetchSlots(selectedDate)
+          setStep(1)
+          return
+        }
         throw new Error(err.message || "Erro ao criar agendamento.")
       }
       setStep(3)
@@ -219,272 +275,136 @@ export default function AgendarPage() {
   )
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <>
-        <style>{`@keyframes spinAg{to{transform:rotate(360deg)}}`}</style>
-        <div style={{
-          minHeight: "100vh", display: "flex", alignItems: "center",
-          justifyContent: "center", backgroundColor: "#0A0A0A",
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: "50%",
-            border: "3px solid #1F1F1F", borderTopColor: "#0066FF",
-            animation: "spinAg 0.7s linear infinite",
-          }} />
-        </div>
-      </>
-    )
-  }
+  if (loading) return (
+    <>
+      <style>{`@keyframes spinAg{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ minHeight:"100vh", backgroundColor:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid #1F1F1F", borderTopColor:"#0066FF", animation:"spinAg 0.7s linear infinite" }} />
+      </div>
+    </>
+  )
 
-  const calCells = buildCalendarDays(calendarMonth)
+  if (!business) return null
 
   return (
     <>
       <style>{`
-        @keyframes spinAg { to { transform: rotate(360deg); } }
-        @keyframes fadeAg {
-          from { opacity:0; transform:translateY(8px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        .ag2-input:focus { border-color:rgba(0,102,255,0.4) !important; outline:none; }
-        .ag2-slot:hover  { background:#1F1F1F !important; }
-        .ag2-day:hover:not(:disabled) { color:#fff !important; }
+        @keyframes fadeAg  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spinAg  { to{transform:rotate(360deg)} }
+        .ag2-slot:hover { background:rgba(255,255,255,0.04)!important; border-color:#3F3F46!important; }
+        * { box-sizing:border-box; }
       `}</style>
 
-      <div style={{
-        minHeight: "100vh", backgroundColor: "#0A0A0A",
-        fontFamily: "'Inter',-apple-system,sans-serif",
-        animation: "fadeAg 0.35s ease both",
-      }}>
+      <div style={{ minHeight:"100vh", backgroundColor:"#0A0A0A", fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
-        {/* ── STICKY HEADER ─────────────────────────────────────────────── */}
-        <div style={{
-          position: "sticky", top: 0, zIndex: 40, height: 60,
-          backgroundColor: "rgba(10,10,10,0.9)",
-          backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid #1A1A1A",
-        }}>
-          <div style={{
-            maxWidth: 700, margin: "0 auto", padding: "0 24px",
-            height: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-          }}>
+        {/* ── Top bar ── */}
+        <div style={{ position:"sticky", top:0, zIndex:40, backgroundColor:"rgba(10,10,10,0.95)", backdropFilter:"blur(12px)", borderBottom:"1px solid #1A1A1A" }}>
+          <div style={{ maxWidth:700, margin:"0 auto", padding:"0 24px", height:56, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button
-              onClick={() =>
-                step === 1 ? router.push(`/${slug}`) : setStep((s) => (s - 1) as 1 | 2 | 3)
-              }
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 13, color: "#A1A1AA", fontFamily: "inherit",
-              }}
+              onClick={() => step === 1 ? router.push(`/${slug}`) : setStep(s => (s - 1) as 1 | 2 | 3)}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, color:"#A1A1AA", fontFamily:"inherit" }}
             >
-              <ChevronLeft size={16} /> Voltar
+              <ChevronLeft size={16}/> Voltar
             </button>
-
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
-                {business?.name ?? ""}
+            <div style={{ textAlign:"center" }}>
+              <p style={{ fontSize:13, fontWeight:600, color:"#fff", margin:0 }}>{business.name}</p>
+              <p style={{ fontSize:11, color:"#52525B", margin:"2px 0 0" }}>
+                {step === 1 ? "Escolha data e horário" : step === 2 ? "Seus dados" : "Confirmado!"}
               </p>
-              <p style={{ fontSize: 11, color: "#52525B", margin: 0 }}>Agendamento</p>
             </div>
-
-            <div style={{ width: 60 }} />
+            <div style={{ width:60 }} />
           </div>
         </div>
 
-        {/* ── STEP INDICATOR ────────────────────────────────────────────── */}
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 24px 0" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {STEPS.map((s, i) => (
-              <div key={s.n} style={{ display: "flex", alignItems: "center", flex: i < 2 ? 1 : undefined }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 700, margin: "0 auto",
-                    backgroundColor: step >= s.n ? "#0066FF" : "#1F1F1F",
-                    color: step >= s.n ? "#fff" : "#52525B",
-                    border: step < s.n ? "1px solid #252525" : "none",
-                    transition: "all 0.2s",
-                  }}>
-                    {step > s.n ? <CheckCircle2 size={13} /> : s.n}
-                  </div>
-                  <p style={{
-                    fontSize: 11, marginTop: 4, textAlign: "center",
-                    color: step >= s.n ? "#fff" : "#52525B",
-                  }}>
-                    {s.label}
-                  </p>
-                </div>
-
-                {i < 2 && (
-                  <div style={{
-                    flex: 1, height: 1, margin: "0 8px", marginBottom: 18,
-                    backgroundColor: step > s.n ? "rgba(0,102,255,0.3)" : "#1F1F1F",
-                    transition: "background 0.3s",
-                  }} />
-                )}
-              </div>
-            ))}
-          </div>
+        {/* ── Progress bar ── */}
+        <div style={{ height:2, backgroundColor:"#111" }}>
+          <div style={{ height:"100%", background:"linear-gradient(90deg,#0066FF,#7C3AED)", width:`${step === 1 ? 33 : step === 2 ? 66 : 100}%`, transition:"width 0.3s ease" }} />
         </div>
 
-        {/* ── CONTENT ───────────────────────────────────────────────────── */}
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 24px 60px" }}>
+        <div style={{ maxWidth:700, margin:"0 auto", padding:"24px 24px 80px" }}>
 
-          {/* ── STEP 1 ────────────────────────────────────────────────── */}
+          {/* ═══════ STEP 1 — Data e horário ═══════ */}
           {step === 1 && (
-            <div>
-              {/* Service summary */}
-              <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 14, padding: "14px 16px", marginBottom: 20,
-              }}>
-                <p style={{ fontSize: 12, color: "#71717A", marginBottom: 8 }}>
-                  Serviços selecionados
-                </p>
-                {selectedServices.map((s) => (
-                  <div key={s.id} style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: 13, marginBottom: 4,
-                  }}>
-                    <span style={{ color: "#fff" }}>{s.name}</span>
-                    <span style={{ color: "#10B981", fontWeight: 600 }}>
-                      {formatCurrency(s.price)}
-                    </span>
-                  </div>
-                ))}
-                {selectedServices.length > 1 && (
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: 13, marginTop: 8, paddingTop: 8, borderTop: "1px solid #1A1A1A",
-                  }}>
-                    <span style={{ color: "#A1A1AA" }}>Total</span>
-                    <span style={{ color: "#fff", fontWeight: 700 }}>
-                      {formatCurrency(totalSelected.price)}
-                    </span>
-                  </div>
-                )}
-              </div>
+            <div style={{ animation:"fadeAg 0.25s ease" }}>
 
-              {/* Calendar card */}
-              <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 16, padding: 20, marginBottom: 16,
-              }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 16 }}>
-                  Escolha uma data
-                </h3>
-
-                {/* Month nav */}
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  alignItems: "center", marginBottom: 12,
-                }}>
-                  <button
-                    onClick={() => setCalendarMonth(
-                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
-                    )}
-                    style={{
-                      width: 30, height: 30, borderRadius: 8,
-                      backgroundColor: "#161616", border: "1px solid #252525",
-                      color: "#A1A1AA", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
-                    {formatMonthYear(calendarMonth)}
-                  </span>
-                  <button
-                    onClick={() => setCalendarMonth(
-                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
-                    )}
-                    style={{
-                      width: 30, height: 30, borderRadius: 8,
-                      backgroundColor: "#161616", border: "1px solid #252525",
-                      color: "#A1A1AA", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-
-                {/* Week labels */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
-                  {WEEK_LABELS.map((w) => (
-                    <div key={w} style={{
-                      textAlign: "center", fontSize: 11, fontWeight: 600,
-                      color: "#3F3F46", padding: "4px 0",
-                    }}>
-                      {w}
+              {/* Resumo dos serviços */}
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:"16px 20px", marginBottom:20 }}>
+                <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 10px", letterSpacing:"0.04em" }}>SERVIÇOS SELECIONADOS</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {selectedServices.map(s => (
+                    <div key={s.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{s.name}</span>
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                        <span style={{ fontSize:12, color:"#52525B" }}>{formatDuration(s.durationMinutes)}</span>
+                        <span style={{ fontSize:13, color:"#A1A1AA" }}>{formatCurrency(s.price)}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Day cells */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                  {calCells.map((cell, i) => {
-                    const past  = isPastDate(cell.dateStr)
-                    const isSel = cell.dateStr === selectedDate
-                    const today = cell.dateStr === todayStr()
-                    return (
-                      <button
-                        key={i}
-                        className="ag2-day"
-                        disabled={past || !cell.inMonth}
-                        onClick={() => handleSelectDate(cell.dateStr)}
-                        style={{
-                          width: "100%", aspectRatio: "1", borderRadius: 8,
-                          fontSize: 13, fontFamily: "inherit",
-                          cursor: past || !cell.inMonth ? "not-allowed" : "pointer",
-                          opacity: !cell.inMonth ? 0.15 : past ? 0.2 : 1,
-                          backgroundColor: isSel ? "#0066FF" : "transparent",
-                          border: today && !isSel ? "1px solid #0066FF" : "1px solid transparent",
-                          color: isSel ? "#fff" : today ? "#0066FF" : "#A1A1AA",
-                          fontWeight: isSel || today ? 700 : 400,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {cell.day}
-                      </button>
-                    )
-                  })}
-                </div>
+                {selectedServices.length > 1 && (
+                  <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #1F1F1F", display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:12, color:"#52525B" }}>Total: {formatDuration(totalSelected.duration)}</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{formatCurrency(totalSelected.price)}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Slots card */}
-              {selectedDate && (
-                <div style={{
-                  backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                  borderRadius: 16, padding: 20, marginBottom: 20,
-                }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 14 }}>
-                    Escolha um horário
-                  </h3>
+              {/* ── Etapa "Com quem?" ── */}
+              {showEmployeeStep && !loadingEmployees && (
+                <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:20 }}>
+                  <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 12px", letterSpacing:"0.04em" }}>COM QUEM?</p>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                    {employees.map(emp => {
+                      const sel = emp.id === selectedEmployee
+                      return (
+                        <button
+                          key={emp.id}
+                          onClick={() => setSelectedEmployee(emp.id)}
+                          style={{
+                            display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+                            borderRadius:12, cursor:"pointer",
+                            backgroundColor: sel ? "rgba(0,102,255,0.06)" : "#0D0D0D",
+                            border: `1px solid ${sel ? "rgba(0,102,255,0.35)" : "#1F1F1F"}`,
+                            fontFamily:"inherit",
+                          }}
+                        >
+                          <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, background:"linear-gradient(135deg,#0066FF,#7C3AED)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#fff" }}>
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize:13, fontWeight: sel ? 600 : 400, color: sel ? "#fff" : "#A1A1AA" }}>{emp.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
+              {/* Calendário */}
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:20 }}>
+                <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 16px", letterSpacing:"0.04em" }}>ESCOLHA A DATA</p>
+                <Calendar
+                  month={calendarMonth}
+                  selectedDate={selectedDate}
+                  onSelect={handleSelectDate}
+                  onPrev={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                  onNext={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                />
+              </div>
+
+              {/* Horários */}
+              {selectedDate && (
+                <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:20 }}>
+                  <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 14px", letterSpacing:"0.04em" }}>HORÁRIOS DISPONÍVEIS</p>
                   {loadingSlots ? (
-                    <div style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      gap: 10, padding: "12px 0",
-                    }}>
-                      <div style={{
-                        width: 16, height: 16, borderRadius: "50%",
-                        border: "2px solid #252525", borderTopColor: "#0066FF",
-                        animation: "spinAg 0.7s linear infinite",
-                      }} />
-                      <span style={{ fontSize: 13, color: "#71717A" }}>Buscando horários...</span>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ width:14, height:14, borderRadius:"50%", border:"2px solid #2A2A2A", borderTopColor:"#0066FF", animation:"spinAg 0.7s linear infinite" }} />
+                      <span style={{ fontSize:13, color:"#71717A" }}>Buscando horários...</span>
                     </div>
                   ) : availableSlots.length === 0 ? (
-                    <p style={{ fontSize: 13, color: "#71717A", textAlign: "center", padding: "8px 0" }}>
-                      Nenhum horário disponível para este dia.
-                    </p>
+                    <p style={{ fontSize:13, color:"#71717A", textAlign:"center", padding:"8px 0" }}>Nenhum horário disponível para este dia.</p>
                   ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {availableSlots.map((slot) => {
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                      {availableSlots.map(slot => {
                         const isSel = slot === selectedSlot
                         return (
                           <button
@@ -492,12 +412,12 @@ export default function AgendarPage() {
                             className={isSel ? undefined : "ag2-slot"}
                             onClick={() => setSelectedSlot(slot)}
                             style={{
-                              height: 36, padding: "0 14px", borderRadius: 8,
-                              fontSize: 13, fontWeight: 500, cursor: "pointer",
-                              backgroundColor: isSel ? "#0066FF" : "#161616",
-                              border: `1px solid ${isSel ? "#0066FF" : "#252525"}`,
+                              height:36, padding:"0 14px", borderRadius:8,
+                              fontSize:13, fontWeight:500, cursor:"pointer",
+                              background: isSel ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "transparent",
+                              border: isSel ? "none" : "1px solid #2A2A2A",
                               color: isSel ? "#fff" : "#A1A1AA",
-                              transition: "all 0.15s", fontFamily: "inherit",
+                              fontFamily:"inherit", transition:"all 0.15s",
                             }}
                           >
                             {slot}
@@ -509,282 +429,151 @@ export default function AgendarPage() {
                 </div>
               )}
 
-              {/* Continue button */}
+              {/* CTA Step 1 */}
               <button
                 onClick={() => setStep(2)}
                 disabled={!selectedDate || !selectedSlot}
                 style={{
-                  width: "100%", height: 46,
-                  background:
-                    selectedDate && selectedSlot
-                      ? "linear-gradient(135deg,#0066FF,#7C3AED)"
-                      : "#1F1F1F",
-                  border: "none", borderRadius: 12,
+                  width:"100%", height:52, borderRadius:14, border:"none",
+                  background: selectedDate && selectedSlot ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "#161616",
                   color: selectedDate && selectedSlot ? "#fff" : "#3F3F46",
-                  fontSize: 14, fontWeight: 600,
-                  cursor: selectedDate && selectedSlot ? "pointer" : "not-allowed",
-                  transition: "all 0.2s", fontFamily: "inherit",
+                  fontSize:15, fontWeight:700, cursor: selectedDate && selectedSlot ? "pointer" : "not-allowed",
+                  fontFamily:"inherit", transition:"all 0.2s",
                 }}
               >
-                Continuar
+                Continuar →
               </button>
             </div>
           )}
 
-          {/* ── STEP 2 ────────────────────────────────────────────────── */}
+          {/* ═══════ STEP 2 — Dados do cliente ═══════ */}
           {step === 2 && (
-            <div>
-              {/* Date summary */}
-              <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 12, padding: "12px 16px", marginBottom: 20,
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <span style={{ fontSize: 13, color: "#fff" }}>
-                  {selectedDate} às {selectedSlot}
-                </span>
-                <button
-                  onClick={() => setStep(1)}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    fontSize: 12, color: "#0066FF", fontFamily: "inherit",
-                  }}
-                >
-                  Alterar
-                </button>
+            <div style={{ animation:"fadeAg 0.25s ease" }}>
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:16 }}>
+                <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 14px", letterSpacing:"0.04em" }}>SEU AGENDAMENTO</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Serviços</span>
+                    <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{selectedServices.map(s=>s.name).join(", ")}</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Data</span>
+                    <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"})}</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Horário</span>
+                    <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{selectedSlot}</span>
+                  </div>
+                  {showEmployeeStep && (
+                    <div style={{ display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:13, color:"#71717A" }}>Profissional</span>
+                      <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>
+                        {employees.find(e => e.id === selectedEmployee)?.name ?? "Proprietário"}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid #1F1F1F", paddingTop:8, marginTop:2 }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Total</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:"#fff" }}>{formatCurrency(totalSelected.price)}</span>
+                  </div>
+                </div>
               </div>
 
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16 }}>
-                Seus dados
-              </h3>
+              {/* Dados pessoais */}
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:16 }}>
+                <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 14px", letterSpacing:"0.04em" }}>SEUS DADOS</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  <FInput label="Nome completo" value={customerName} onChange={setCustomerName} placeholder="Ex: Maria Silva" required />
+                  <FInput label="Telefone / WhatsApp" value={customerPhone} onChange={setCustomerPhone} placeholder="(47) 99999-9999" required type="tel" />
+                  <FInput label="E-mail (opcional)" value={customerEmail} onChange={setCustomerEmail} placeholder="maria@email.com" type="email" />
+                </div>
+              </div>
 
-              {/* Error banner */}
+              {/* Dados do veículo */}
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:20, marginBottom:16 }}>
+                <p style={{ fontSize:11, fontWeight:600, color:"#52525B", margin:"0 0 14px", letterSpacing:"0.04em" }}>DADOS DO VEÍCULO</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  <FInput label="Placa" value={vehiclePlate} onChange={setVehiclePlate} placeholder="ABC-1234" required />
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                    <FInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand} placeholder="Ex: Toyota" required />
+                    <FInput label="Modelo" value={vehicleModel} onChange={setVehicleModel} placeholder="Ex: Corolla" required />
+                  </div>
+                  <FInput label="Cor (opcional)" value={vehicleColor} onChange={setVehicleColor} placeholder="Ex: Prata" />
+                  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                    <label style={{ fontSize:11, fontWeight:500, color:"#71717A" }}>Tipo</label>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {VEHICLE_TYPES.map(t => (
+                        <button key={t} onClick={() => setVehicleType(t)} style={{ height:34, padding:"0 14px", borderRadius:8, fontSize:12, fontWeight: vehicleType === t ? 600 : 400, border:"1px solid", borderColor: vehicleType === t ? "rgba(0,102,255,0.4)" : "#2A2A2A", backgroundColor: vehicleType === t ? "rgba(0,102,255,0.08)" : "transparent", color: vehicleType === t ? "#fff" : "#71717A", cursor:"pointer", fontFamily:"inherit" }}>
+                          {VEHICLE_TYPE_LABELS[t]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {submitError && (
-                <div style={{
-                  backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-                  borderRadius: 10, padding: "10px 14px", marginBottom: 16,
-                  display: "flex", alignItems: "center", gap: 8,
-                }}>
-                  <AlertCircle size={14} color="#EF4444" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: "#EF4444" }}>{submitError}</span>
+                <div style={{ backgroundColor:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:12, padding:"11px 16px", marginBottom:16, fontSize:13, color:"#EF4444" }}>
+                  {submitError}
                 </div>
               )}
 
-              {/* Form fields */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <FInput label="Nome completo" value={customerName} onChange={setCustomerName}
-                  placeholder="João da Silva" required />
-                <FInput label="Telefone" value={customerPhone} onChange={setCustomerPhone}
-                  placeholder="(47) 99999-0000" required />
-                <FInput label="E-mail" value={customerEmail} onChange={setCustomerEmail}
-                  placeholder="(opcional)" />
-
-                {/* Vehicle separator */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "8px 0 4px" }}>
-                  <Car size={14} color="#52525B" />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#A1A1AA" }}>
-                    Dados do veículo
-                  </span>
-                </div>
-
-                <FInput label="Placa" value={vehiclePlate}
-                  onChange={(v) => setVehiclePlate(v.toUpperCase())}
-                  placeholder="ABC-1234" required />
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <FInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand}
-                    placeholder="Honda" required />
-                  <FInput label="Modelo" value={vehicleModel} onChange={setVehicleModel}
-                    placeholder="Civic" required />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <FInput label="Cor" value={vehicleColor} onChange={setVehicleColor}
-                    placeholder="Prata" />
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6 }}>
-                      Tipo
-                    </label>
-                    <select
-                      value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value)}
-                      style={{
-                        height: 42, backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                        borderRadius: 10, padding: "0 14px", fontSize: 14, color: "#fff",
-                        outline: "none", cursor: "pointer", fontFamily: "inherit",
-                        appearance: "none", WebkitAppearance: "none",
-                      }}
-                    >
-                      <option value="CAR">Carro</option>
-                      <option value="MOTORCYCLE">Moto</option>
-                      <option value="TRUCK">Caminhão</option>
-                      <option value="SUV">SUV</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit button */}
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                style={{
-                  marginTop: 20, width: "100%", height: 48,
-                  background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                  border: "none", borderRadius: 12, color: "white",
-                  fontSize: 14, fontWeight: 600,
-                  cursor: submitting ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  opacity: submitting ? 0.7 : 1, transition: "opacity 0.15s",
-                  fontFamily: "inherit",
-                }}
+                style={{ width:"100%", height:52, borderRadius:14, border:"none", background: submitting ? "#161616" : "linear-gradient(135deg,#0066FF,#7C3AED)", color: submitting ? "#3F3F46" : "#fff", fontSize:15, fontWeight:700, cursor: submitting ? "not-allowed" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}
               >
                 {submitting ? (
-                  <>
-                    <div style={{
-                      width: 16, height: 16, borderRadius: "50%",
-                      border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff",
-                      animation: "spinAg 0.7s linear infinite",
-                    }} />
-                    Agendando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={16} />
-                    Confirmar agendamento
-                  </>
-                )}
+                  <><div style={{ width:16, height:16, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.2)", borderTopColor:"#fff", animation:"spinAg 0.7s linear infinite" }} /> Agendando...</>
+                ) : "Confirmar agendamento →"}
               </button>
             </div>
           )}
 
-          {/* ── STEP 3 ────────────────────────────────────────────────── */}
+          {/* ═══════ STEP 3 — Confirmação ═══════ */}
           {step === 3 && (
-            <div style={{ textAlign: "center", paddingTop: 32 }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: "50%",
-                backgroundColor: "rgba(16,185,129,0.1)",
-                border: "1px solid rgba(16,185,129,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                margin: "0 auto",
-              }}>
-                <CheckCircle2 size={32} color="#10B981" />
+            <div style={{ animation:"fadeAg 0.25s ease", textAlign:"center", paddingTop:40 }}>
+              <div style={{ width:80, height:80, borderRadius:"50%", background:"linear-gradient(135deg,#0066FF,#7C3AED)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px" }}>
+                <CheckCircle2 size={40} color="#fff" />
               </div>
-
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginTop: 20 }}>
-                Agendamento confirmado!
-              </h2>
-              <p style={{ fontSize: 14, color: "#A1A1AA", marginTop: 8 }}>
-                Seu agendamento foi criado com sucesso.
+              <h1 style={{ fontSize:28, fontWeight:800, color:"#fff", margin:"0 0 10px", letterSpacing:"-0.5px" }}>Agendamento confirmado!</h1>
+              <p style={{ fontSize:15, color:"#71717A", margin:"0 0 32px", lineHeight:1.6 }}>
+                Entraremos em contato para confirmar. Até lá!
               </p>
-
-              {/* Summary card */}
-              <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 16, padding: 20, marginTop: 24, textAlign: "left",
-              }}>
-                {[
-                  { label: "Data",     value: `${selectedDate} às ${selectedSlot}` },
-                  { label: "Serviços", value: selectedServices.map((s) => s.name).join(", ") },
-                  { label: "Total",    value: formatCurrency(totalSelected.price) },
-                ].map((row) => (
-                  <div key={row.label} style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: 13, marginBottom: 12, gap: 16,
-                  }}>
-                    <span style={{ color: "#71717A", flexShrink: 0 }}>{row.label}</span>
-                    <span style={{ color: "#fff", textAlign: "right" }}>{row.value}</span>
+              <div style={{ backgroundColor:"#111111", border:"1px solid #1F1F1F", borderRadius:16, padding:24, marginBottom:24, textAlign:"left" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Serviço</span>
+                    <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{selectedServices.map(s=>s.name).join(", ")}</span>
                   </div>
-                ))}
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, alignItems: "center" }}>
-                  <span style={{ color: "#71717A" }}>Status</span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, color: "#F59E0B",
-                    backgroundColor: "rgba(245,158,11,0.08)",
-                    border: "1px solid rgba(245,158,11,0.2)",
-                    borderRadius: 6, padding: "3px 8px",
-                  }}>
-                    Aguardando confirmação
-                  </span>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Data e horário</span>
+                    <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>{new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})} às {selectedSlot}</span>
+                  </div>
+                  {showEmployeeStep && (
+                    <div style={{ display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:13, color:"#71717A" }}>Profissional</span>
+                      <span style={{ fontSize:13, color:"#fff", fontWeight:500 }}>
+                        {employees.find(e => e.id === selectedEmployee)?.name ?? "Proprietário"}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:13, color:"#71717A" }}>Total</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:"#fff" }}>{formatCurrency(totalSelected.price)}</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Action buttons */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 24 }}>
-                <button
-                  onClick={() => router.push(`/${slug}`)}
-                  style={{
-                    width: "100%", height: 44, backgroundColor: "#161616",
-                    border: "1px solid #1F1F1F", color: "#A1A1AA",
-                    borderRadius: 12, cursor: "pointer", fontSize: 14,
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Voltar para a loja
-                </button>
-
-                {business?.phone && (
-                  <button
-                    onClick={() => {
-                      const phone = business.phone.replace(/\D/g, "")
-                      const text  = encodeURIComponent(
-                        `Olá! Acabei de agendar no ${business.name}. Aguardo confirmação!`
-                      )
-                      window.open(`https://wa.me/55${phone}?text=${text}`, "_blank")
-                    }}
-                    style={{
-                      width: "100%", height: 44,
-                      backgroundColor: "rgba(37,211,102,0.1)",
-                      border: "1px solid rgba(37,211,102,0.2)",
-                      color: "#25D366", borderRadius: 12, cursor: "pointer",
-                      fontSize: 14, fontWeight: 600,
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Confirmar pelo WhatsApp
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => router.push(`/${slug}`)}
+                style={{ width:"100%", height:48, borderRadius:12, border:"1px solid #2A2A2A", backgroundColor:"transparent", color:"#A1A1AA", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+              >
+                Voltar para a loja
+              </button>
             </div>
           )}
         </div>
       </div>
     </>
-  )
-}
-
-// ── Reusable field ────────────────────────────────────────────────────────────
-
-function FInput({
-  label, value, onChange, placeholder, required,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-  required?: boolean
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6 }}>
-        {label}
-        {required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
-      </label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="ag2-input"
-        style={{
-          height: 42, backgroundColor: "#111111",
-          border: "1px solid #1F1F1F", borderRadius: 10,
-          padding: "0 14px", fontSize: 14, color: "#fff",
-          outline: "none", width: "100%", boxSizing: "border-box",
-          transition: "border-color 0.15s", fontFamily: "inherit",
-        }}
-      />
-    </div>
   )
 }

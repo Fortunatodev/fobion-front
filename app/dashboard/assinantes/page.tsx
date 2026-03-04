@@ -19,7 +19,7 @@ interface Subscription {
   customerPlan: { id: string; name: string; price: number; discountPercent: number }
 }
 
-interface PlanOption  { id: string; name: string; price: number }
+interface PlanOption     { id: string; name: string; price: number }
 interface CustomerOption { id: string; name: string }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -82,12 +82,14 @@ function SelectField({ label, value, onChange, children, required }: {
         {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
       </label>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{
+        width: "100%",
         height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
         borderRadius: 10, padding: "0 14px", fontSize: 14, color: value ? "#fff" : "#3F3F46",
         outline: "none", cursor: "pointer", fontFamily: "inherit",
         appearance: "none", WebkitAppearance: "none",
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
         backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+        boxSizing: "border-box",
       }}>
         {children}
       </select>
@@ -95,23 +97,96 @@ function SelectField({ label, value, onChange, children, required }: {
   )
 }
 
+// ── Atomic helpers ────────────────────────────────────────────────────────────
+
+function NewSubBtn({ onClick, isMobile }: { onClick: () => void; isMobile: boolean }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        background: "linear-gradient(135deg,#7C3AED,#0066FF)",
+        border: "none", borderRadius: 12,
+        padding: isMobile ? "10px 16px" : "10px 18px",
+        color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
+        width: isMobile ? "100%" : "auto",
+        boxShadow: hov ? "0 8px 30px rgba(124,58,237,0.5)" : "0 4px 20px rgba(124,58,237,0.3)",
+        transform: hov ? "scale(1.02)" : "scale(1)",
+        transition: "all 0.2s", fontFamily: "inherit",
+        boxSizing: "border-box",
+      }}
+    >
+      <Plus size={15} />
+      Nova assinatura
+    </button>
+  )
+}
+
+function StatCard({ label, value, color, bg, border, isMobile }: {
+  label: string; value: number; color: string; bg: string; border: string; isMobile: boolean
+}) {
+  return (
+    <div style={{
+      backgroundColor: bg, border: `1px solid ${border}`,
+      borderRadius: 12, padding: isMobile ? "10px 12px" : "12px 16px",
+      minWidth: 0, boxSizing: "border-box",
+    }}>
+      <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color, margin: 0 }}>{value}</p>
+      <p style={{ fontSize: isMobile ? 11 : 12, color: "#71717A", marginTop: 4, margin: "4px 0 0" }}>{label}</p>
+    </div>
+  )
+}
+
+function CancelBtn({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        height: 40, padding: "0 18px", borderRadius: 10,
+        fontSize: 13, fontWeight: 600, cursor: "pointer",
+        background: "transparent", border: "1px solid #252525",
+        color: hov ? "#ffffff" : "#A1A1AA",
+        transition: "color 0.15s", fontFamily: "inherit",
+      }}
+    >
+      Cancelar
+    </button>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AssinantesPage() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
-  const [plans,         setPlans]         = useState<PlanOption[]>([])
-  const [customers,     setCustomers]     = useState<CustomerOption[]>([])
-  const [loading,       setLoading]       = useState(true)
-  const [error,         setError]         = useState<string | null>(null)
-  const [filterStatus,  setFilterStatus]  = useState("")
-  const [searchQuery,   setSearchQuery]   = useState("")
-  const [showModal,     setShowModal]     = useState(false)
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [formError,     setFormError]     = useState<string | null>(null)
+  const [subscriptions,  setSubscriptions]  = useState<Subscription[]>([])
+  const [plans,          setPlans]          = useState<PlanOption[]>([])
+  const [customers,      setCustomers]      = useState<CustomerOption[]>([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState<string | null>(null)
+  const [filterStatus,   setFilterStatus]   = useState("")
+  const [searchQuery,    setSearchQuery]    = useState("")
+  const [showModal,      setShowModal]      = useState(false)
+  const [actionLoading,  setActionLoading]  = useState<string | null>(null)
+  const [formError,      setFormError]      = useState<string | null>(null)
   const [formCustomerId, setFormCustomerId] = useState("")
   const [formPlanId,     setFormPlanId]     = useState("")
   const [hoveredId,      setHoveredId]      = useState<string | null>(null)
+  const [isMobile,       setIsMobile]       = useState(false)
 
+  // ── Responsividade ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
+  // ── Data ────────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
@@ -134,6 +209,7 @@ export default function AssinantesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // ── Actions ─────────────────────────────────────────────────────────────────
   async function handleActivate(id: string) {
     setActionLoading(id)
     try {
@@ -178,6 +254,7 @@ export default function AssinantesPage() {
     }
   }
 
+  // ── Derived ─────────────────────────────────────────────────────────────────
   const filtered = subscriptions.filter((s) => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
@@ -203,17 +280,23 @@ export default function AssinantesPage() {
     { value: "EXPIRED",   label: "Expirado"  },
   ]
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        @keyframes spinAs { to { transform: rotate(360deg); } }
-        @keyframes skeletonAs { 0%,100%{opacity:.4} 50%{opacity:.8} }
-        @keyframes fadeAs { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes slideUpAs {
-          from{opacity:0;transform:translate(-50%,-44%)}
-          to{opacity:1;transform:translate(-50%,-50%)}
+        @keyframes spinAs      { to { transform: rotate(360deg); } }
+        @keyframes skeletonAs  { 0%,100%{opacity:.4} 50%{opacity:.8} }
+        @keyframes fadeAs      { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideUpAs   {
+          from { opacity:0; transform: translate(-50%, -44%) }
+          to   { opacity:1; transform: translate(-50%, -50%) }
+        }
+        @keyframes slideUpMob  {
+          from { opacity:0; transform: translateY(24px) }
+          to   { opacity:1; transform: translateY(0) }
         }
         select option { background: #111111; }
+        * { box-sizing: border-box; }
       `}</style>
 
       <div style={{
@@ -222,39 +305,55 @@ export default function AssinantesPage() {
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       }}>
 
-        {/* ── HEADER ──────────────────────────────────────────────────── */}
+        {/* ── HEADER ────────────────────────────────────────────────────── */}
         <div style={{
-          display: "flex", justifyContent: "space-between",
-          alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 32,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: isMobile ? "flex-start" : "flex-start",
+          gap: isMobile ? 12 : 16,
+          marginBottom: isMobile ? 20 : 32,
         }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+            <h1 style={{
+              fontSize: isMobile ? 22 : 28,
+              fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px",
+            }}>
               Assinantes
             </h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
-              {loading ? "Carregando..." : `${countActive} assinante${countActive !== 1 ? "s" : ""} ativo${countActive !== 1 ? "s" : ""}`}
+            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6, margin: "6px 0 0" }}>
+              {loading
+                ? "Carregando..."
+                : `${countActive} assinante${countActive !== 1 ? "s" : ""} ativo${countActive !== 1 ? "s" : ""}`}
             </p>
           </div>
-          <NewSubBtn onClick={() => setShowModal(true)} />
+          <NewSubBtn onClick={() => setShowModal(true)} isMobile={isMobile} />
         </div>
 
-        {/* ── FILTERS ─────────────────────────────────────────────────── */}
+        {/* ── FILTERS ───────────────────────────────────────────────────── */}
         <div style={{
           backgroundColor: "#111111", border: "1px solid #1F1F1F",
-          borderRadius: 16, padding: "14px 18px", marginBottom: 12,
-          display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
+          borderRadius: 16, padding: isMobile ? "12px 14px" : "14px 18px",
+          marginBottom: 12,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          gap: 12, alignItems: isMobile ? "stretch" : "center",
         }}>
           {/* Search */}
-          <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
-            <Search size={14} color="#52525B" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+          <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+            <Search
+              size={14} color="#52525B"
+              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+            />
             <input
-              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por cliente ou plano..."
               style={{
                 width: "100%", height: 38, backgroundColor: "#0A0A0A",
                 border: "1px solid #1F1F1F", borderRadius: 10,
                 paddingLeft: 36, paddingRight: 14, fontSize: 13, color: "#fff",
-                outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+                outline: "none", fontFamily: "inherit",
               }}
               onFocus={(e)  => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
               onBlur={(e)   => { e.target.style.borderColor = "#1F1F1F" }}
@@ -262,23 +361,32 @@ export default function AssinantesPage() {
           </div>
 
           {/* Status filters */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{
+            display: "flex", gap: 6,
+            flexWrap: "wrap",
+            overflowX: isMobile ? "auto" : "visible",
+          }}>
             {statusFilters.map((f) => {
               const active = filterStatus === f.value
-              const cfg = f.value ? getStatusConfig(f.value) : null
+              const cfg    = f.value ? getStatusConfig(f.value) : null
               return (
-                <button key={f.value} onClick={() => setFilterStatus(f.value)} style={{
-                  fontSize: 12, fontWeight: 500,
-                  padding: "5px 12px", borderRadius: 8, cursor: "pointer",
-                  border: active
-                    ? `1px solid ${cfg?.border ?? "rgba(0,102,255,0.3)"}`
-                    : "1px solid #1F1F1F",
-                  backgroundColor: active
-                    ? (cfg?.bg ?? "rgba(0,102,255,0.08)")
-                    : "transparent",
-                  color: active ? (cfg?.color ?? "#0066FF") : "#71717A",
-                  transition: "all 0.15s", fontFamily: "inherit",
-                }}>
+                <button
+                  key={f.value}
+                  onClick={() => setFilterStatus(f.value)}
+                  style={{
+                    fontSize: 12, fontWeight: 500,
+                    padding: "5px 12px", borderRadius: 8, cursor: "pointer",
+                    border: active
+                      ? `1px solid ${cfg?.border ?? "rgba(0,102,255,0.3)"}`
+                      : "1px solid #1F1F1F",
+                    backgroundColor: active
+                      ? (cfg?.bg ?? "rgba(0,102,255,0.08)")
+                      : "transparent",
+                    color: active ? (cfg?.color ?? "#0066FF") : "#71717A",
+                    transition: "all 0.15s", fontFamily: "inherit",
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                >
                   {f.label}
                 </button>
               )
@@ -286,42 +394,51 @@ export default function AssinantesPage() {
           </div>
         </div>
 
-        {/* ── STATS ───────────────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
-          <StatCard label="Total" value={subscriptions.length} color="#A1A1AA" bg="#111111" border="#1F1F1F" />
-          <StatCard label="Ativos"     value={countActive}    color="#10B981" bg="rgba(16,185,129,0.06)"  border="rgba(16,185,129,0.2)" />
-          <StatCard label="Pendentes"  value={countPending}   color="#F59E0B" bg="rgba(245,158,11,0.06)"  border="rgba(245,158,11,0.2)" />
-          <StatCard label="Cancelados" value={countCancelled} color="#EF4444" bg="rgba(239,68,68,0.06)"   border="rgba(239,68,68,0.2)" />
+        {/* ── STATS ─────────────────────────────────────────────────────── */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: isMobile ? 6 : 8,
+          marginBottom: isMobile ? 12 : 16,
+        }}>
+          <StatCard label="Total"      value={subscriptions.length} color="#A1A1AA" bg="#111111"                  border="#1F1F1F"                   isMobile={isMobile} />
+          <StatCard label="Ativos"     value={countActive}          color="#10B981" bg="rgba(16,185,129,0.06)"   border="rgba(16,185,129,0.2)"      isMobile={isMobile} />
+          <StatCard label="Pendentes"  value={countPending}         color="#F59E0B" bg="rgba(245,158,11,0.06)"   border="rgba(245,158,11,0.2)"      isMobile={isMobile} />
+          <StatCard label="Cancelados" value={countCancelled}       color="#EF4444" bg="rgba(239,68,68,0.06)"    border="rgba(239,68,68,0.2)"       isMobile={isMobile} />
         </div>
 
-        {/* ── ERROR ───────────────────────────────────────────────────── */}
+        {/* ── ERROR ─────────────────────────────────────────────────────── */}
         {error && (
           <div style={{
             backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
             borderRadius: 12, padding: "12px 16px", marginBottom: 20,
-            display: "flex", alignItems: "center", gap: 10,
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
           }}>
             <AlertCircle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: "#EF4444", flex: 1 }}>{error}</span>
-            <button onClick={fetchData} style={{ fontSize: 12, color: "#EF4444", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+            <span style={{ fontSize: 13, color: "#EF4444", flex: 1, minWidth: 0 }}>{error}</span>
+            <button
+              onClick={fetchData}
+              style={{ fontSize: 12, color: "#EF4444", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, flexShrink: 0 }}
+            >
               Tentar novamente
             </button>
           </div>
         )}
 
-        {/* ── LOADING ─────────────────────────────────────────────────── */}
+        {/* ── LOADING ───────────────────────────────────────────────────── */}
         {loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[1,2,3,4,5].map((i) => (
               <div key={i} style={{
-                height: 72, backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 14, animation: `skeletonAs 1.5s ease ${i*0.07}s infinite`,
+                height: isMobile ? 90 : 72,
+                backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                borderRadius: 14, animation: `skeletonAs 1.5s ease ${i * 0.07}s infinite`,
               }} />
             ))}
           </div>
         )}
 
-        {/* ── EMPTY ───────────────────────────────────────────────────── */}
+        {/* ── EMPTY ─────────────────────────────────────────────────────── */}
         {!loading && !error && filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
             <Crown size={40} color="#1F1F1F" style={{ margin: "0 auto" }} />
@@ -329,129 +446,178 @@ export default function AssinantesPage() {
               {searchQuery ? "Nenhum assinante encontrado" : "Nenhuma assinatura cadastrada"}
             </p>
             {!searchQuery && (
-              <button onClick={() => setShowModal(true)} style={{
-                marginTop: 16, padding: "10px 20px",
-                background: "linear-gradient(135deg,#7C3AED,#0066FF)",
-                border: "none", borderRadius: 12, color: "white",
-                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              }}>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  marginTop: 16, padding: "10px 20px",
+                  background: "linear-gradient(135deg,#7C3AED,#0066FF)",
+                  border: "none", borderRadius: 12, color: "white",
+                  fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
                 Criar primeira assinatura
               </button>
             )}
           </div>
         )}
 
-        {/* ── SUBSCRIPTIONS LIST ──────────────────────────────────────── */}
+        {/* ── SUBSCRIPTIONS LIST ────────────────────────────────────────── */}
         {!loading && !error && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {filtered.map((sub) => {
               const hov  = hoveredId === sub.id
               const busy = actionLoading === sub.id
               const cfg  = getStatusConfig(sub.status)
+
               return (
-                <div key={sub.id}
+                <div
+                  key={sub.id}
                   onMouseEnter={() => setHoveredId(sub.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
                     backgroundColor: "#111111",
                     border: `1px solid ${hov ? "#252525" : "#1F1F1F"}`,
-                    borderRadius: 14, padding: "14px 20px",
-                    display: "flex", alignItems: "center", gap: 16,
+                    borderRadius: 14,
+                    padding: isMobile ? "14px 14px" : "14px 20px",
+                    display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    gap: isMobile ? 10 : 16,
                     transition: "all 0.18s ease",
-                    transform: hov ? "translateY(-1px)" : "translateY(0)",
-                    boxShadow: hov ? "0 8px 24px rgba(0,0,0,0.25)" : "none",
+                    transform: hov && !isMobile ? "translateY(-1px)" : "translateY(0)",
+                    boxShadow: hov && !isMobile ? "0 8px 24px rgba(0,0,0,0.25)" : "none",
                   }}
                 >
-                  {/* Avatar */}
+                  {/* ── TOP ROW (mobile): avatar + nome + badge ── */}
                   <div style={{
-                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                    background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(0,102,255,0.15))",
-                    border: "1px solid rgba(124,58,237,0.15)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 14, fontWeight: 700, color: "#7C3AED",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: isMobile ? 10 : 16,
+                    width: isMobile ? "100%" : "auto",
+                    flex: isMobile ? "unset" : 1,
+                    minWidth: 0,
                   }}>
-                    {getInitials(sub.customer.name)}
-                  </div>
+                    {/* Avatar */}
+                    <div style={{
+                      width: isMobile ? 36 : 40,
+                      height: isMobile ? 36 : 40,
+                      borderRadius: 10, flexShrink: 0,
+                      background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(0,102,255,0.15))",
+                      border: "1px solid rgba(124,58,237,0.15)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: isMobile ? 12 : 14, fontWeight: 700, color: "#7C3AED",
+                    }}>
+                      {getInitials(sub.customer.name)}
+                    </div>
 
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
-                      {sub.customer.name}
-                    </span>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{
+                        fontSize: isMobile ? 13 : 14,
+                        fontWeight: 600, color: "#fff",
+                        display: "block",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>
+                        {sub.customer.name}
+                      </span>
 
-                    <div style={{ display: "flex", gap: 10, marginTop: 4, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Crown size={11} color="#7C3AED" />
-                        <span style={{ fontSize: 12, color: "#A1A1AA" }}>{sub.customerPlan.name}</span>
-                      </span>
-                      <span style={{ color: "#3F3F46", fontSize: 12 }}>•</span>
-                      <span style={{ fontSize: 12, color: "#71717A" }}>
-                        {formatCurrency(sub.customerPlan.price)}/mês
-                      </span>
-                      {sub.customerPlan.discountPercent > 0 && (
-                        <span style={{ fontSize: 11, color: "#10B981", fontWeight: 500 }}>
-                          {sub.customerPlan.discountPercent}% desc.
+                      <div style={{ display: "flex", gap: 8, marginTop: 3, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <Crown size={10} color="#7C3AED" />
+                          <span style={{ fontSize: 11, color: "#A1A1AA" }}>{sub.customerPlan.name}</span>
                         </span>
-                      )}
+                        <span style={{ color: "#3F3F46", fontSize: 11 }}>·</span>
+                        <span style={{ fontSize: 11, color: "#71717A" }}>
+                          {formatCurrency(sub.customerPlan.price)}/mês
+                        </span>
+                        {sub.customerPlan.discountPercent > 0 && (
+                          <span style={{ fontSize: 11, color: "#10B981", fontWeight: 500 }}>
+                            {sub.customerPlan.discountPercent}% desc.
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 3 }}>
+                        <span style={{ fontSize: 11, color: "#52525B" }}>
+                          Desde {formatDate(sub.startedAt ?? sub.createdAt)}
+                        </span>
+                      </div>
                     </div>
 
-                    <div style={{ marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: "#52525B" }}>
-                        Desde {formatDate(sub.startedAt ?? sub.createdAt)}
-                      </span>
-                    </div>
+                    {/* Badge — sempre visível no topo direito */}
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: cfg.color, backgroundColor: cfg.bg,
+                      border: `1px solid ${cfg.border}`,
+                      borderRadius: 8, padding: "4px 10px",
+                      whiteSpace: "nowrap", flexShrink: 0,
+                      alignSelf: "flex-start",
+                    }}>
+                      {cfg.label}
+                    </span>
                   </div>
 
-                  {/* Status badge */}
-                  <span style={{
-                    fontSize: 11, fontWeight: 600,
-                    color: cfg.color, backgroundColor: cfg.bg,
-                    border: `1px solid ${cfg.border}`,
-                    borderRadius: 8, padding: "4px 10px", whiteSpace: "nowrap", flexShrink: 0,
+                  {/* ── ACTIONS ── */}
+                  <div style={{
+                    display: "flex", gap: 6, flexShrink: 0,
+                    width: isMobile ? "100%" : "auto",
                   }}>
-                    {cfg.label}
-                  </span>
-
-                  {/* Actions */}
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     {sub.status === "PENDING" && (
                       <>
-                        <button onClick={() => handleActivate(sub.id)} disabled={busy} style={{
-                          display: "flex", alignItems: "center", gap: 5,
-                          height: 30, padding: "0 12px", borderRadius: 8,
-                          backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)",
-                          color: "#10B981", fontSize: 12, fontWeight: 600,
-                          cursor: busy ? "not-allowed" : "pointer", fontFamily: "inherit",
-                        }}>
+                        <button
+                          onClick={() => handleActivate(sub.id)}
+                          disabled={busy}
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                            height: 34,
+                            flex: isMobile ? 1 : "unset",
+                            padding: "0 12px",
+                            borderRadius: 8,
+                            backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)",
+                            color: "#10B981", fontSize: 12, fontWeight: 600,
+                            cursor: busy ? "not-allowed" : "pointer", fontFamily: "inherit",
+                          }}
+                        >
                           {busy ? <Spinner size={12} color="#10B981" /> : <CheckCircle2 size={13} />}
                           Ativar
                         </button>
-                        <button onClick={() => handleCancel(sub.id)} disabled={busy} style={{
-                          width: 30, height: 30, borderRadius: 8,
-                          backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)",
-                          color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center",
-                          cursor: busy ? "not-allowed" : "pointer",
-                        }}>
+                        <button
+                          onClick={() => handleCancel(sub.id)}
+                          disabled={busy}
+                          style={{
+                            width: 34, height: 34, borderRadius: 8,
+                            backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)",
+                            color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center",
+                            cursor: busy ? "not-allowed" : "pointer", flexShrink: 0,
+                          }}
+                        >
                           <XCircle size={14} />
                         </button>
                       </>
                     )}
 
                     {sub.status === "ACTIVE" && (
-                      <button onClick={() => handleCancel(sub.id)} disabled={busy} style={{
-                        display: "flex", alignItems: "center", gap: 5,
-                        height: 30, padding: "0 12px", borderRadius: 8,
-                        backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
-                        color: "#EF4444", fontSize: 12, fontWeight: 500,
-                        cursor: busy ? "not-allowed" : "pointer", fontFamily: "inherit",
-                      }}>
+                      <button
+                        onClick={() => handleCancel(sub.id)}
+                        disabled={busy}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                          height: 34,
+                          flex: isMobile ? 1 : "unset",
+                          padding: "0 12px", borderRadius: 8,
+                          backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
+                          color: "#EF4444", fontSize: 12, fontWeight: 500,
+                          cursor: busy ? "not-allowed" : "pointer", fontFamily: "inherit",
+                        }}
+                      >
                         {busy ? <Spinner size={12} color="#EF4444" /> : null}
                         Cancelar
                       </button>
                     )}
 
                     {(sub.status === "CANCELLED" || sub.status === "EXPIRED") && (
-                      <span style={{ fontSize: 11, color: "#3F3F46" }}>Encerrada</span>
+                      <span style={{ fontSize: 11, color: "#3F3F46", padding: "0 4px" }}>Encerrada</span>
                     )}
                   </div>
                 </div>
@@ -461,49 +627,93 @@ export default function AssinantesPage() {
         )}
       </div>
 
-      {/* ── MODAL NOVA ASSINATURA ───────────────────────────────────────── */}
+      {/* ── MODAL NOVA ASSINATURA ─────────────────────────────────────────── */}
       {showModal && (
         <>
-          <div onClick={() => { setShowModal(false); setFormError(null) }} style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
-            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 100,
-          }} />
-          <div onClick={(e) => e.stopPropagation()} style={{
-            position: "fixed", top: "50%", left: "50%",
-            transform: "translate(-50%,-50%)",
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
-            borderRadius: 20, padding: 28, width: "100%", maxWidth: 420, zIndex: 101,
-            boxShadow: "0 32px 64px rgba(0,0,0,0.7)",
-            animation: "slideUpAs 0.3s cubic-bezier(0.16,1,0.3,1)",
-            boxSizing: "border-box",
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-          }}>
+          {/* Backdrop */}
+          <div
+            onClick={() => { setShowModal(false); setFormError(null) }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.8)",
+              backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+              zIndex: 100,
+            }}
+          />
+
+          {/* Modal — desktop: centrado | mobile: bottom sheet */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              // desktop
+              ...(isMobile ? {} : {
+                top: "50%", left: "50%",
+                transform: "translate(-50%,-50%)",
+                animation: "slideUpAs 0.3s cubic-bezier(0.16,1,0.3,1)",
+              }),
+              // mobile
+              ...(isMobile ? {
+                bottom: 0, left: 0, right: 0,
+                borderRadius: "20px 20px 0 0",
+                animation: "slideUpMob 0.3s cubic-bezier(0.16,1,0.3,1)",
+              } : {}),
+              backgroundColor: "#111111", border: "1px solid #1F1F1F",
+              borderRadius: isMobile ? "20px 20px 0 0" : 20,
+              padding: isMobile ? "20px 16px 32px" : 28,
+              width: isMobile ? "100%" : "100%",
+              maxWidth: isMobile ? "none" : 420,
+              zIndex: 101,
+              boxShadow: "0 32px 64px rgba(0,0,0,0.7)",
+              boxSizing: "border-box",
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+              maxHeight: isMobile ? "90dvh" : "none",
+              overflowY: isMobile ? "auto" : "visible",
+            }}
+          >
+            {/* Drag handle (mobile) */}
+            {isMobile && (
+              <div style={{
+                width: 36, height: 4, backgroundColor: "#2A2A2A",
+                borderRadius: 2, margin: "0 auto 16px",
+              }} />
+            )}
+
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
                 Nova assinatura
               </h2>
-              <button onClick={() => { setShowModal(false); setFormError(null) }} style={{
-                background: "rgba(255,255,255,0.05)", border: "1px solid #252525",
-                borderRadius: 8, width: 32, height: 32, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#71717A", flexShrink: 0,
-              }}><X size={16} /></button>
+              <button
+                onClick={() => { setShowModal(false); setFormError(null) }}
+                style={{
+                  background: "rgba(255,255,255,0.05)", border: "1px solid #252525",
+                  borderRadius: 8, width: 32, height: 32, display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", color: "#71717A", flexShrink: 0,
+                }}
+              >
+                <X size={16} />
+              </button>
             </div>
 
             {formError && <FormErrorBanner message={formError} />}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <SelectField label="Cliente" value={formCustomerId}
-                onChange={(v) => { setFormCustomerId(v); setFormError(null) }} required>
+              <SelectField
+                label="Cliente" value={formCustomerId}
+                onChange={(v) => { setFormCustomerId(v); setFormError(null) }} required
+              >
                 <option value="" disabled>Selecione um cliente</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </SelectField>
 
-              <SelectField label="Plano" value={formPlanId}
-                onChange={(v) => { setFormPlanId(v); setFormError(null) }} required>
+              <SelectField
+                label="Plano" value={formPlanId}
+                onChange={(v) => { setFormPlanId(v); setFormError(null) }} required
+              >
                 <option value="" disabled>Selecione um plano</option>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -522,19 +732,26 @@ export default function AssinantesPage() {
                   <p style={{ fontSize: 13, color: "#fff", margin: 0, fontWeight: 500 }}>
                     {selectedCustomerObj.name}
                   </p>
-                  <p style={{ fontSize: 12, color: "#A1A1AA", marginTop: 4 }}>
+                  <p style={{ fontSize: 12, color: "#A1A1AA", marginTop: 4, margin: "4px 0 0" }}>
                     {selectedPlanObj.name} · {formatCurrency(selectedPlanObj.price)}/mês
                   </p>
-                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 6 }}>
+                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 6, margin: "6px 0 0" }}>
                     A assinatura será criada com status PENDENTE
                   </p>
                 </div>
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "flex-end" }}>
+            {/* Footer */}
+            <div style={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              gap: 8, marginTop: 24,
+              justifyContent: "flex-end",
+            }}>
               <CancelBtn onClick={() => { setShowModal(false); setFormError(null) }} />
-              <button onClick={handleCreateSubscription}
+              <button
+                onClick={handleCreateSubscription}
                 disabled={actionLoading === "create"}
                 style={{
                   height: 40, padding: "0 18px", borderRadius: 10,
@@ -542,10 +759,12 @@ export default function AssinantesPage() {
                   cursor: actionLoading === "create" ? "not-allowed" : "pointer",
                   background: "linear-gradient(135deg,#7C3AED,#0066FF)",
                   border: "none", color: "white",
-                  display: "flex", alignItems: "center", gap: 8,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   opacity: actionLoading === "create" ? 0.7 : 1,
                   transition: "opacity 0.15s", fontFamily: "inherit",
-                }}>
+                  width: isMobile ? "100%" : "auto",
+                }}
+              >
                 {actionLoading === "create" && <Spinner size={13} />}
                 {actionLoading === "create" ? "Criando..." : "Criar assinatura"}
               </button>
@@ -554,55 +773,5 @@ export default function AssinantesPage() {
         </>
       )}
     </>
-  )
-}
-
-// ── Atomic helpers ────────────────────────────────────────────────────────────
-
-function NewSubBtn({ onClick }: { onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button onClick={onClick}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        background: "linear-gradient(135deg,#7C3AED,#0066FF)",
-        border: "none", borderRadius: 12, padding: "10px 18px",
-        color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
-        boxShadow: hov ? "0 8px 30px rgba(124,58,237,0.5)" : "0 4px 20px rgba(124,58,237,0.3)",
-        transform: hov ? "scale(1.02)" : "scale(1)",
-        transition: "all 0.2s", fontFamily: "inherit",
-      }}>
-      <Plus size={15} />Nova assinatura
-    </button>
-  )
-}
-
-function StatCard({ label, value, color, bg, border }: {
-  label: string; value: number; color: string; bg: string; border: string
-}) {
-  return (
-    <div style={{
-      backgroundColor: bg, border: `1px solid ${border}`,
-      borderRadius: 12, padding: "12px 16px",
-    }}>
-      <p style={{ fontSize: 22, fontWeight: 800, color, margin: 0 }}>{value}</p>
-      <p style={{ fontSize: 12, color: "#71717A", marginTop: 4 }}>{label}</p>
-    </div>
-  )
-}
-
-function CancelBtn({ onClick }: { onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button onClick={onClick}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        height: 40, padding: "0 18px", borderRadius: 10,
-        fontSize: 13, fontWeight: 600, cursor: "pointer",
-        background: "transparent", border: "1px solid #252525",
-        color: hov ? "#ffffff" : "#A1A1AA",
-        transition: "color 0.15s", fontFamily: "inherit",
-      }}>Cancelar</button>
   )
 }

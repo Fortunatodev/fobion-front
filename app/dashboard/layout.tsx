@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { isAuthenticated } from "@/lib/auth"
-import { Sidebar } from "@/components/layout/Sidebar"
+import Sidebar from "@/components/layout/Sidebar"   // import direto, não barrel
 import Header from "@/components/layout/Header"
 
 export default function DashboardLayout({
@@ -14,6 +14,14 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const { loading } = useUser()
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   useEffect(() => {
     if (!loading && !isAuthenticated()) {
@@ -57,10 +65,11 @@ export default function DashboardLayout({
         className="main-with-sidebar"
         style={{
           flex: 1,
+          marginLeft: isMobile ? 0 : 220,
+          paddingTop: isMobile ? 56 : 0,
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
-          minWidth: 0,
-          width: "100%",
         }}
       >
         {/* Header: .header-mobile = flex mobile / none desktop */}
@@ -71,7 +80,7 @@ export default function DashboardLayout({
           className="content-offset"
           style={{ flex: 1, overflowY: "auto" }}
         >
-          <div style={{ padding: "24px" }}>{children}</div>
+          <div style={{ padding: isMobile ? "16px" : "24px" }}>{children}</div>
         </main>
       </div>
     </div>
