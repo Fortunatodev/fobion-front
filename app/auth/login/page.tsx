@@ -233,11 +233,11 @@ function LoginContent() {
         </div>
 
         {/* Rodapé */}
-        <p style={{ fontSize: 11, color: "#2A2A2A", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "#52525B", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
           Ao entrar você concorda com os{" "}
-          <span style={{ color: "#3F3F46", cursor: "pointer" }}>Termos de Uso</span>
+          <a href="/terms" style={{ color: "#71717A", textDecoration: "underline" }}>Termos de Serviço</a>
           {" "}e{" "}
-          <span style={{ color: "#3F3F46", cursor: "pointer" }}>Política de Privacidade</span>
+          <a href="/privacy" style={{ color: "#71717A", textDecoration: "underline" }}>Política de Privacidade</a>
         </p>
       </div>
 
