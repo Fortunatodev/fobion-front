@@ -15,8 +15,9 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      // Warnings only — não quebra o build
-      "@next/next/no-img-element": "warn",
+      // Desabilitado — usamos <img> em vários lugares com URLs externas (Google, etc.)
+      // Migrar para next/image exigiria configurar remotePatterns para cada domínio.
+      "@next/next/no-img-element": "off",
     },
   },
 ]);
