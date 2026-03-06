@@ -1,3 +1,5 @@
+export { default as AppLogo } from "./AppLogo"
+export { default as ForbionLogo } from "./ForbionLogo"
 export { default as Avatar } from "./Avatar"
 export { default as StatusBadge } from "./StatusBadge"
 export { default as Button } from "./Button"

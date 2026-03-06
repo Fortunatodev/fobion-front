@@ -76,6 +76,14 @@ export default function ServicosPage() {
   const [deleting,     setDeleting]     = useState<string | null>(null)
   const [formError,    setFormError]    = useState<string | null>(null)
   const [successMsg,   setSuccessMsg]   = useState<string | null>(null)
+  const [isMobile,     setIsMobile]     = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   // Form
   const [formName,     setFormName]     = useState("")
@@ -195,7 +203,7 @@ export default function ServicosPage() {
         ::placeholder { color:#3F3F46; }
       `}</style>
 
-      <div style={{ padding: "28px 32px", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
+      <div style={{ padding: isMobile ? "16px 14px" : "28px 32px", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
         {/* ── Toast de sucesso ── */}
         {successMsg && (
@@ -212,9 +220,9 @@ export default function ServicosPage() {
         )}
 
         {/* ── Header ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isMobile ? 20 : 28, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.4px" }}>
+            <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.4px" }}>
               Serviços
             </h1>
             <p style={{ fontSize: 13, color: "#71717A", marginTop: 4 }}>
@@ -292,7 +300,7 @@ export default function ServicosPage() {
         {!loading && services.length > 0 && (
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
             gap: 16,
           }}>
             {services.map(s => (
@@ -316,12 +324,13 @@ export default function ServicosPage() {
             position: "fixed", inset: 0, zIndex: 60,
             backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 24,
+            padding: isMobile ? 16 : 24,
           }}
         >
           <div style={{
             backgroundColor: "#111111", border: "1px solid #1F1F1F",
-            borderRadius: 20, padding: 28, width: "100%", maxWidth: 480,
+            borderRadius: isMobile ? 16 : 20, padding: isMobile ? 20 : 28,
+            width: "100%", maxWidth: 480,
             maxHeight: "90vh", overflowY: "auto",
             animation: "fadeIn 0.2s ease",
           }}>
@@ -369,7 +378,7 @@ export default function ServicosPage() {
               <Field label="Nome" required value={formName} onChange={setFormName} placeholder="Ex: Polimento Espelhado" />
               <Field label="Descrição" value={formDesc} onChange={setFormDesc} placeholder="Descreva o serviço..." />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 <Field
                   label="Preço (R$)" required type="number"
                   value={formPrice} onChange={setFormPrice}

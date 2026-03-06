@@ -3,12 +3,32 @@
 import { useState, useEffect, useCallback } from "react"
 import {
   Plus, Edit3, Trash2, X, Crown,
-  Users, CircleDollarSign, Percent,
-  AlertCircle, Link2,
+  Users, Percent, AlertCircle, Link2,
+  Package,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+type DiscountType = "FREE" | "PERCENTAGE" | "FIXED"
+
+interface ServiceRule {
+  serviceId: string
+  discountType: DiscountType
+  discountValue: number | null
+  maxUsages: number | null
+}
+
+interface PlanServiceFromAPI {
+  id: string
+  serviceId: string
+  discountType: DiscountType
+  discountValue: number | null
+  maxUsages: number | null
+  service: { id: string; name: string; price: number }
+}
 
 interface CustomerPlan {
   id: string
@@ -22,12 +42,24 @@ interface CustomerPlan {
   createdAt: string
   activeSubscribersCount: number
   subscriptions: unknown[]
+  planServices?: PlanServiceFromAPI[]
 }
+
+interface ServiceItem { id: string; name: string; price: number }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatCurrency(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
+function discountLabel(rule: PlanServiceFromAPI): string {
+  switch (rule.discountType) {
+    case "FREE": return "Grátis"
+    case "PERCENTAGE": return `${rule.discountValue ?? 0}% off`
+    case "FIXED": return `${formatCurrency(rule.discountValue ?? 0)} off`
+    default: return ""
+  }
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -154,9 +186,174 @@ function SubmitBtn({ loading, label, loadingLabel, onClick, gradient }: {
   )
 }
 
+// ── Service Rule Card (per-service discount config) ───────────────────────────
+
+function ServiceRuleCard({
+  service,
+  rule,
+  onToggle,
+  onUpdate,
+}: {
+  service: ServiceItem
+  rule: ServiceRule | null
+  onToggle: (enabled: boolean) => void
+  onUpdate: (updates: Partial<ServiceRule>) => void
+}) {
+  const enabled = rule !== null
+
+  return (
+    <div style={{
+      backgroundColor: enabled ? "rgba(0,102,255,0.04)" : "#0A0A0A",
+      border: `1px solid ${enabled ? "rgba(0,102,255,0.15)" : "#1F1F1F"}`,
+      borderRadius: 12, padding: 14,
+      transition: "all 0.2s",
+    }}>
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => onToggle(!enabled)}
+            style={{
+              width: 20, height: 20, borderRadius: 6,
+              border: `2px solid ${enabled ? "#0066FF" : "#3F3F46"}`,
+              backgroundColor: enabled ? "#0066FF" : "transparent",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s", flexShrink: 0, padding: 0,
+            }}
+          >
+            {enabled && (
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+          <div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{service.name}</span>
+            <span style={{ fontSize: 12, color: "#71717A", marginLeft: 8 }}>
+              {formatCurrency(service.price)}
+            </span>
+          </div>
+        </div>
+        {enabled && rule && (
+          <span style={{
+            fontSize: 10, fontWeight: 600, padding: "3px 8px",
+            borderRadius: 6, color: "#10B981",
+            backgroundColor: "rgba(16,185,129,0.1)",
+            border: "1px solid rgba(16,185,129,0.2)",
+          }}>
+            {rule.discountType === "FREE" ? "Grátis" :
+             rule.discountType === "PERCENTAGE" ? `${rule.discountValue ?? 0}% off` :
+             `${formatCurrency(rule.discountValue ?? 0)} off`}
+          </span>
+        )}
+      </div>
+
+      {/* Config row (visible when enabled) */}
+      {enabled && rule && (
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10,
+          marginTop: 12, paddingTop: 12,
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+        }}>
+          {/* Discount Type */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Tipo
+            </span>
+            <select
+              value={rule.discountType}
+              onChange={(e) => onUpdate({ discountType: e.target.value as DiscountType })}
+              style={{
+                height: 34, backgroundColor: "#111111", border: "1px solid #252525",
+                borderRadius: 8, padding: "0 8px", fontSize: 12, color: "#fff",
+                outline: "none", cursor: "pointer", fontFamily: "inherit",
+                appearance: "none", WebkitAppearance: "none",
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
+              }}
+            >
+              <option value="FREE">100% Grátis</option>
+              <option value="PERCENTAGE">Percentual (%)</option>
+              <option value="FIXED">Valor fixo (R$)</option>
+            </select>
+          </div>
+
+          {/* Discount Value */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              {rule.discountType === "FREE" ? "Valor" : rule.discountType === "PERCENTAGE" ? "%" : "R$"}
+            </span>
+            <div style={{ position: "relative" }}>
+              <input
+                type="number"
+                min={0}
+                max={rule.discountType === "PERCENTAGE" ? 100 : undefined}
+                disabled={rule.discountType === "FREE"}
+                value={rule.discountType === "FREE" ? "" : (rule.discountType === "FIXED" ? ((rule.discountValue ?? 0) / 100).toFixed(2) : (rule.discountValue ?? 0))}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value)
+                  if (isNaN(val)) return
+                  onUpdate({
+                    discountValue: rule.discountType === "FIXED" ? Math.round(val * 100) : Math.round(val),
+                  })
+                }}
+                placeholder={rule.discountType === "FREE" ? "—" : "0"}
+                style={{
+                  height: 34, width: "100%", backgroundColor: rule.discountType === "FREE" ? "#0A0A0A" : "#111111",
+                  border: "1px solid #252525", borderRadius: 8,
+                  padding: "0 8px", fontSize: 12, color: rule.discountType === "FREE" ? "#3F3F46" : "#fff",
+                  outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Max Usages */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Limite
+            </span>
+            <input
+              type="number"
+              min={0}
+              value={rule.maxUsages ?? ""}
+              onChange={(e) => {
+                const val = e.target.value === "" ? null : parseInt(e.target.value)
+                onUpdate({ maxUsages: val && val > 0 ? val : null })
+              }}
+              placeholder="∞"
+              style={{
+                height: 34, width: "100%", backgroundColor: "#111111",
+                border: "1px solid #252525", borderRadius: 8,
+                padding: "0 8px", fontSize: 12, color: "#fff",
+                outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PlanosPage() {
+  const { planStatus } = useUser()
+
+  if (planStatus && planStatus.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Planos de assinatura"
+        description="Crie planos recorrentes para seus clientes, com desconto automático nos serviços e controle de assinantes."
+      />
+    )
+  }
+
+  return <PlanosContent />
+}
+
+function PlanosContent() {
   const [plans,          setPlans]          = useState<CustomerPlan[]>([])
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState<string | null>(null)
@@ -172,6 +369,8 @@ export default function PlanosPage() {
   const [formInterval,    setFormInterval]    = useState("MONTHLY")
   const [formDiscount,    setFormDiscount]    = useState("0")
   const [formPaymentLink, setFormPaymentLink] = useState("")
+  const [services,        setServices]        = useState<ServiceItem[]>([])
+  const [serviceRules,    setServiceRules]    = useState<Map<string, ServiceRule>>(new Map())
 
   const fetchPlans = useCallback(async () => {
     setLoading(true)
@@ -186,13 +385,21 @@ export default function PlanosPage() {
     }
   }, [])
 
+  const fetchServices = useCallback(async () => {
+    try {
+      const res = await apiGet<{ services: ServiceItem[] }>("/services")
+      setServices(res.services ?? [])
+    } catch { /* ignore */ }
+  }, [])
+
   useEffect(() => { fetchPlans() }, [fetchPlans])
+  useEffect(() => { fetchServices() }, [fetchServices])
 
   function closeModal() {
     setShowModal(null); setSelectedPlan(null)
     setFormName(""); setFormDescription(""); setFormPrice("")
     setFormInterval("MONTHLY"); setFormDiscount("0"); setFormPaymentLink("")
-    setFormError(null)
+    setFormError(null); setServiceRules(new Map())
   }
 
   function openEditModal(plan: CustomerPlan) {
@@ -203,7 +410,47 @@ export default function PlanosPage() {
     setFormInterval(plan.interval)
     setFormDiscount(plan.discountPercent.toString())
     setFormPaymentLink(plan.cactopayPaymentLink ?? "")
+
+    // Reconstroi regras por serviço
+    const rules = new Map<string, ServiceRule>()
+    plan.planServices?.forEach((ps) => {
+      rules.set(ps.serviceId, {
+        serviceId:     ps.serviceId,
+        discountType:  ps.discountType,
+        discountValue: ps.discountValue,
+        maxUsages:     ps.maxUsages,
+      })
+    })
+    setServiceRules(rules)
     setShowModal("edit")
+  }
+
+  function toggleService(serviceId: string, enabled: boolean) {
+    setServiceRules((prev) => {
+      const next = new Map(prev)
+      if (enabled) {
+        next.set(serviceId, {
+          serviceId,
+          discountType: "FREE",
+          discountValue: null,
+          maxUsages: null,
+        })
+      } else {
+        next.delete(serviceId)
+      }
+      return next
+    })
+  }
+
+  function updateServiceRule(serviceId: string, updates: Partial<ServiceRule>) {
+    setServiceRules((prev) => {
+      const next = new Map(prev)
+      const existing = next.get(serviceId)
+      if (existing) {
+        next.set(serviceId, { ...existing, ...updates })
+      }
+      return next
+    })
   }
 
   function validateForm(): boolean {
@@ -214,21 +461,35 @@ export default function PlanosPage() {
     if (isNaN(discount) || discount < 0 || discount > 100) {
       setFormError("Desconto deve ser entre 0 e 100."); return false
     }
+    // Validar regras de serviço
+    for (const [, rule] of serviceRules) {
+      if (rule.discountType === "PERCENTAGE" && (rule.discountValue === null || rule.discountValue < 0 || rule.discountValue > 100)) {
+        setFormError("Desconto percentual deve ser entre 0 e 100."); return false
+      }
+      if (rule.discountType === "FIXED" && (rule.discountValue === null || rule.discountValue < 0)) {
+        setFormError("Valor fixo de desconto inválido."); return false
+      }
+    }
     return true
+  }
+
+  function buildPayload() {
+    return {
+      name: formName.trim(),
+      description: formDescription.trim() || undefined,
+      price: Math.round(parseFloat(formPrice) * 100),
+      interval: formInterval,
+      discountPercent: parseInt(formDiscount),
+      cactopayPaymentLink: formPaymentLink.trim() || undefined,
+      serviceRules: Array.from(serviceRules.values()),
+    }
   }
 
   async function handleCreate() {
     if (!validateForm()) return
     setActionLoading("create")
     try {
-      await apiPost("/customer-plans", {
-        name: formName.trim(),
-        description: formDescription.trim() || undefined,
-        price: Math.round(parseFloat(formPrice) * 100),
-        interval: formInterval,
-        discountPercent: parseInt(formDiscount),
-        cactopayPaymentLink: formPaymentLink.trim() || undefined,
-      })
+      await apiPost("/customer-plans", buildPayload())
       closeModal(); await fetchPlans()
     } catch {
       setFormError("Erro ao criar plano.")
@@ -241,14 +502,7 @@ export default function PlanosPage() {
     if (!selectedPlan || !validateForm()) return
     setActionLoading("edit")
     try {
-      await apiPut(`/customer-plans/${selectedPlan.id}`, {
-        name: formName.trim(),
-        description: formDescription.trim() || undefined,
-        price: Math.round(parseFloat(formPrice) * 100),
-        interval: formInterval,
-        discountPercent: parseInt(formDiscount),
-        cactopayPaymentLink: formPaymentLink.trim() || undefined,
-      })
+      await apiPut(`/customer-plans/${selectedPlan.id}`, buildPayload())
       closeModal(); await fetchPlans()
     } catch {
       setFormError("Erro ao atualizar plano.")
@@ -321,11 +575,11 @@ export default function PlanosPage() {
           <Crown size={16} color="#0066FF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>
-              Planos de fidelidade
+              Planos de fidelidade com regras por serviço
             </p>
             <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, lineHeight: 1.6 }}>
-              Crie planos mensais ou anuais com desconto para fidelizar seus clientes.
-              O link de pagamento é gerado pelo CactoPay e vinculado aqui.
+              Configure desconto individual por serviço: grátis, percentual ou valor fixo.
+              Defina limite de usos por ciclo (ex: 5 lavagens/mês).
             </p>
           </div>
         </div>
@@ -347,10 +601,10 @@ export default function PlanosPage() {
 
         {/* ── LOADING ─────────────────────────────────────────────────── */}
         {loading && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
             {[1, 2, 3].map((i) => (
               <div key={i} style={{
-                height: 180, backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                height: 220, backgroundColor: "#111111", border: "1px solid #1F1F1F",
                 borderRadius: 20, animation: `skeletonPl 1.5s ease ${i * 0.1}s infinite`,
               }} />
             ))}
@@ -380,10 +634,11 @@ export default function PlanosPage() {
 
         {/* ── PLANS GRID ──────────────────────────────────────────────── */}
         {!loading && !error && plans.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
             {plans.map((plan) => {
               const hov = hoveredId === plan.id
               const deleting = actionLoading === plan.id
+              const svcCount = plan.planServices?.length ?? 0
               return (
                 <div key={plan.id}
                   onMouseEnter={() => setHoveredId(plan.id)}
@@ -421,10 +676,9 @@ export default function PlanosPage() {
                         <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>{plan.name}</p>
                       </div>
                       {plan.description && (
-                        <p style={{
-                          fontSize: 12, color: "#71717A", marginTop: 6,
-                          maxWidth: 200, lineHeight: 1.5,
-                        }}>{plan.description}</p>
+                        <p style={{ fontSize: 12, color: "#71717A", marginTop: 6, lineHeight: 1.5 }}>
+                          {plan.description}
+                        </p>
                       )}
                     </div>
 
@@ -457,15 +711,57 @@ export default function PlanosPage() {
                         /{plan.interval === "MONTHLY" ? "mês" : "ano"}
                       </span>
                     </div>
+
+                    {/* Desconto global */}
                     {plan.discountPercent > 0 && (
                       <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
                         <Percent size={12} color="#10B981" />
                         <span style={{ fontSize: 12, color: "#10B981", fontWeight: 500 }}>
-                          {plan.discountPercent}% de desconto nos serviços
+                          {plan.discountPercent}% de desconto geral
                         </span>
                       </div>
                     )}
                   </div>
+
+                  {/* Serviços incluídos */}
+                  {svcCount > 0 && (
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                        <Package size={12} color="#A1A1AA" />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          Serviços ({svcCount})
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {plan.planServices!.map((ps) => (
+                          <div key={ps.id} style={{
+                            display: "flex", justifyContent: "space-between", alignItems: "center",
+                            backgroundColor: "#0A0A0A", borderRadius: 8, padding: "6px 10px",
+                          }}>
+                            <span style={{ fontSize: 12, color: "#D4D4D8" }}>{ps.service.name}</span>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <span style={{
+                                fontSize: 10, fontWeight: 600, color: "#10B981",
+                                backgroundColor: "rgba(16,185,129,0.08)",
+                                borderRadius: 4, padding: "2px 6px",
+                              }}>
+                                {discountLabel(ps)}
+                              </span>
+                              {ps.maxUsages && (
+                                <span style={{
+                                  fontSize: 10, color: "#A1A1AA",
+                                  backgroundColor: "#161616",
+                                  borderRadius: 4, padding: "2px 6px",
+                                }}>
+                                  {ps.maxUsages}x
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Separator */}
                   <div style={{ height: 1, backgroundColor: "#1A1A1A", margin: "16px 0 14px" }} />
@@ -475,7 +771,7 @@ export default function PlanosPage() {
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <Users size={13} color="#A1A1AA" />
                       <span style={{ fontSize: 12, color: "#71717A" }}>
-                        {plan.activeSubscribersCount} assinante{plan.activeSubscribersCount !== 1 ? "s" : ""} ativo{plan.activeSubscribersCount !== 1 ? "s" : ""}
+                        {plan.activeSubscribersCount} assinante{plan.activeSubscribersCount !== 1 ? "s" : ""}
                       </span>
                     </div>
 
@@ -518,7 +814,7 @@ export default function PlanosPage() {
             position: "fixed", top: "50%", left: "50%",
             transform: "translate(-50%,-50%)",
             backgroundColor: "#111111", border: "1px solid #1F1F1F",
-            borderRadius: 20, padding: 28, width: "100%", maxWidth: 480, zIndex: 101,
+            borderRadius: 20, padding: 28, width: "100%", maxWidth: 560, zIndex: 101,
             boxShadow: "0 32px 64px rgba(0,0,0,0.7)",
             animation: "slideUpPl 0.3s cubic-bezier(0.16,1,0.3,1)",
             boxSizing: "border-box",
@@ -565,12 +861,12 @@ export default function PlanosPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <FieldLabel>Desconto nos serviços (%)</FieldLabel>
+                  <FieldLabel>Desconto global (%)</FieldLabel>
                   <div style={{ position: "relative" }}>
                     <input type="number" min={0} max={100}
                       value={formDiscount}
                       onChange={(e) => { setFormDiscount(e.target.value); setFormError(null) }}
-                      placeholder="10"
+                      placeholder="0"
                       style={{
                         height: 42, width: "100%", backgroundColor: "#0A0A0A",
                         border: "1px solid #252525", borderRadius: 10,
@@ -583,35 +879,57 @@ export default function PlanosPage() {
                       transform: "translateY(-50%)", color: "#52525B", fontSize: 13,
                     }}>%</span>
                   </div>
+                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 4 }}>
+                    Aplicado em serviços sem regra própria
+                  </p>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <FieldLabel>Desconto aplicado</FieldLabel>
-                  <div style={{
-                    height: 42, backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
-                    borderRadius: 10, display: "flex", alignItems: "center", padding: "0 14px",
-                  }}>
-                    <span style={{ fontSize: 13, color: "#71717A" }}>
-                      {parseInt(formDiscount) > 0 ? `${formDiscount}% off em cada serviço` : "Sem desconto"}
-                    </span>
-                  </div>
+                  <FieldLabel>Link CactoPay</FieldLabel>
+                  <input type="url" value={formPaymentLink}
+                    onChange={(e) => setFormPaymentLink(e.target.value)}
+                    placeholder="https://pay.cactopay.com/..."
+                    style={{
+                      height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
+                      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "#fff",
+                      outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit",
+                    }}
+                  />
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <FieldLabel>Link CactoPay</FieldLabel>
-                <input type="url" value={formPaymentLink}
-                  onChange={(e) => setFormPaymentLink(e.target.value)}
-                  placeholder="https://pay.cactopay.com/..."
-                  style={{
-                    height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
-                    borderRadius: 10, padding: "0 14px", fontSize: 14, color: "#fff",
-                    outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit",
-                  }}
-                />
-                <p style={{ fontSize: 11, color: "#52525B", marginTop: 4 }}>
-                  O cliente acessa este link para assinar o plano
+              {/* ── Serviços com regras individuais ──────────────────────── */}
+              <div style={{ marginTop: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <Package size={15} color="#0066FF" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                    Serviços incluídos no plano
+                  </span>
+                  <span style={{ fontSize: 11, color: "#71717A" }}>
+                    ({serviceRules.size} de {services.length})
+                  </span>
+                </div>
+
+                <p style={{ fontSize: 11, color: "#52525B", marginBottom: 10, lineHeight: 1.5 }}>
+                  Selecione os serviços e configure o tipo de desconto e limite de usos por ciclo.
+                  Serviços sem regra usam o desconto global (%).
                 </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
+                  {services.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "#71717A", padding: 12 }}>Carregando serviços...</div>
+                  ) : (
+                    services.map((s) => (
+                      <ServiceRuleCard
+                        key={s.id}
+                        service={s}
+                        rule={serviceRules.get(s.id) ?? null}
+                        onToggle={(enabled) => toggleService(s.id, enabled)}
+                        onUpdate={(updates) => updateServiceRule(s.id, updates)}
+                      />
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 

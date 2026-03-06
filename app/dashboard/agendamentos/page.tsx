@@ -10,6 +10,8 @@ import {
   User,
 } from "lucide-react"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
+import { formatScheduleTime } from "@/lib/dateUtils"
+import { useUser } from "@/contexts/UserContext"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,7 +21,7 @@ interface Schedule {
   status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
   totalPrice: number
   paymentStatus: "PENDING" | "PAID"
-  paymentMethod: "PIX" | "CREDITCARD" | "DEBITCARD" | "CASH" | null
+  paymentMethod: "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH" | null
   notes: string | null
   isSubscriber: boolean
   discountApplied: number
@@ -53,7 +55,7 @@ interface CustomerResult {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  return formatScheduleTime(iso)
 }
 
 function formatShortDate(iso: string): string {
@@ -86,7 +88,7 @@ function getStatusConfig(status: string) {
 }
 
 function getPaymentMethodLabel(method: string | null): string {
-  const map: Record<string, string> = { PIX: "PIX", CREDITCARD: "Crédito", DEBITCARD: "Débito", CASH: "Dinheiro" }
+  const map: Record<string, string> = { PIX: "PIX", CREDIT_CARD: "Crédito", DEBIT_CARD: "Débito", CASH: "Dinheiro" }
   return method ? (map[method] ?? "—") : "—"
 }
 
@@ -100,10 +102,10 @@ const STATUS_FILTERS = [
 ]
 
 const PAYMENT_METHODS = [
-  { value: "PIX",        label: "PIX",      icon: QrCode     },
-  { value: "CREDITCARD", label: "Crédito",  icon: CreditCard },
-  { value: "DEBITCARD",  label: "Débito",   icon: CreditCard },
-  { value: "CASH",       label: "Dinheiro", icon: Banknote   },
+  { value: "PIX",         label: "PIX",      icon: QrCode     },
+  { value: "CREDIT_CARD", label: "Crédito",  icon: CreditCard },
+  { value: "DEBIT_CARD",  label: "Débito",   icon: CreditCard },
+  { value: "CASH",        label: "Dinheiro", icon: Banknote   },
 ]
 
 const VEHICLE_TYPES = ["CAR", "MOTORCYCLE", "TRUCK", "SUV"]
@@ -319,10 +321,9 @@ function NovoAgendamentoModal({
   onClose,
   onSuccess,
 }: {
-  isMobile: boolean
-  onClose: () => void
-  onSuccess: () => void
+  isMobile: boolean; onClose: () => void; onSuccess: () => void
 }) {
+  const { user } = useUser()
   const [step, setStep] = useState<1 | 2>(1)
 
   // Services
@@ -335,6 +336,7 @@ function NovoAgendamentoModal({
   const [scheduledTime, setScheduledTime] = useState("09:00")
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [loadingSlots,  setLoadingSlots]  = useState(false)
+  const [slotsError,    setSlotsError]    = useState<string | null>(null)
 
   // Customer
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -372,27 +374,42 @@ function NovoAgendamentoModal({
 
   // Load slots when date or services change
   useEffect(() => {
-    if (!scheduledDate || selectedServices.length === 0) {
+    if (!scheduledDate || selectedServices.length === 0 || !user?.businessId) {
       setAvailableSlots([])
+      setSlotsError(null)
       return
     }
     async function loadSlots() {
       setLoadingSlots(true)
+      setSlotsError(null)
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-        const res = await fetch(
-          `${API}/api/schedules/available-slots?date=${scheduledDate}&serviceId=${selectedServices[0]}`
+        const params: Record<string, string> = {
+          date: scheduledDate,
+          businessId: user!.businessId,
+          serviceIds: selectedServices[0],
+        }
+        const res = await apiGet<{ date: string; slots: { time: string; available: boolean }[] }>(
+          "/schedules/available-slots", params
         )
-        const data = await res.json()
-        setAvailableSlots(data.slots ?? [])
-      } catch {
+        const freeSlots = (res.slots ?? []).filter(s => s.available).map(s => s.time)
+        setAvailableSlots(freeSlots)
+        if (freeSlots.length > 0) {
+          setScheduledTime(freeSlots[0])
+        }
+        if (freeSlots.length === 0) {
+          setSlotsError("Nenhum horário disponível para este serviço nesta data.")
+        }
+      } catch (err: unknown) {
+        console.warn("[loadSlots] erro:", err)
         setAvailableSlots([])
+        setSlotsError("Não foi possível carregar os horários. Você pode digitar manualmente.")
       } finally {
         setLoadingSlots(false)
       }
     }
     loadSlots()
-  }, [scheduledDate, selectedServices])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduledDate, selectedServices, user?.businessId])
 
   function toggleService(id: string) {
     setSelectedServices((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id])
@@ -439,44 +456,53 @@ function NovoAgendamentoModal({
   async function handleSubmit() {
     setSubmitError(null)
     if (selectedServices.length === 0) { setSubmitError("Selecione pelo menos um serviço."); return }
-    if (!customerName.trim() || !customerPhone.trim()) { setSubmitError("Nome e telefone são obrigatórios."); return }
-    if (!vehiclePlate.trim() || !vehicleBrand.trim() || !vehicleModel.trim()) { setSubmitError("Placa, marca e modelo são obrigatórios."); return }
+    if (!customerName.trim()) { setSubmitError("Nome do cliente é obrigatório."); return }
+    // Telefone e e-mail são opcionais
+    if (selectedVehicleId === null) {
+      if (!vehicleModel.trim()) { setSubmitError("Modelo do veículo é obrigatório."); return }
+      if (!vehicleColor.trim()) { setSubmitError("Cor do veículo é obrigatória."); return }
+    }
 
     setSubmitting(true)
     try {
-      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString()
+      // ✅ Construir scheduledAt como UTC — igual ao fluxo público
+      const [y, m, d] = scheduledDate.split("-").map(Number)
+      const [hh, mm]  = scheduledTime.split(":").map(Number)
+      const scheduledAt = new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).toISOString()
+
       await apiPost("/schedules", {
+        businessId: user?.businessId,
         serviceIds: selectedServices,
         scheduledAt,
-        // se cliente existente, envia o id; senão envia os dados para criar
         ...(selectedCustomerId
           ? { customerId: selectedCustomerId }
-          : {
-              customer: {
-                name:  customerName.trim(),
-                phone: customerPhone.trim(),
-                email: customerEmail.trim() || undefined,
-              },
-            }
+          : { customer: {
+              name: customerName.trim(),
+              ...(customerPhone.trim() ? { phone: customerPhone.trim() } : {}),
+              ...(customerEmail.trim() ? { email: customerEmail.trim() } : {}),
+            } }
         ),
-        // se veículo existente, envia o id; senão envia os dados para criar
         ...(selectedVehicleId
           ? { vehicleId: selectedVehicleId }
-          : {
-              vehicle: {
-                plate: vehiclePlate.trim().toUpperCase(),
-                brand: vehicleBrand.trim(),
-                model: vehicleModel.trim(),
-                color: vehicleColor.trim() || undefined,
-                type:  vehicleType,
-              },
-            }
+          : { vehicle: {
+              ...(vehiclePlate.trim() ? { plate: vehiclePlate.trim().toUpperCase() } : {}),
+              ...(vehicleBrand.trim() ? { brand: vehicleBrand.trim() } : {}),
+              model: vehicleModel.trim(),
+              color: vehicleColor.trim(),
+              type: vehicleType,
+            } }
         ),
       })
       onSuccess()
       onClose()
     } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : "Erro ao criar agendamento.")
+      const msg = e instanceof Error ? e.message : "Erro ao criar agendamento."
+      // Detecta conflito (mensagem vinda do backend)
+      if (msg.includes("reservado") || msg.includes("conflito") || msg.includes("indisponível")) {
+        setSubmitError("⚠️ " + msg)
+      } else {
+        setSubmitError(msg)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -661,7 +687,14 @@ function NovoAgendamentoModal({
                     <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>
                       Horário <span style={{ color: "#EF4444" }}>*</span>
                     </label>
-                    {availableSlots.length > 0 ? (
+                    {loadingSlots ? (
+                      <div style={{
+                        ...inputStyle, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        color: "#52525B", fontSize: 12,
+                      }}>
+                        <Spinner size={12} color="#52525B" /> Carregando horários...
+                      </div>
+                    ) : availableSlots.length > 0 ? (
                       <div style={{ position: "relative" }}>
                         <select value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)}
                           style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: 32, cursor: "pointer" }}>
@@ -672,12 +705,12 @@ function NovoAgendamentoModal({
                     ) : (
                       <div style={{ position: "relative" }}>
                         <input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} style={inputStyle} />
-                        {loadingSlots && (
-                          <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }}>
-                            <Spinner size={12} color="#52525B" />
-                          </div>
-                        )}
                       </div>
+                    )}
+                    {slotsError && !loadingSlots && (
+                      <p style={{ fontSize: 11, color: "#F59E0B", margin: "4px 0 0", lineHeight: 1.4 }}>
+                        {slotsError}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -748,7 +781,7 @@ function NovoAgendamentoModal({
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <FInput label="Nome completo" value={customerName} onChange={setCustomerName} placeholder="João da Silva" required disabled={isCustomerLocked} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <FInput label="Telefone" value={customerPhone} onChange={setCustomerPhone} placeholder="(47) 99999-0000" required disabled={isCustomerLocked} />
+                    <FInput label="Telefone" value={customerPhone} onChange={setCustomerPhone} placeholder="(opcional)" disabled={isCustomerLocked} />
                     <FInput label="E-mail" value={customerEmail} onChange={setCustomerEmail} placeholder="(opcional)" disabled={isCustomerLocked} />
                   </div>
                 </div>
@@ -820,21 +853,34 @@ function NovoAgendamentoModal({
                     {existingVehicles.length > 0 ? "NOVO VEÍCULO" : "VEÍCULO"}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <FInput label="Placa" value={vehiclePlate} onChange={(v) => setVehiclePlate(v.toUpperCase())} placeholder="ABC-1234" required />
+                    <FInput label="Placa" value={vehiclePlate} onChange={(v) => setVehiclePlate(v.toUpperCase())} placeholder="(opcional)" />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <FInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand} placeholder="Honda" required />
+                      <FInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand} placeholder="(opcional)" />
                       <FInput label="Modelo" value={vehicleModel} onChange={setVehicleModel} placeholder="Civic" required />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <FInput label="Cor" value={vehicleColor} onChange={setVehicleColor} placeholder="Prata" />
+                      <FInput label="Cor" value={vehicleColor} onChange={setVehicleColor} placeholder="Prata" required />
                       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                         <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>Tipo</label>
-                        <div style={{ position: "relative" }}>
-                          <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
-                            style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: 32, cursor: "pointer" }}>
-                            {VEHICLE_TYPES.map((t) => <option key={t} value={t}>{VEHICLE_TYPE_LABELS[t]}</option>)}
-                          </select>
-                          <ChevronDown size={14} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#52525B", pointerEvents: "none" }} />
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                          {VEHICLE_TYPES.map((t) => {
+                            const icons: Record<string, string> = { CAR: "🚗", MOTORCYCLE: "🏍️", TRUCK: "🚚", SUV: "🚙" }
+                            const sel = vehicleType === t
+                            return (
+                              <button key={t} type="button" onClick={() => setVehicleType(t)} style={{
+                                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                                gap: 2, padding: "8px 0", borderRadius: 9, cursor: "pointer",
+                                backgroundColor: sel ? "rgba(0,102,255,0.10)" : "#0D0D0D",
+                                border: `1.5px solid ${sel ? "rgba(0,102,255,0.5)" : "#1F1F1F"}`,
+                                transition: "all 0.15s", fontFamily: "inherit",
+                              }}>
+                                <span style={{ fontSize: 18, lineHeight: 1 }}>{icons[t]}</span>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: sel ? "#3B82F6" : "#71717A", letterSpacing: "0.02em" }}>
+                                  {VEHICLE_TYPE_LABELS[t]}
+                                </span>
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
                     </div>

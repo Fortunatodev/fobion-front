@@ -82,7 +82,30 @@ export const customerApiGet = async <T>(path: string): Promise<T> => {
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error((err as any).message || "Erro na requisição")
+    throw new Error((err as Record<string, string>).message || "Erro na requisição")
+  }
+  return res.json() as Promise<T>
+}
+
+export const customerApiPut = async <T>(path: string, body: unknown): Promise<T> => {
+  const token = getCustomerToken()
+  if (!token) throw new Error("Não autenticado")
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+  const res = await fetch(`${API}/api${path}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+  if (res.status === 401) {
+    removeCustomerToken()
+    throw new Error("Sessão expirada")
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error((err as Record<string, string>).message || "Erro na requisição")
   }
   return res.json() as Promise<T>
 }
@@ -105,7 +128,7 @@ export const customerApiPost = async <T>(path: string, body: unknown): Promise<T
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error((err as any).message || "Erro na requisição")
+    throw new Error((err as Record<string, string>).message || "Erro na requisição")
   }
   return res.json() as Promise<T>
 }

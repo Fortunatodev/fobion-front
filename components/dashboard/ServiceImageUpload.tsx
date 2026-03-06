@@ -53,17 +53,12 @@ export default function ServiceImageUpload({
     try {
       const res = await startUpload([file])
       
-      // DEBUG — veja o que vem na resposta
-      console.log("[UploadThing] resposta completa:", JSON.stringify(res, null, 2))
-      
       const uploaded = res?.[0]
       // Tenta todas as propriedades possíveis dependendo da versão
       const url = uploaded?.ufsUrl 
-               ?? (uploaded as any)?.url 
-               ?? (uploaded as any)?.fileUrl
-               ?? (uploaded as any)?.appUrl
-
-      console.log("[UploadThing] URL final:", url)
+               ?? (uploaded as Record<string, string> | undefined)?.url 
+               ?? (uploaded as Record<string, string> | undefined)?.fileUrl
+               ?? (uploaded as Record<string, string> | undefined)?.appUrl
 
       if (!url) throw new Error("Upload falhou — nenhuma URL retornada")
 

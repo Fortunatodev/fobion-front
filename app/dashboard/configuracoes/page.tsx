@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useState, useEffect, useCallback, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
-import { apiGet, apiPut } from "@/lib/api"
+import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
   ExternalLink, Crown, Zap, X,
-  Camera, Loader2,
+  Camera, Loader2, Calendar,
 } from "lucide-react"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -28,7 +28,9 @@ interface BusinessConfig {
   email: string
   address: string | null
   description: string | null
-  plan: "FREE" | "PRO"
+  plan: "FREE" | "BASIC" | "PRO"
+  isTrial?: boolean
+  planExpiresAt?: string | null
   slug: string
   ownerAvatarUrl: string | null
   themeColor: string | null
@@ -50,13 +52,13 @@ const TABS: { id: TabId; label: string; Icon: React.ElementType }[] = [
   { id: "plano",    label: "Plano",         Icon: Shield    },
 ]
 
-const PLAN_FEATURES: { label: string; free: boolean; pro: boolean }[] = [
-  { label: "Agendamentos ilimitados",         free: true,  pro: true  },
-  { label: "Gestão de clientes",              free: true,  pro: true  },
-  { label: "Relatórios básicos",              free: true,  pro: true  },
-  { label: "Relatórios avançados",            free: false, pro: true  },
-  { label: "Assinantes / planos recorrentes", free: false, pro: true  },
-  { label: "Loja pública personalizada",      free: false, pro: true  },
+const PLAN_FEATURES: { label: string; basic: boolean; pro: boolean }[] = [
+  { label: "Agendamentos ilimitados",         basic: true,  pro: true  },
+  { label: "Gestão de clientes",              basic: true,  pro: true  },
+  { label: "Relatórios básicos",              basic: true,  pro: true  },
+  { label: "Relatórios avançados",            basic: false, pro: true  },
+  { label: "Assinantes / planos recorrentes", basic: false, pro: true  },
+  { label: "Loja pública personalizada",      basic: false, pro: true  },
 ]
 
 const COLOR_PALETTE = [
@@ -161,7 +163,7 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       backgroundColor: "#111111", border: "1px solid #1F1F1F",
-      borderRadius: 16, padding: "24px 28px",
+      borderRadius: 16, padding: "24px 20px",
     }}>
       {children}
     </div>
@@ -181,6 +183,7 @@ function TabBtn({ label, Icon, active, onClick }: {
         color: active ? "#fff" : "#71717A",
         fontSize: 13, fontWeight: active ? 600 : 400,
         cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+        whiteSpace: "nowrap", flexShrink: 0,
       }}
     >
       <Icon size={14} />
@@ -378,7 +381,21 @@ function UpgradeBtn({ onClick }: { onClick: () => void }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ConfiguracoesPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+        <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+      </div>
+    }>
+      <ConfiguracoesContent />
+    </Suspense>
+  )
+}
+
+function ConfiguracoesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, logout } = useUser()
 
   const [config,      setConfig]      = useState<BusinessConfig | null>(null)
@@ -387,6 +404,14 @@ export default function ConfiguracoesPage() {
   const [error,       setError]       = useState<string | null>(null)
   const [success,     setSuccess]     = useState<string | null>(null)
   const [activeTab,   setActiveTab]   = useState<TabId>("negocio")
+  const [isMobile,    setIsMobile]    = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   const [formName,        setFormName]        = useState("")
   const [formPhone,       setFormPhone]       = useState("")
@@ -398,6 +423,8 @@ export default function ConfiguracoesPage() {
   const [themeColor,      setThemeColor]      = useState("#0066FF")
   const [colorSaved,      setColorSaved]      = useState(false)
   const [hours,           setHours]           = useState<BusinessHour[]>([])
+  const [calendarConnected, setCalendarConnected] = useState(false)
+  const [calendarLoading,   setCalendarLoading]   = useState(false)
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
@@ -431,6 +458,55 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => { fetchConfig() }, [fetchConfig])
 
+  // ── Google Calendar status ──────────────────────────────────────────────────
+  const fetchCalendarStatus = useCallback(async () => {
+    try {
+      const res = await apiGet<{ connected: boolean }>("/auth/google/calendar/status")
+      setCalendarConnected(res.connected)
+    } catch {
+      // silently ignore
+    }
+  }, [])
+
+  useEffect(() => { fetchCalendarStatus() }, [fetchCalendarStatus])
+
+  // Handle ?calendar=success|error from OAuth callback redirect
+  useEffect(() => {
+    const cal = searchParams.get("calendar")
+    if (cal === "success") {
+      setCalendarConnected(true)
+      setSuccess("Google Calendar conectado com sucesso!")
+      setTimeout(() => setSuccess(null), 4000)
+      setActiveTab("conta")
+      router.replace("/dashboard/configuracoes")
+    } else if (cal === "error") {
+      setError("Erro ao conectar Google Calendar. Tente novamente.")
+      setActiveTab("conta")
+      router.replace("/dashboard/configuracoes")
+    }
+  }, [searchParams, router])
+
+  async function handleCalendarConnect() {
+    const token = typeof window !== "undefined" ? localStorage.getItem("forbion_token") : null
+    if (!token) return
+    // Redirect to backend calendar connect (which needs auth). We pass token as query param
+    // since the browser redirect won't have the Authorization header.
+    window.location.href = `${API}/api/auth/google/calendar/connect?token=${token}`
+  }
+
+  async function handleCalendarDisconnect() {
+    setCalendarLoading(true)
+    try {
+      await apiDelete("/auth/google/calendar/disconnect")
+      setCalendarConnected(false)
+      showSuccess("Google Calendar desconectado.")
+    } catch {
+      setError("Erro ao desconectar Google Calendar.")
+    } finally {
+      setCalendarLoading(false)
+    }
+  }
+
   function showSuccess(msg: string) {
     setSuccess(msg)
     setTimeout(() => setSuccess(null), 4000)
@@ -462,7 +538,7 @@ export default function ConfiguracoesPage() {
   async function handleSaveHorarios() {
     setSaving(true); setError(null); setSuccess(null)
     try {
-      await apiPut("/business/hours", { hours })
+      await apiPut("/auth/business/hours", { hours })
       showSuccess("Horários salvos com sucesso!")
     } catch {
       setError("Erro ao salvar horários.")
@@ -559,13 +635,14 @@ export default function ConfiguracoesPage() {
 
       <div style={{
         maxWidth: 900, margin: "0 auto",
+        padding: isMobile ? "16px 14px 40px" : undefined,
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         animation: "fadeInCfg 0.3s ease",
       }}>
 
         {/* ── HEADER ── */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+        <div style={{ marginBottom: isMobile ? 20 : 32 }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
             Configurações
           </h1>
           <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
@@ -599,7 +676,10 @@ export default function ConfiguracoesPage() {
         <div style={{
           display: "flex", gap: 4, marginBottom: 24,
           backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
-          borderRadius: 12, padding: 4, width: "fit-content",
+          borderRadius: 12, padding: 4,
+          width: isMobile ? "100%" : "fit-content",
+          overflowX: isMobile ? "auto" : undefined,
+          WebkitOverflowScrolling: "touch",
         }}>
           {TABS.map(({ id, label, Icon }) => (
             <TabBtn key={id} label={label} Icon={Icon}
@@ -619,7 +699,8 @@ export default function ConfiguracoesPage() {
             <div style={{
               backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
               borderRadius: 12, padding: "12px 16px", marginBottom: 24,
-              display: "flex", justifyContent: "space-between", alignItems: "center",
+              display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
             }}>
               <div>
                 <p style={{ fontSize: 12, color: "#52525B", margin: "0 0 4px" }}>URL da sua loja pública</p>
@@ -633,7 +714,7 @@ export default function ConfiguracoesPage() {
                 <FieldLabel required>Nome do estabelecimento</FieldLabel>
                 <TextInput value={formName} onChange={setFormName} placeholder="Ex: Auto Estética Premium" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <div>
                   <FieldLabel required>Telefone</FieldLabel>
                   <TextInput value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-9999" type="tel" />
@@ -659,7 +740,7 @@ export default function ConfiguracoesPage() {
                 Perfil do proprietário
               </h3>
 
-              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 20, alignItems: isMobile ? "flex-start" : "center", flexDirection: isMobile ? "column" : "row" }}>
                 {/* Preview avatar */}
                 <div style={{ position: "relative", flexShrink: 0 }}>
                   {ownerAvatarUrl ? (
@@ -872,9 +953,11 @@ export default function ConfiguracoesPage() {
 
             {/* Profile card */}
             <div style={{
-              display: "flex", gap: 16, alignItems: "center", marginBottom: 24,
+              display: "flex", gap: 16, alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row",
+              marginBottom: 24,
               backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
-              borderRadius: 14, padding: "16px 20px",
+              borderRadius: 14, padding: isMobile ? "16px 14px" : "16px 20px",
             }}>
               <UserAvatar name={user?.name ?? ""} picture={user?.picture} />
               <div>
@@ -886,12 +969,13 @@ export default function ConfiguracoesPage() {
                 </p>
                 <span style={{
                   fontSize: 11, fontWeight: 600,
-                  color: config?.plan === "PRO" ? "#F59E0B" : "#52525B",
-                  backgroundColor: config?.plan === "PRO" ? "rgba(245,158,11,0.1)" : "#0D0D0D",
-                  border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.2)" : "#1F1F1F"}`,
+                  color: config?.plan === "PRO" ? "#F59E0B" : "#0066FF",
+                  backgroundColor: config?.plan === "PRO" ? "rgba(245,158,11,0.1)" : "rgba(0,102,255,0.1)",
+                  border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.2)" : "rgba(0,102,255,0.2)"}`,
                   borderRadius: 6, padding: "2px 8px", display: "inline-block", marginTop: 6,
                 }}>
-                  {config?.plan === "PRO" ? "✦ PRO" : "FREE"}
+                  {config?.plan === "PRO" ? "✦ PRO" : "BASIC"}
+                  {config?.isTrial ? " · Trial" : ""}
                 </span>
               </div>
             </div>
@@ -899,8 +983,9 @@ export default function ConfiguracoesPage() {
             {/* Google connection */}
             <div style={{
               backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
-              borderRadius: 12, padding: "14px 16px",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
+              borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px",
+              display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
               marginBottom: 24,
             }}>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -915,14 +1000,73 @@ export default function ConfiguracoesPage() {
               <span style={{ fontSize: 12, color: "#10B981", fontWeight: 500 }}>Conectado</span>
             </div>
 
+            {/* Google Calendar integration */}
+            <div style={{
+              backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+              borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px",
+              display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
+              marginBottom: 24,
+            }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <Calendar size={16} color={calendarConnected ? "#10B981" : "#71717A"} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                    Google Calendar
+                  </p>
+                  <p style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>
+                    {calendarConnected
+                      ? "Agendamentos sincronizados com seu calendário"
+                      : "Sincronize agendamentos com o Google Calendar"}
+                  </p>
+                </div>
+              </div>
+
+              {calendarConnected ? (
+                <button
+                  onClick={handleCalendarDisconnect}
+                  disabled={calendarLoading}
+                  style={{
+                    height: 32, padding: "0 14px", borderRadius: 8,
+                    border: "1px solid rgba(239,68,68,0.2)",
+                    backgroundColor: "transparent",
+                    color: "#EF4444", fontSize: 12, fontWeight: 500,
+                    cursor: calendarLoading ? "not-allowed" : "pointer",
+                    fontFamily: "inherit", transition: "all 0.15s",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
+                >
+                  {calendarLoading ? <Spinner size={11} color="#EF4444" /> : null}
+                  Desconectar
+                </button>
+              ) : (
+                <button
+                  onClick={handleCalendarConnect}
+                  style={{
+                    height: 32, padding: "0 14px", borderRadius: 8,
+                    border: "none",
+                    background: "linear-gradient(135deg,#0066FF,#7C3AED)",
+                    color: "#fff", fontSize: 12, fontWeight: 600,
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "all 0.15s",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
+                >
+                  <Calendar size={12} />
+                  Conectar
+                </button>
+              )}
+            </div>
+
             {/* Danger zone */}
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "#EF4444", margin: "0 0 12px" }}>
               Zona de perigo
             </h3>
             <div style={{
               border: "1px solid rgba(239,68,68,0.15)", borderRadius: 12,
-              padding: "16px 20px",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: isMobile ? "14px 14px" : "16px 20px",
+              display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0,
             }}>
               <div>
                 <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>Sair da conta</p>
@@ -942,26 +1086,26 @@ export default function ConfiguracoesPage() {
               Seu plano atual
             </h2>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
-              {/* FREE */}
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
+              {/* BASIC */}
               <div style={{
-                border: `1px solid ${config?.plan === "FREE" ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
+                border: `1px solid ${config?.plan === "BASIC" ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
                 borderRadius: 14, padding: "18px 20px",
-                backgroundColor: config?.plan === "FREE" ? "rgba(0,102,255,0.04)" : "#0A0A0A",
+                backgroundColor: config?.plan === "BASIC" ? "rgba(0,102,255,0.04)" : "#0A0A0A",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>FREE</span>
-                  {config?.plan === "FREE" && (
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>BASIC</span>
+                  {config?.plan === "BASIC" && (
                     <span style={{ fontSize: 10, fontWeight: 600, color: "#0066FF", backgroundColor: "rgba(0,102,255,0.1)", border: "1px solid rgba(0,102,255,0.2)", borderRadius: 6, padding: "2px 8px" }}>
-                      Atual
+                      Atual{config?.isTrial ? " · Trial" : ""}
                     </span>
                   )}
                 </div>
                 <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: "8px 0 16px" }}>
-                  R$ 0<span style={{ fontSize: 13, fontWeight: 400, color: "#52525B" }}>/mês</span>
+                  R$ 49<span style={{ fontSize: 13, fontWeight: 400, color: "#52525B" }}>/mês</span>
                 </p>
                 {PLAN_FEATURES.map(f => (
-                  <FeatureCell key={f.label} label={f.label} available={f.free} labelColor="#A1A1AA" />
+                  <FeatureCell key={f.label} label={f.label} available={f.basic} labelColor="#A1A1AA" />
                 ))}
               </div>
 
@@ -991,7 +1135,7 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
 
-            {config?.plan === "FREE" && (
+            {config?.plan !== "PRO" && (
               <UpgradeBtn onClick={() => router.push("/dashboard/configuracoes?tab=plano")} />
             )}
           </SectionCard>

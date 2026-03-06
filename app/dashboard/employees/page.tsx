@@ -1,16 +1,20 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Users, Plus, Pencil, X, AlertCircle } from "lucide-react"
+import { Suspense, useState, useEffect, useCallback } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2 } from "lucide-react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
 interface Employee {
-  id:        string
-  name:      string
-  email:     string
-  avatarUrl: string | null
-  active:    boolean
-  createdAt: string
+  id:                string
+  name:              string
+  email:             string
+  avatarUrl:         string | null
+  active:            boolean
+  calendarConnected: boolean
+  createdAt:         string
 }
 
 function getInitials(name: string): string {
@@ -45,9 +49,26 @@ function Field({
 }
 
 export default function EmployeesPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+        <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+      </div>
+    }>
+      <EmployeesContent />
+    </Suspense>
+  )
+}
+
+function EmployeesContent() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+
   const [employees,     setEmployees]     = useState<Employee[]>([])
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState<string | null>(null)
+  const [success,       setSuccess]       = useState<string | null>(null)
   const [showModal,     setShowModal]     = useState<"create" | "edit" | null>(null)
   const [selected,      setSelected]      = useState<Employee | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -70,6 +91,20 @@ export default function EmployeesPage() {
   }, [])
 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
+
+  // ── Handle ?calendar=success|error from OAuth callback redirect ───────────
+  useEffect(() => {
+    const cal = searchParams.get("calendar")
+    if (cal === "success") {
+      setSuccess("Google Calendar conectado com sucesso!")
+      setTimeout(() => setSuccess(null), 5000)
+      fetchEmployees()
+      router.replace("/dashboard/employees")
+    } else if (cal === "error") {
+      setError("Erro ao conectar Google Calendar. Tente novamente.")
+      router.replace("/dashboard/employees")
+    }
+  }, [searchParams, router, fetchEmployees])
 
   function openCreate() {
     setFormName(""); setFormEmail(""); setFormError(null)
@@ -116,6 +151,27 @@ export default function EmployeesPage() {
     }
   }
 
+  // ── Google Calendar per-employee ──────────────────────────────────────────
+  function handleCalendarConnect(employeeId: string) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("forbion_token") : null
+    if (!token) return
+    window.location.href = `${API}/api/employees/${employeeId}/calendar/connect?token=${token}`
+  }
+
+  async function handleCalendarDisconnect(employeeId: string) {
+    setActionLoading(`cal-${employeeId}`)
+    try {
+      await apiDelete(`/employees/${employeeId}/calendar`)
+      await fetchEmployees()
+      setSuccess("Google Calendar desconectado.")
+      setTimeout(() => setSuccess(null), 4000)
+    } catch {
+      setError("Erro ao desconectar Google Calendar.")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   return (
     <>
       <style>{`
@@ -146,6 +202,14 @@ export default function EmployeesPage() {
           </button>
         </div>
 
+        {/* ── Success toast ── */}
+        {success && (
+          <div style={{ backgroundColor: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: "11px 16px", marginBottom: 20, display: "flex", gap: 8, alignItems: "center" }}>
+            <Check size={14} color="#10B981" />
+            <span style={{ fontSize: 13, color: "#10B981" }}>{success}</span>
+          </div>
+        )}
+
         {/* ── Error ── */}
         {error && (
           <div style={{ backgroundColor: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "11px 16px", marginBottom: 20, display: "flex", gap: 8, alignItems: "center" }}>
@@ -158,7 +222,7 @@ export default function EmployeesPage() {
         {loading && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
             {[1, 2, 3].map(i => (
-              <div key={i} style={{ height: 100, backgroundColor: "#111111", border: "1px solid #1F1F1F", borderRadius: 16, animation: `skelEmp 1.5s ease ${i * 0.1}s infinite` }} />
+              <div key={i} style={{ height: 140, backgroundColor: "#111111", border: "1px solid #1F1F1F", borderRadius: 16, animation: `skelEmp 1.5s ease ${i * 0.1}s infinite` }} />
             ))}
           </div>
         )}
@@ -182,7 +246,7 @@ export default function EmployeesPage() {
 
         {/* ── Grid de cards ── */}
         {!loading && employees.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
             {employees.map(emp => {
               const isHov = hoveredId === emp.id
               return (
@@ -197,6 +261,7 @@ export default function EmployeesPage() {
                     transition: "border-color 0.15s",
                   }}
                 >
+                  {/* ── Avatar + info + badges ── */}
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                     <div style={{
                       width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
@@ -210,22 +275,74 @@ export default function EmployeesPage() {
                       <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.name}</p>
                       <p style={{ fontSize: 12, color: "#52525B", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.email}</p>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 99, padding: "3px 8px", flexShrink: 0 }}>
-                      Ativo
-                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 99, padding: "3px 8px" }}>
+                        Ativo
+                      </span>
+                      {/* ── Calendar status badge ── */}
+                      <span style={{
+                        fontSize: 10, fontWeight: 600,
+                        color:           emp.calendarConnected ? "#3B82F6" : "#52525B",
+                        backgroundColor: emp.calendarConnected ? "rgba(59,130,246,0.1)" : "rgba(82,82,91,0.1)",
+                        border:          emp.calendarConnected ? "1px solid rgba(59,130,246,0.2)" : "1px solid rgba(82,82,91,0.2)",
+                        borderRadius: 99, padding: "3px 8px",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}>
+                        <Calendar size={9} />
+                        {emp.calendarConnected ? "Agenda vinculada" : "Sem agenda"}
+                      </span>
+                    </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8 }}>
+                  {/* ── Action buttons ── */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       onClick={() => openEdit(emp)}
-                      style={{ flex: 1, height: 34, borderRadius: 8, border: "1px solid #2A2A2A", backgroundColor: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit" }}
+                      style={{ flex: 1, minWidth: 70, height: 34, borderRadius: 8, border: "1px solid #2A2A2A", backgroundColor: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit" }}
                     >
                       <Pencil size={12} /> Editar
                     </button>
+
+                    {/* ── Google Calendar connect/disconnect ── */}
+                    {emp.calendarConnected ? (
+                      <button
+                        onClick={() => handleCalendarDisconnect(emp.id)}
+                        disabled={actionLoading === `cal-${emp.id}`}
+                        style={{
+                          flex: 1, minWidth: 90, height: 34, borderRadius: 8,
+                          border: "1px solid rgba(59,130,246,0.2)", backgroundColor: "transparent",
+                          color: "#3B82F6", fontSize: 12, fontWeight: 600,
+                          cursor: actionLoading === `cal-${emp.id}` ? "not-allowed" : "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                          opacity: actionLoading === `cal-${emp.id}` ? 0.5 : 1,
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {actionLoading === `cal-${emp.id}`
+                          ? <Loader2 size={12} style={{ animation: "spinEmp 0.7s linear infinite" }} />
+                          : <Calendar size={12} />}
+                        Desconectar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleCalendarConnect(emp.id)}
+                        style={{
+                          flex: 1, minWidth: 90, height: 34, borderRadius: 8,
+                          border: "1px solid rgba(16,185,129,0.2)", backgroundColor: "transparent",
+                          color: "#10B981", fontSize: 12, fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <Calendar size={12} /> Vincular agenda
+                      </button>
+                    )}
+
                     <button
                       onClick={() => handleDeactivate(emp.id)}
                       disabled={actionLoading === emp.id}
-                      style={{ flex: 1, height: 34, borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", backgroundColor: "transparent", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: actionLoading === emp.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: actionLoading === emp.id ? 0.5 : 1, fontFamily: "inherit" }}
+                      style={{ flex: 1, minWidth: 70, height: 34, borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", backgroundColor: "transparent", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: actionLoading === emp.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: actionLoading === emp.id ? 0.5 : 1, fontFamily: "inherit" }}
                     >
                       {actionLoading === emp.id
                         ? <span style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(239,68,68,0.3)", borderTopColor: "#EF4444", animation: "spinEmp 0.7s linear infinite", display: "inline-block" }} />

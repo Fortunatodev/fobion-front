@@ -11,8 +11,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Forbion — Gestão de Estéticas Automotivas",
+  title: "Forbion | Gestão de Estéticas",
   description: "Plataforma completa para gestão da sua estética automotiva",
+  icons: {
+    icon: "/logo.svg",
+  },
 }
 
 export default function RootLayout({

@@ -20,12 +20,58 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+/**
+ * Custom event emitted when the backend returns PLAN_EXPIRED or NO_PLAN.
+ * The UserContext listens for this and sets accountLock accordingly.
+ * This avoids full-page reloads and keeps the lock state centralized.
+ */
+export const ACCOUNT_LOCK_EVENT = "forbion:account-lock"
+
+export interface AccountLockEventDetail {
+  code: "PLAN_EXPIRED" | "NO_PLAN" | "BUSINESS_INACTIVE"
+  plan: string
+  isTrial: boolean
+  expiredAt: string | null
+  scheduleCount: number
+  customerCount: number
+}
+
 /** Interceptor de resposta: trata erros globais */
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string }>) => {
+  (error: AxiosError<{ message?: string; code?: string }>) => {
     if (!error.response) {
       return Promise.reject(new Error("Sem conexão com o servidor"))
+    }
+
+    const data = error.response.data as Record<string, unknown> | undefined
+
+    // ── Plan expired / No plan / Business inactive → emit custom event ───
+    if (
+      error.response.status === 403 &&
+      data?.code &&
+      (data.code === "PLAN_EXPIRED" || data.code === "NO_PLAN" || data.code === "BUSINESS_INACTIVE")
+    ) {
+      if (typeof window !== "undefined") {
+        const detail: AccountLockEventDetail = {
+          code:          data.code as "PLAN_EXPIRED" | "NO_PLAN" | "BUSINESS_INACTIVE",
+          plan:          (data.plan as string) ?? "BASIC",
+          isTrial:       (data.isTrial as boolean) ?? false,
+          expiredAt:     (data.expiredAt as string) ?? null,
+          scheduleCount: (data.scheduleCount as number) ?? 0,
+          customerCount: (data.customerCount as number) ?? 0,
+        }
+        window.dispatchEvent(
+          new CustomEvent(ACCOUNT_LOCK_EVENT, { detail })
+        )
+      }
+      return Promise.reject(new Error(
+        data.code === "NO_PLAN"
+          ? "Plano não configurado."
+          : data.code === "BUSINESS_INACTIVE"
+            ? "Negócio desativado."
+            : "Plano expirado."
+      ))
     }
 
     if (error.response.status === 401) {

@@ -1,10 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getToken, removeToken } from "@/lib/auth"
+import ForbionLogo from "@/components/shared/ForbionLogo"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "spin 0.7s linear infinite" }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -115,18 +129,7 @@ export default function LoginPage() {
           display: "flex", alignItems: "center",
           justifyContent: "center", gap: 10, marginBottom: 32,
         }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: "linear-gradient(135deg, #0066FF, #7C3AED)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 20px rgba(0,102,255,0.35)",
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>F</span>
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
-            Forbion
-          </span>
+          <ForbionLogo size="xl" />
         </div>
 
         {/* Título */}

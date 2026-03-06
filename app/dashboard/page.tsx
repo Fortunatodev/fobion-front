@@ -6,9 +6,11 @@ import {
   AlertCircle, BarChart3, Calendar,
   CircleDollarSign, Crown, Sparkles,
   Users, ArrowUpRight, Clock,
+  TrendingUp, Star, UserPlus,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
+import { formatScheduleTime } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,13 +28,22 @@ interface SchedulesResponse { schedules: Schedule[] }
 interface CustomersResponse { customers: unknown[] }
 interface SubsResponse      { subscriptions: unknown[] }
 
+interface DashboardSummary {
+  revenue:           number
+  appointments:      number
+  newCustomers:      number
+  activeSubscribers: number
+  topService:        { name: string; count: number } | null
+  revenueGrowth:     number
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatCurrency(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  return formatScheduleTime(iso)
 }
 function formatTodayDate(): string {
   return new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
@@ -124,11 +135,15 @@ function MetricCard({
 
 export default function DashboardPage() {
   const router   = useRouter()
-  const { user } = useUser()
+  const { user, planStatus } = useUser()
+
+  const isPro = planStatus?.plan === "PRO"
 
   const [schedulesToday,    setSchedulesToday]    = useState<Schedule[]>([])
   const [totalCustomers,    setTotalCustomers]    = useState(0)
   const [activeSubscribers, setActiveSubscribers] = useState(0)
+  const [summary,           setSummary]           = useState<DashboardSummary | null>(null)
+  const [summaryLoading,    setSummaryLoading]    = useState(false)
   const [loading,           setLoading]           = useState(true)
   const [error,             setError]             = useState<string | null>(null)
   const [ctaHov,            setCtaHov]            = useState(false)
@@ -140,14 +155,24 @@ export default function DashboardPage() {
       setError(null)
       try {
         const today = new Date().toISOString().split("T")[0]
-        const [sRes, cRes, subRes] = await Promise.all([
+
+        // Base calls available on any plan
+        const [sRes, cRes] = await Promise.all([
           apiGet<SchedulesResponse>(`/schedules?date=${today}`),
           apiGet<CustomersResponse>("/customers"),
-          apiGet<SubsResponse>("/customer-plans/subscriptions?status=ACTIVE"),
         ])
-        setSchedulesToday(sRes.schedules      ?? [])
-        setTotalCustomers((cRes.customers      ?? []).length)
-        setActiveSubscribers((subRes.subscriptions ?? []).length)
+        setSchedulesToday(sRes.schedules ?? [])
+        setTotalCustomers((cRes.customers ?? []).length)
+
+        // Subscriptions is PRO-only — skip on BASIC to avoid 403
+        if (isPro) {
+          try {
+            const subRes = await apiGet<SubsResponse>("/customer-plans/subscriptions?status=ACTIVE")
+            setActiveSubscribers((subRes.subscriptions ?? []).length)
+          } catch {
+            setActiveSubscribers(0)
+          }
+        }
       } catch {
         setError("Erro ao carregar dados. Verifique sua conexão com o servidor.")
       } finally {
@@ -155,7 +180,17 @@ export default function DashboardPage() {
       }
     }
     load()
-  }, [])
+  }, [isPro])
+
+  // ── Fetch dashboard summary (PRO only) ─────────────────────────────────────
+  useEffect(() => {
+    if (!isPro) return
+    setSummaryLoading(true)
+    apiGet<DashboardSummary>("/analytics/dashboard-summary")
+      .then((data) => setSummary(data))
+      .catch(() => setSummary(null))
+      .finally(() => setSummaryLoading(false))
+  }, [isPro])
 
   const paidRevenue = schedulesToday
     .filter((s) => s.paymentStatus === "PAID")
@@ -253,8 +288,8 @@ export default function DashboardPage() {
           accentColor="#F59E0B" loading={loading}
         />
         <MetricCard
-          title="Assinantes ativos" value={activeSubscribers.toString()}
-          subtitle="planos ativos agora"
+          title="Assinantes ativos" value={isPro ? activeSubscribers.toString() : "—"}
+          subtitle={isPro ? "planos ativos agora" : "disponível no plano PRO"}
           icon={<Crown size={16} />}
           iconColor="#7C3AED" iconBg="rgba(124,58,237,0.1)"
           accentColor="#7C3AED" loading={loading}
@@ -366,22 +401,173 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Chart placeholder */}
+        {/* Resumo de Relatórios (PRO) / CTA Upgrade (BASIC) */}
         <div style={{
           backgroundColor: "#111111",
           border: "1px solid #1F1F1F",
           borderRadius: 16, padding: 20,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          gap: 8, textAlign: "center", minHeight: 220,
+          minHeight: 220,
         }}>
-          <BarChart3 size={44} color="#1F1F1F" />
-          <p style={{ fontSize: 14, fontWeight: 500, color: "#3F3F46", margin: 0 }}>
-            Faturamento da Semana
-          </p>
-          <p style={{ fontSize: 12, color: "#2A2A2A", margin: 0 }}>
-            Módulo de relatórios em breve
-          </p>
+          {isPro ? (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div>
+                  <h2 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+                    📊 Resumo do mês
+                  </h2>
+                  <p style={{ fontSize: 11, color: "#52525B", marginTop: 3 }}>
+                    Últimos 30 dias
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push("/dashboard/relatorios")}
+                  style={{ fontSize: 12, color: "#0066FF", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Ver completo →
+                </button>
+              </div>
+
+              {summaryLoading && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="animate-skeleton-pulse" style={{
+                      height: 40, backgroundColor: "#1A1A1A", borderRadius: 8,
+                      animationDelay: `${i * 0.1}s`,
+                    }} />
+                  ))}
+                </div>
+              )}
+
+              {!summaryLoading && summary && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Mini metric rows */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{
+                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
+                      borderRadius: 10, padding: "10px 12px",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <CircleDollarSign size={12} color="#10B981" />
+                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Faturamento</span>
+                      </div>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                        {formatCurrency(summary.revenue)}
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 4 }}>
+                        <TrendingUp size={10} color={summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444"} />
+                        <span style={{ fontSize: 10, color: summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444" }}>
+                          {summary.revenueGrowth >= 0 ? "+" : ""}{summary.revenueGrowth}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
+                      borderRadius: 10, padding: "10px 12px",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <Calendar size={12} color="#3B82F6" />
+                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Concluídos</span>
+                      </div>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                        {summary.appointments}
+                      </p>
+                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>agendamentos</span>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
+                      borderRadius: 10, padding: "10px 12px",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <UserPlus size={12} color="#F59E0B" />
+                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Novos clientes</span>
+                      </div>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                        {summary.newCustomers}
+                      </p>
+                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>no período</span>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
+                      borderRadius: 10, padding: "10px 12px",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <Star size={12} color="#7C3AED" />
+                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Assinantes</span>
+                      </div>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                        {summary.activeSubscribers}
+                      </p>
+                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>ativos</span>
+                    </div>
+                  </div>
+
+                  {/* Top service */}
+                  {summary.topService && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
+                      borderRadius: 10, padding: "8px 12px",
+                    }}>
+                      <span style={{ fontSize: 12 }}>🏆</span>
+                      <span style={{ fontSize: 11, color: "#A1A1AA", flex: 1 }}>
+                        Serviço mais popular: <strong style={{ color: "#fff" }}>{summary.topService.name}</strong>
+                        <span style={{ color: "#52525B" }}> ({summary.topService.count}x)</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!summaryLoading && !summary && (
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
+                  <BarChart3 size={28} color="#2A2A2A" style={{ margin: "0 auto 8px" }} />
+                  <p style={{ fontSize: 12, color: "#52525B" }}>Sem dados para o período.</p>
+                </div>
+              )}
+            </>
+          ) : (
+            /* BASIC plan — upgrade CTA */
+            <div style={{
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              textAlign: "center", height: "100%", minHeight: 180,
+              gap: 10,
+            }}>
+              <div style={{
+                width: 44, height: 44,
+                backgroundColor: "rgba(124,58,237,0.1)",
+                borderRadius: 12,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "1px solid rgba(124,58,237,0.2)",
+              }}>
+                <BarChart3 size={20} color="#7C3AED" />
+              </div>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+                📊 Relatórios disponíveis no PRO
+              </h3>
+              <p style={{ fontSize: 12, color: "#52525B", margin: 0, maxWidth: 240 }}>
+                Veja faturamento, agendamentos e métricas do seu negócio em tempo real.
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/planos")}
+                style={{
+                  marginTop: 4,
+                  padding: "8px 18px",
+                  background: "linear-gradient(135deg, #7C3AED, #0066FF)",
+                  border: "none", borderRadius: 10,
+                  color: "white", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                <Crown size={13} />
+                Fazer upgrade
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

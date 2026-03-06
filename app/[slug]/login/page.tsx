@@ -1,12 +1,26 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { isCustomerAuthenticated } from "@/lib/customer-auth"
+import ForbionLogo from "@/components/shared/ForbionLogo"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
 export default function CustomerLoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter',-apple-system,sans-serif" }}>
+        <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+      </div>
+    }>
+      <CustomerLoginContent />
+    </Suspense>
+  )
+}
+
+function CustomerLoginContent() {
   const params       = useParams()
   const router       = useRouter()
   const searchParams = useSearchParams()
@@ -95,15 +109,15 @@ export default function CustomerLoginPage() {
             animation: "cardEntrance 0.4s cubic-bezier(0.16,1,0.3,1)",
           }}>
             {/* Logo */}
-            <div style={{ margin: "0 auto 24px", width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", textAlign: "center" }}>
-              {businessName ? businessName.charAt(0).toUpperCase() : "F"}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+              <ForbionLogo size="xl" />
             </div>
 
             <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", textAlign: "center", letterSpacing: "-0.5px", margin: 0 }}>
               Bem-vindo!
             </h1>
             <p style={{ fontSize: 14, color: "#71717A", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-              {businessName ? `Entre na sua conta de cliente — ${businessName}` : "Entre na sua conta de cliente"}
+              {businessName ? `Entrar na sua conta da loja ${businessName}` : "Entrar na sua conta"}
             </p>
 
             {/* Mensagem de erro */}

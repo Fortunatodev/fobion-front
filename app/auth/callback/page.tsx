@@ -11,10 +11,8 @@ export default function AuthCallbackPage() {
     const url = new URL(window.location.href);
     const token = url.searchParams.get("token");
 
-    console.log("[auth callback] token query:", token?.slice(0, 20));
-
     if (!token) {
-      setError("Erro na autenticação. Tente novamente.");
+      setError("Erro na autenticação. Tente novamente."); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
 

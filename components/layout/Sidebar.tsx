@@ -6,9 +6,18 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X,
+  ChevronRight, UserCircle, Menu, X, Crown,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
+import NotificationBell from "@/components/dashboard/NotificationBell"
+import ForbionLogo from "@/components/shared/ForbionLogo"
+
+// PRO-only paths — shown with a badge on BASIC plan
+const PRO_ONLY_PATHS = new Set([
+  "/dashboard/planos",
+  "/dashboard/assinantes",
+  "/dashboard/relatorios",
+])
 
 const navSections = [
   {
@@ -41,7 +50,9 @@ const navSections = [
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname        = usePathname()
   const router          = useRouter()
-  const { user, logout } = useUser()   // ← logout vem do contexto
+  const { user, planStatus, logout } = useUser()
+
+  const isPro = planStatus?.plan === "PRO"
 
   function isActive(href: string) {
     if (href === "/dashboard") return pathname === "/dashboard"
@@ -64,18 +75,11 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       backgroundColor: "#0A0A0A",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
-      {/* Logo */}
+      {/* Logo + Notificações */}
       <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #1A1A1A", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0,
-          }}>F</div>
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: "-0.3px" }}>
-            Forbion
-          </span>
+          <ForbionLogo size="md" as="div" style={{ flex: 1 }} />
+          <NotificationBell />
         </div>
       </div>
 
@@ -90,8 +94,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               {section.label}
             </p>
             {section.items.map(item => {
-              const active = isActive(item.href)
-              const Icon   = item.icon
+              const active     = isActive(item.href)
+              const Icon       = item.icon
+              const isProOnly  = PRO_ONLY_PATHS.has(item.href) && !isPro
               return (
                 <Link
                   key={item.href}
@@ -101,21 +106,61 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                     display: "flex", alignItems: "center", gap: 10,
                     padding: "8px 10px", borderRadius: 10,
                     backgroundColor: active ? "rgba(0,102,255,0.1)" : "transparent",
-                    color: active ? "#fff" : "#71717A",
+                    color: active ? "#fff" : isProOnly ? "#52525B" : "#71717A",
                     textDecoration: "none", fontSize: 13,
                     fontWeight: active ? 600 : 400,
                     transition: "all 0.15s", marginBottom: 2,
+                    opacity: isProOnly ? 0.7 : 1,
                   }}
                 >
                   <Icon size={15} style={{ flexShrink: 0, color: active ? "#0066FF" : "#52525B" }} />
                   <span style={{ flex: 1 }}>{item.label}</span>
-                  {active && <ChevronRight size={12} color="#0066FF" />}
+                  {isProOnly && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, color: "#F59E0B",
+                      backgroundColor: "rgba(245,158,11,0.1)",
+                      border: "1px solid rgba(245,158,11,0.15)",
+                      borderRadius: 4, padding: "1px 5px",
+                      display: "flex", alignItems: "center", gap: 2,
+                    }}>
+                      <Crown size={8} /> PRO
+                    </span>
+                  )}
+                  {active && !isProOnly && <ChevronRight size={12} color="#0066FF" />}
                 </Link>
               )
             })}
           </div>
         ))}
       </nav>
+
+      {/* Plan badge */}
+      {planStatus && (
+        <div style={{ padding: "0 10px 8px", flexShrink: 0 }}>
+          <div style={{
+            padding: "8px 10px", borderRadius: 8,
+            backgroundColor: isPro ? "rgba(245,158,11,0.06)" : "rgba(0,102,255,0.06)",
+            border: `1px solid ${isPro ? "rgba(245,158,11,0.15)" : "rgba(0,102,255,0.15)"}`,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              {isPro ? <Crown size={11} color="#F59E0B" /> : null}
+              <span style={{
+                fontSize: 10, fontWeight: 700,
+                color: isPro ? "#F59E0B" : "#0066FF",
+              }}>
+                {isPro ? "PRO" : "BASIC"}
+                {planStatus.isTrial ? " · TRIAL" : ""}
+              </span>
+            </div>
+            {planStatus.planExpiresAt && (
+              <p style={{ fontSize: 9, color: "#52525B", margin: 0 }}>
+                {planStatus.isTrial ? "Teste até " : "Válido até "}
+                {new Date(planStatus.planExpiresAt).toLocaleDateString("pt-BR")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User footer */}
       <div style={{ padding: "12px 10px", borderTop: "1px solid #1A1A1A", flexShrink: 0 }}>
@@ -198,20 +243,17 @@ export default function Sidebar() {
         padding: "0 16px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8,
-            background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 12, fontWeight: 800, color: "#fff",
-          }}>F</div>
-          <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: "-0.3px" }}>Forbion</span>
+          <ForbionLogo size="md" as="div" />
         </div>
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer", padding: 6, display: "flex", alignItems: "center" }}
-        >
-          <Menu size={22} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <NotificationBell />
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer", padding: 6, display: "flex", alignItems: "center" }}
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
       {/* Overlay */}

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { navGroups } from "@/lib/navigation"
-import Logo from "./Logo"
+import ForbionLogo from "@/components/shared/ForbionLogo"
 
 export default function Header() {
   const router      = useRouter()
@@ -53,7 +53,7 @@ export default function Header() {
           <Menu size={20} />
         </button>
 
-        <Logo size="sm" />
+        <ForbionLogo size="md" as="div" />
 
         {user ? (
           user.picture ? (
@@ -109,7 +109,7 @@ export default function Header() {
             display: "flex", alignItems: "center",
             justifyContent: "space-between", flexShrink: 0,
           }}>
-            <Logo size="sm" />
+            <ForbionLogo size="md" as="div" />
             <button
               onClick={() => setOpen(false)}
               style={{

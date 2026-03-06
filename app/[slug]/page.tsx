@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent } from "lucide-react"
-import { isCustomerAuthenticated } from "@/lib/customer-auth"
-import type { PublicBusiness } from "@/types"
+import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift } from "lucide-react"
+import { isCustomerAuthenticated, customerApiGet } from "@/lib/customer-auth"
+import ForbionLogo from "@/components/shared/ForbionLogo"
+import type { PublicBusiness, PlanServiceRule, Service, CustomerPlan } from "@/types"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -48,6 +49,58 @@ function sortHours(hours: PublicBusiness["hours"]) {
   return [...hours].sort((a, b) => order.indexOf(a.dayOfWeek) - order.indexOf(b.dayOfWeek))
 }
 
+/**
+ * Calcula o preço efetivo de um serviço para um assinante.
+ *
+ * Hierarquia:
+ *   1) Regra específica do serviço no plano (FREE, PERCENTAGE, FIXED)
+ *   2) Desconto genérico do plano (discountPercent)
+ *   3) Preço cheio
+ */
+function calcEffectivePrice(
+  basePrice:       number,
+  serviceId:       string,
+  planServices:    PlanServiceRule[],
+  genericDiscount: number,
+): { effectivePrice: number; label: string | null } {
+  const rule = planServices.find(r => r.serviceId === serviceId)
+
+  if (rule) {
+    switch (rule.discountType) {
+      case "FREE":
+        return {
+          effectivePrice: 0,
+          label: rule.maxUsages ? `Grátis (até ${rule.maxUsages}x)` : "Grátis",
+        }
+      case "PERCENTAGE": {
+        const pct = rule.discountValue ?? 0
+        const eff = Math.max(0, basePrice - Math.floor(basePrice * pct / 100))
+        return {
+          effectivePrice: eff,
+          label: rule.maxUsages ? `${pct}% off (até ${rule.maxUsages}x)` : `${pct}% off`,
+        }
+      }
+      case "FIXED": {
+        const fix = rule.discountValue ?? 0
+        const eff = Math.max(0, basePrice - fix)
+        return {
+          effectivePrice: eff,
+          label: rule.maxUsages
+            ? `${formatCurrency(fix)} off (até ${rule.maxUsages}x)`
+            : `${formatCurrency(fix)} off`,
+        }
+      }
+    }
+  }
+
+  if (genericDiscount > 0) {
+    const eff = Math.max(0, basePrice - Math.floor(basePrice * genericDiscount / 100))
+    return { effectivePrice: eff, label: `${genericDiscount}% off` }
+  }
+
+  return { effectivePrice: basePrice, label: null }
+}
+
 // ── Extended type ─────────────────────────────────────────────────────────────
 
 type BusinessWithTheme = PublicBusiness & {
@@ -68,6 +121,13 @@ export default function SlugPage() {
   const [authed,           setAuthed]           = useState(false)
   const [isMobile,         setIsMobile]         = useState(false)
 
+  // ── Subscription info (para desconto na vitrine) ──────────────────────────
+  const [activeSub, setActiveSub] = useState<{
+    planName: string
+    discountPercent: number
+    planServices: PlanServiceRule[]
+  } | null>(null)
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
@@ -78,7 +138,7 @@ export default function SlugPage() {
   const checkAuth = useCallback(() => setAuthed(isCustomerAuthenticated()), [])
 
   useEffect(() => {
-    checkAuth()
+    checkAuth() // eslint-disable-line react-hooks/set-state-in-effect
     window.addEventListener("storage", checkAuth)
     window.addEventListener("focus",   checkAuth)
     return () => {
@@ -99,6 +159,25 @@ export default function SlugPage() {
       .finally(() => setLoading(false))
   }, [slug])
 
+  // ── Fetch active subscription when authenticated ──────────────────────────
+  useEffect(() => {
+    if (!authed) { setActiveSub(null); return } // eslint-disable-line react-hooks/set-state-in-effect
+    customerApiGet<{ customer: { subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
+      .then(({ customer }) => {
+        const active = customer.subscriptions?.find((s) => s.status === "ACTIVE")
+        if (active?.customerPlan) {
+          setActiveSub({
+            planName: active.customerPlan.name,
+            discountPercent: active.customerPlan.discountPercent,
+            planServices: active.customerPlan.planServices ?? [],
+          })
+        } else {
+          setActiveSub(null)
+        }
+      })
+      .catch(() => setActiveSub(null))
+  }, [authed])
+
   const toggleService = useCallback((id: string) => {
     setSelectedServices(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -107,6 +186,15 @@ export default function SlugPage() {
 
   const totalCents   = selectedServices.reduce((acc, id) => acc + (business?.services.find(s => s.id === id)?.price ?? 0), 0)
   const totalMinutes = selectedServices.reduce((acc, id) => acc + (business?.services.find(s => s.id === id)?.durationMinutes ?? 0), 0)
+
+  // Calcula total com desconto por serviço (hierarquia: regra específica → genérico → cheio)
+  const totalWithDiscount = selectedServices.reduce((acc, id) => {
+    const svc = business?.services.find(s => s.id === id)
+    if (!svc || !activeSub) return acc + (svc?.price ?? 0)
+    const { effectivePrice } = calcEffectivePrice(svc.price, id, activeSub.planServices, activeSub.discountPercent)
+    return acc + effectivePrice
+  }, 0)
+  const hasAnyDiscount = activeSub !== null && totalWithDiscount < totalCents
 
   if (loading) return (
     <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
@@ -125,7 +213,8 @@ export default function SlugPage() {
 
   const open           = isOpenNow(business.hours)
   const sortedHours    = sortHours(business.hours)
-  const hasPlans       = (business.plans?.length ?? 0) > 0
+  const isPro          = business.plan === "PRO"
+  const hasPlans       = isPro && (business.plans?.length ?? 0) > 0
   const ownerAvatarUrl = business.ownerAvatarUrl
 
   // ── TEMA ──────────────────────────────────────────────────────────────────
@@ -173,14 +262,60 @@ export default function SlugPage() {
           <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: isMobile ? "100px 20px 60px" : "0 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
 
             {/* Badge status */}
-            <div style={{ marginBottom: 24, display: "inline-flex" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", backgroundColor: open ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${open ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}`, borderRadius: 100, padding: "6px 14px" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: open ? "#10B981" : "#EF4444", animation: open ? "pulseGreen 2s infinite" : "none" }} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: open ? "#10B981" : "#EF4444" }}>
-                  {open ? "Aberto agora" : "Fechado no momento"}
-                </span>
-              </div>
-            </div>
+       {/* Badge status */}
+{/* Badge status */}
+<div style={{ marginBottom: 24, display: "inline-flex" }}>
+  <style>{`
+    @keyframes pulseGreen {
+      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(16,185,129,0.6); }
+      50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(16,185,129,0); }
+    }
+    @keyframes pulseRed {
+      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(239,68,68,0.6); }
+      50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(239,68,68,0); }
+    }
+  `}</style>
+  <div style={{
+    display: "flex", gap: 8, alignItems: "center",
+    backgroundColor: open ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+    border: `1px solid ${open ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
+    borderRadius: 100,
+    padding: "7px 14px 7px 10px",
+    backdropFilter: "blur(8px)",
+  }}>
+
+    {/* Bolinha com anel externo */}
+    <div style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
+      {/* Anel pulsante externo */}
+      <div style={{
+        position: "absolute", inset: 0,
+        borderRadius: "50%",
+        backgroundColor: open ? "#10B981" : "#EF4444",
+        opacity: 0.25,
+        animation: open ? "pulseGreen 2s ease-in-out infinite" : "pulseRed 2s ease-in-out infinite",
+        transform: "scale(2.2)",
+      }} />
+      {/* Núcleo sólido */}
+      <div style={{
+        position: "absolute", inset: "1px",
+        borderRadius: "50%",
+        backgroundColor: open ? "#10B981" : "#EF4444",
+        boxShadow: open
+          ? "0 0 6px rgba(16,185,129,0.8)"
+          : "0 0 6px rgba(239,68,68,0.8)",
+      }} />
+    </div>
+
+    <span style={{
+      fontSize: 12, fontWeight: 600, letterSpacing: "0.01em",
+      color: open ? "#10B981" : "#EF4444",
+    }}>
+      {open ? "Aberto agora" : "Fechado no momento"}
+    </span>
+  </div>
+</div>
+
+
 
             {/* Avatar */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
@@ -253,19 +388,41 @@ export default function SlugPage() {
           {business.services.length === 0 ? (
             <p style={{ textAlign: "center", fontSize: 16, color: "#52525B", padding: "64px 0" }}>Nenhum serviço disponível no momento.</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
-              {business.services.map(service => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  isSelected={selectedServices.includes(service.id)}
-                  onToggle={() => toggleService(service.id)}
-                  theme={theme}
-                  themeRgb={themeRgb}
-                  isMobile={isMobile}
-                />
-              ))}
-            </div>
+            <>
+              {/* Banner de assinante ativo */}
+              {activeSub && (
+                <div style={{ marginBottom: 20, background: "linear-gradient(135deg,rgba(124,58,237,0.06),rgba(16,185,129,0.04))", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 16, padding: "14px 18px", display: "flex", gap: 10, alignItems: "center" }}>
+                  <Crown size={16} color="#A78BFA" />
+                  <p style={{ fontSize: 13, color: "#A78BFA", fontWeight: 500, margin: 0 }}>
+                    Assinante <strong>{activeSub.planName}</strong> — descontos aplicados automaticamente nos serviços do plano
+                  </p>
+                </div>
+              )}
+              {/* Marketing sutil para quem não é assinante */}
+              {!activeSub && hasPlans && (
+                <div style={{ marginBottom: 20, background: "rgba(255,255,255,0.02)", border: "1px solid #161616", borderRadius: 14, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+                  <Percent size={13} color="#52525B" />
+                  <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                    Assinantes dos planos desta loja têm descontos em todos os serviços.{" "}
+                    <a href="#planos" style={{ color: "#7C3AED", fontWeight: 600, textDecoration: "none" }}>Ver planos →</a>
+                  </p>
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
+                {business.services.map(service => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    isSelected={selectedServices.includes(service.id)}
+                    onToggle={() => toggleService(service.id)}
+                    theme={theme}
+                    themeRgb={themeRgb}
+                    isMobile={isMobile}
+                    activeSub={activeSub}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </section>
 
@@ -349,7 +506,7 @@ export default function SlugPage() {
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
             <div>
               <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>{business.name}</p>
-              <p style={{ fontSize: 12, color: "#2A2A2A", marginTop: 4 }}>Powered by Forbion</p>
+              <p style={{ fontSize: 12, color: "#2A2A2A", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>Powered by <ForbionLogo size="sm" as="span" color="#3F3F46" /></p>
             </div>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               {business.phone   && <a href={`tel:${business.phone}`}    style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "#52525B", textDecoration: "none" }}><Phone size={13} color="#3F3F46" />{business.phone}</a>}
@@ -365,6 +522,9 @@ export default function SlugPage() {
         <FloatingBar
           count={selectedServices.length}
           totalCents={totalCents}
+          totalWithDiscount={totalWithDiscount}
+          hasDiscount={hasAnyDiscount}
+          planName={activeSub?.planName ?? null}
           totalMinutes={totalMinutes}
           theme={theme}
           themeRgb={themeRgb}
@@ -388,12 +548,19 @@ export default function SlugPage() {
 /* ── Sub-componentes ─────────────────────────────────────────────────────────── */
 
 function ServiceCard({
-  service, isSelected, onToggle, theme, themeRgb, isMobile,
+  service, isSelected, onToggle, theme, themeRgb, isMobile, activeSub,
 }: {
-  service: any; isSelected: boolean; onToggle: () => void
+  service: Service; isSelected: boolean; onToggle: () => void
   theme: string; themeRgb: string; isMobile: boolean
+  activeSub: { planName: string; discountPercent: number; planServices: PlanServiceRule[] } | null
 }) {
   const [hovered, setHovered] = useState(false)
+
+  const { effectivePrice, label: discountLabel } = activeSub
+    ? calcEffectivePrice(service.price, service.id, activeSub.planServices, activeSub.discountPercent)
+    : { effectivePrice: service.price, label: null }
+  const hasDiscount = activeSub !== null && effectivePrice < service.price
+  const isFree      = effectivePrice === 0
   return (
     <div
       onClick={onToggle}
@@ -424,14 +591,35 @@ function ServiceCard({
           </p>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-          <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "#fff" }}>
-            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(service.price / 100)}
-          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {hasDiscount ? (
+              <>
+                <span style={{ fontSize: isMobile ? 11 : 12, color: "#52525B", textDecoration: "line-through" }}>
+                  {formatCurrency(service.price)}
+                </span>
+                <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "#10B981" }}>
+                  {isFree ? "Grátis" : formatCurrency(effectivePrice)}
+                </span>
+              </>
+            ) : (
+              <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "#fff" }}>
+                {formatCurrency(service.price)}
+              </span>
+            )}
+          </div>
           <div style={{ display: "flex", gap: 5, alignItems: "center", backgroundColor: "#161616", border: "1px solid #1F1F1F", padding: "5px 10px", borderRadius: 8 }}>
             <Clock size={12} color="#52525B" />
             <span style={{ fontSize: 12, color: "#71717A" }}>{formatDuration(service.durationMinutes)}</span>
           </div>
         </div>
+        {hasDiscount && discountLabel && (
+          <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 8 }}>
+            {isFree ? <Gift size={11} color="#10B981" /> : <Tag size={11} color="#7C3AED" />}
+            <span style={{ fontSize: 11, color: isFree ? "#10B981" : "#A78BFA", fontWeight: 500 }}>
+              {discountLabel} — plano {activeSub!.planName}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -440,7 +628,7 @@ function ServiceCard({
 function PlanCard({
   plan, slug, authed, router, theme, themeRgb,
 }: {
-  plan: any; slug: string; authed: boolean; router: any
+  plan: CustomerPlan; slug: string; authed: boolean; router: ReturnType<typeof useRouter>
   theme: string; themeRgb: string
 }) {
   const [hovered, setHovered] = useState(false)
@@ -469,7 +657,7 @@ function PlanCard({
         </div>
       )}
       <button
-        onClick={() => authed ? router.push(`/${slug}/minha-conta?tab=planos`) : router.push(`/${slug}/login?redirect=planos`)}
+        onClick={() => authed ? router.push(`/${slug}/cliente?tab=planos`) : router.push(`/${slug}/login?redirect=planos`)}
         style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${theme}, ${theme}CC)`, color: "#fff", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 20px rgba(${themeRgb},0.3)` }}
       >
         Assinar plano →
@@ -479,9 +667,9 @@ function PlanCard({
 }
 
 function FloatingBar({
-  count, totalCents, totalMinutes, theme, themeRgb, isMobile, onClear, onSchedule,
+  count, totalCents, totalWithDiscount, hasDiscount, planName, totalMinutes, theme, themeRgb, isMobile, onClear, onSchedule,
 }: {
-  count: number; totalCents: number; totalMinutes: number
+  count: number; totalCents: number; totalWithDiscount: number; hasDiscount: boolean; planName: string | null; totalMinutes: number
   theme: string; themeRgb: string; isMobile: boolean
   onClear: () => void; onSchedule: () => void
 }) {
@@ -493,9 +681,26 @@ function FloatingBar({
             <p style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#fff", margin: 0 }}>
               {count} serviço{count > 1 ? "s" : ""} selecionado{count > 1 ? "s" : ""}
             </p>
-            <p style={{ fontSize: 13, color: "#71717A", margin: "3px 0 0" }}>
-              Total: {formatCurrency(totalCents)} · {formatDuration(totalMinutes)}
-            </p>
+            {hasDiscount ? (
+              <div style={{ margin: "3px 0 0" }}>
+                <span style={{ fontSize: 12, color: "#52525B", textDecoration: "line-through", marginRight: 6 }}>
+                  {formatCurrency(totalCents)}
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#10B981" }}>
+                  {formatCurrency(totalWithDiscount)}
+                </span>
+                <span style={{ fontSize: 12, color: "#71717A", marginLeft: 6 }}>
+                  · {formatDuration(totalMinutes)}
+                </span>
+                <span style={{ display: "block", fontSize: 11, color: "#A78BFA", marginTop: 2 }}>
+                  Desconto assinante — plano {planName}
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: "#71717A", margin: "3px 0 0" }}>
+                Total: {formatCurrency(totalCents)} · {formatDuration(totalMinutes)}
+              </p>
+            )}
           </div>
           {isMobile && (
             <button onClick={onClear} style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>

@@ -2,22 +2,28 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useParams, usePathname, useRouter } from "next/navigation"
-import Link from "next/link"
 import {
   isCustomerAuthenticated,
   getCustomerPayload,
   removeCustomerToken,
   AUTH_CHANGE_EVENT,
 } from "@/lib/customer-auth"
+import ForbionLogo from "@/components/shared/ForbionLogo"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
-const NAV_LINKS = (slug: string) => [
-  { href: `/${slug}`,          label: "Início"   },
-  { href: `/${slug}#servicos`, label: "Serviços" },
-  { href: `/${slug}#planos`,   label: "Planos"   },
-  { href: `/${slug}#horarios`, label: "Horários" },
-]
+const NAV_LINKS = (slug: string, businessPlan?: string) => {
+  const links: Array<{ href: string; label: string }> = [
+    { href: `/${slug}`,          label: "Início"   },
+    { href: `/${slug}#servicos`, label: "Serviços" },
+    { href: `/${slug}#horarios`, label: "Horários" },
+  ]
+  // Only show 'Planos' on the public nav when the business is PRO
+  if (businessPlan === "PRO") {
+    links.splice(2, 0, { href: `/${slug}#planos`, label: "Planos" })
+  }
+  return links
+}
 
 export default function SlugLayout({ children }: { children: React.ReactNode }) {
   const params   = useParams()
@@ -25,66 +31,63 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname()
   const slug     = params.slug as string
 
-  const [scrolled,       setScrolled]       = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isAuth,         setIsAuth]         = useState(false)
-  const [payload,        setPayload]        = useState<ReturnType<typeof getCustomerPayload>>(null)
-  const [businessName,   setBusinessName]   = useState("")
+  const [scrolled,        setScrolled]        = useState(false)
+  const [mobileMenuOpen,  setMobileMenuOpen]  = useState(false)
+  const [isAuth,          setIsAuth]          = useState(false)
+  const [payload,         setPayload]         = useState<ReturnType<typeof getCustomerPayload>>(null)
+  const [businessName,    setBusinessName]    = useState("")
+  const [businessPlan,    setBusinessPlan]    = useState<string | null>(null)
+  // ✅ NOVO: estado para a foto do dono
+  const [ownerAvatarUrl,  setOwnerAvatarUrl]  = useState<string | null>(null)
 
-  // ── refreshAuth estável ────────────────────────────────────────────────────
   const refreshAuth = useCallback(() => {
     setIsAuth(isCustomerAuthenticated())
     setPayload(getCustomerPayload())
   }, [])
 
-  // Lê estado inicial uma vez na montagem
-  useEffect(() => {
-    refreshAuth()
-  }, [refreshAuth])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- sync auth on mount
+  useEffect(() => { refreshAuth() }, [refreshAuth])
 
-  // Escuta evento customizado (mesma aba — login/logout) e outras abas
   useEffect(() => {
     window.addEventListener(AUTH_CHANGE_EVENT, refreshAuth)
-    window.addEventListener("storage",         refreshAuth)
+    window.addEventListener("storage", refreshAuth)
     return () => {
       window.removeEventListener(AUTH_CHANGE_EVENT, refreshAuth)
-      window.removeEventListener("storage",         refreshAuth)
+      window.removeEventListener("storage", refreshAuth)
     }
   }, [refreshAuth])
 
-  // Atualiza quando pathname muda (cobre router.replace do callback)
-  useEffect(() => {
-    refreshAuth()
-  }, [pathname, refreshAuth])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- sync auth on route change
+  useEffect(() => { refreshAuth() }, [pathname, refreshAuth])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile menu on route change
+  useEffect(() => { setMobileMenuOpen(false) }, [pathname])
 
-  // Fecha menu ao navegar
-  useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname])
-
-  // Scroll handler
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
     window.addEventListener("scroll", handler, { passive: true })
     return () => window.removeEventListener("scroll", handler)
   }, [])
 
-  // Busca nome do negócio
+  // ✅ CORRIGIDO: busca nome + avatar do dono no mesmo fetch
   useEffect(() => {
     if (!slug) return
     fetch(`${API}/api/public/${slug}`)
       .then((r) => r.json())
-      .then((d) => setBusinessName(d?.business?.name || slug))
+      .then((d) => {
+        setBusinessName(d?.business?.name || slug)
+        // Ajuste o caminho conforme o que sua API retorna:
+        setOwnerAvatarUrl(d?.business?.ownerAvatarUrl ?? d?.ownerAvatarUrl ?? null)
+        setBusinessPlan(d?.business?.plan ?? null)
+      })
       .catch(() => setBusinessName(slug))
   }, [slug])
 
   const handleLogout = useCallback(() => {
     removeCustomerToken()
-    // removeCustomerToken já dispara AUTH_CHANGE_EVENT
     router.push(`/${slug}`)
   }, [router, slug])
 
-  const links = NAV_LINKS(slug)
+  const links = NAV_LINKS(slug, businessPlan ?? undefined)
 
   const initials = payload?.name
     ? payload.name.split(" ").filter(Boolean).slice(0, 2).map((n: string) => n[0].toUpperCase()).join("")
@@ -106,6 +109,13 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:#0A0A0A; }
         ::-webkit-scrollbar-thumb { background:#2F2F2F; border-radius:3px; }
+
+        /* ✅ Esconde links desktop e auth no mobile */
+        @media (max-width: 767px) {
+          .slug-desktop-links { display: none !important; }
+          .slug-desktop-auth  { display: none !important; }
+          .slug-burger        { display: flex !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
@@ -122,21 +132,31 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", height: 64, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
 
-            {/* Logo */}
+            {/* Logo — ✅ CORRIGIDO: usa ownerAvatarUrl e businessName do state */}
             <div
               onClick={() => router.push(`/${slug}`)}
               style={{ cursor: "pointer", display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>F</span>
+              <div style={{ position: "relative" }}>
+                {ownerAvatarUrl ? (
+                  <img
+                    src={ownerAvatarUrl}
+                    alt={businessName}
+                    style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", display: "block" }}
+                  />
+                ) : (
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>
+                    {(businessName || slug).charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
                 {businessName || slug}
               </span>
             </div>
 
-            {/* Links desktop */}
-            <div style={{ display: "flex", gap: 2, flex: 1, justifyContent: "center" }}>
+            {/* Links desktop — ✅ some no mobile via CSS */}
+            <div className="slug-desktop-links" style={{ display: "flex", gap: 2, flex: 1, justifyContent: "center" }}>
               {links.map((link) => (
                 <a
                   key={link.href}
@@ -150,8 +170,8 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
               ))}
             </div>
 
-            {/* Auth actions */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            {/* Auth actions desktop — ✅ some no mobile via CSS */}
+            <div className="slug-desktop-auth" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
               {isAuth && payload ? (
                 <>
                   <button
@@ -190,16 +210,16 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   Entrar
                 </button>
               )}
-
-              {/* Burger mobile */}
-              <button
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#A1A1AA", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-                className="slug-burger"
-              >
-                <span style={{ fontSize: 18, lineHeight: 1 }}>{mobileMenuOpen ? "✕" : "☰"}</span>
-              </button>
             </div>
+
+            {/* ✅ Burger — só aparece no mobile */}
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#A1A1AA", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              className="slug-burger"
+            >
+              <span style={{ fontSize: 18, lineHeight: 1 }}>{mobileMenuOpen ? "✕" : "☰"}</span>
+            </button>
           </div>
         </nav>
 
@@ -216,7 +236,19 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
               paddingTop: 80,
             }}
           >
-            <nav style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
+            {/* ✅ Perfil do dono no topo do menu mobile */}
+            <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 20px", borderBottom: "1px solid #111111", marginBottom: 8 }}>
+              {ownerAvatarUrl ? (
+                <img src={ownerAvatarUrl} alt={businessName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)" }} />
+              ) : (
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                  {(businessName || slug).charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{businessName || slug}</span>
+            </div>
+
+            <nav style={{ display: "flex", flexDirection: "column", gap: 0, padding: "0 24px" }}>
               {links.map((link) => (
                 <a
                   key={link.href}
@@ -256,15 +288,22 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
           </div>
         )}
 
-        <style>{`
-          @media (max-width: 767px) {
-            .slug-burger { display: flex !important; }
-          }
-        `}</style>
-
         <div style={{ paddingTop: 64 }}>
           {children}
         </div>
+
+        {/* ── Powered by Forbion footer ── */}
+        <footer style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "20px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+        }}>
+          <span style={{ fontSize: 11, color: "#3F3F46" }}>Powered by</span>
+          <ForbionLogo size="sm" as="span" />
+        </footer>
       </div>
     </React.Fragment>
   )

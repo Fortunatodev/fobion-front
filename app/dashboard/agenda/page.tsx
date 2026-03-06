@@ -1,24 +1,34 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ChevronLeft, ChevronRight, Plus,
-  Calendar, Car, AlertCircle,
+  ChevronLeft, ChevronRight, Plus, Calendar,
+  AlertCircle, User, Clock, CheckCircle2, XCircle,
+  Loader2, ArrowRight,
 } from "lucide-react"
-import { apiGet } from "@/lib/api"
+import { apiGet, apiPut } from "@/lib/api"
+import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Schedule {
-  id:          string
-  scheduledAt: string
-  status:      string
-  totalPrice:  number
-  customer:    { name: string }
-  vehicle:     { plate: string; brand: string; model: string }
-  scheduleServices: { service: { name: string } }[]
-  employee?:   { id: string; name: string; avatarUrl: string | null } | null
+  id:           string
+  scheduledAt:  string
+  status:       string
+  totalPrice:   number
+  notes?:       string | null
+  paymentMethod: string
+  customer:     { id: string; name: string; phone: string }
+  vehicle:      { plate: string; brand: string; model: string; color: string }
+  scheduleServices: { service: { name: string; durationMinutes: number } }[]
+  employee?:    { id: string; name: string; avatarUrl: string | null } | null
+}
+
+interface Employee {
+  id:        string
+  name:      string
+  avatarUrl: string | null
 }
 
 interface DayData {
@@ -30,42 +40,29 @@ interface DayData {
   schedules:      Schedule[]
 }
 
-interface Employee {
-  id:        string
-  name:      string
-  avatarUrl: string | null
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const STATUS_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  PENDING:     { label: "Pendente",     color: "#F59E0B", icon: <Clock    size={10} /> },
+  CONFIRMED:   { label: "Confirmado",   color: "#3B82F6", icon: <CheckCircle2 size={10} /> },
+  IN_PROGRESS: { label: "Em andamento", color: "#8B5CF6", icon: <Loader2  size={10} /> },
+  DONE:        { label: "Concluído",    color: "#10B981", icon: <CheckCircle2 size={10} /> },
+  CANCELLED:   { label: "Cancelado",    color: "#EF4444", icon: <XCircle  size={10} /> },
 }
+
+const PAYMENT_METHODS = [
+  { value: "PIX",         label: "PIX"            },
+  { value: "CASH",        label: "Dinheiro"       },
+  { value: "CREDIT_CARD", label: "Cartão Crédito" },
+  { value: "DEBIT_CARD",  label: "Cartão Débito"  },
+]
+
+const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0]
-}
-
-function getStatusColor(status: string): string {
-  switch (status) {
-    case "PENDING":     return "#F59E0B"
-    case "CONFIRMED":   return "#3B82F6"
-    case "IN_PROGRESS": return "#8B5CF6"
-    case "DONE":        return "#10B981"
-    case "CANCELLED":   return "#EF4444"
-    default:            return "#71717A"
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "PENDING":     return "Pendente"
-    case "CONFIRMED":   return "Confirmado"
-    case "IN_PROGRESS": return "Em andamento"
-    case "DONE":        return "Concluído"
-    case "CANCELLED":   return "Cancelado"
-    default:            return status
-  }
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
 }
 
 function formatCurrency(cents: number): string {
@@ -79,78 +76,318 @@ function formatMonthYear(date: Date): string {
 
 function formatDayHeader(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number)
-  const date = new Date(y, m - 1, d)
-  return date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })
-    .replace(/^\w/, c => c.toUpperCase())
+  return new Date(y, m - 1, d).toLocaleDateString("pt-BR", {
+    weekday: "long", day: "2-digit", month: "long",
+  }).replace(/^\w/, c => c.toUpperCase())
 }
 
-function buildCalendarDays(month: Date, schedules: Schedule[], selectedDate: string): DayData[] {
+function buildCalendarDays(
+  month: Date, schedules: Schedule[], selectedDate: string
+): DayData[] {
   const today    = todayStr()
   const year     = month.getFullYear()
   const mon      = month.getMonth()
   const firstDay = new Date(year, mon, 1).getDay()
-  const lastDay  = new Date(year, mon + 1, 0).getDate()
-
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1
+  const lastDay = new Date(year, mon + 1, 0).getDate()
   const days: DayData[] = []
 
-  // dias do mês anterior
-  for (let i = firstDay - 1; i >= 0; i--) {
+  // Dias do mês anterior
+  for (let i = startOffset - 1; i >= 0; i--) {
     const d    = new Date(year, mon, -i)
-    const dStr = d.toISOString().split("T")[0]
+    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
     days.push({ date: d, dateStr: dStr, isCurrentMonth: false, isToday: false, isSelected: false, schedules: [] })
   }
 
-  // dias do mês atual
+  // Dias do mês atual
   for (let d = 1; d <= lastDay; d++) {
     const date = new Date(year, mon, d)
-    const dStr = date.toISOString().split("T")[0]
+    const dStr = `${year}-${String(mon+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`
     days.push({
       date,
       dateStr:        dStr,
       isCurrentMonth: true,
       isToday:        dStr === today,
       isSelected:     dStr === selectedDate,
-      schedules:      schedules.filter(s => s.scheduledAt.startsWith(dStr)),
+      // ✅ Usar formatScheduleDate para comparar em UTC, não local
+      schedules:      schedules.filter(s => formatScheduleDate(s.scheduledAt) === dStr),
     })
   }
 
-  // completar grid 42 células
+  // Completar grid até 42 células
+  let nextD = 1
   while (days.length < 42) {
-    const d    = new Date(year, mon + 1, days.length - firstDay - lastDay + 1)
-    const dStr = d.toISOString().split("T")[0]
+    const d    = new Date(year, mon + 1, nextD++)
+    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
     days.push({ date: d, dateStr: dStr, isCurrentMonth: false, isToday: false, isSelected: false, schedules: [] })
   }
 
   return days
 }
 
-// ── Calendar grid skeleton ────────────────────────────────────────────────────
+// ── Skeletons ─────────────────────────────────────────────────────────────────
 
-function CalendarGridSkeleton() {
+function CalSkeleton() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
       {Array.from({ length: 42 }).map((_, i) => (
         <div key={i} style={{
-          minHeight: 80, padding: 8,
-          borderRight: "1px solid #1A1A1A",
-          borderBottom: "1px solid #1A1A1A",
-        }}>
-          <div style={{
-            width: 26, height: 26, borderRadius: "50%",
-            backgroundColor: i % 11 === 0 ? "#1F1F1F" : "#161616",
-            animation: `skeletonPulse 1.5s ease ${(i % 7) * 0.07}s infinite`,
-            marginBottom: 6,
-          }} />
-          {(i === 3 || i === 8 || i === 15 || i === 22 || i === 30) && (
-            <div style={{
-              height: 14, borderRadius: 4,
-              backgroundColor: "#161616",
-              animation: `skeletonPulse 1.5s ease ${(i % 7) * 0.07}s infinite`,
-            }} />
-          )}
-        </div>
+          height: 36, borderRadius: 8, backgroundColor: "#111",
+          animation: `skeletonPulse 1.4s ease ${(i % 7) * 0.06}s infinite`,
+        }} />
       ))}
     </div>
+  )
+}
+
+// ── StatusBadge ───────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string }) {
+  const meta = STATUS_META[status] ?? { label: status, color: "#71717A", icon: null }
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 10, fontWeight: 600, color: meta.color,
+      backgroundColor: `${meta.color}16`,
+      border: `1px solid ${meta.color}30`,
+      borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap",
+    }}>
+      {meta.icon} {meta.label}
+    </span>
+  )
+}
+
+// ── Row ───────────────────────────────────────────────────────────────────────
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: "1px solid #111" }}>
+      <span style={{ fontSize: 13, color: "#71717A" }}>{label}</span>
+      <span style={{ fontSize: 13, color: "#E5E7EB", fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{value}</span>
+    </div>
+  )
+}
+
+// ── ActionBtn ─────────────────────────────────────────────────────────────────
+
+function ActionBtn({
+  label, color, onClick, loading, outline = false, disabled = false,
+}: {
+  label: string; color: string; onClick: () => void
+  loading: boolean; outline?: boolean; disabled?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading || disabled}
+      style={{
+        flex: 1, height: 36, borderRadius: 9, fontSize: 12, fontWeight: 600,
+        background: outline ? "transparent" : color,
+        border: outline ? `1px solid ${color}` : "none",
+        color: outline ? color : "#fff",
+        cursor: loading || disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        fontFamily: "inherit",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+      }}
+    >
+      {loading ? <Loader2 size={13} style={{ animation: "spin 0.7s linear infinite" }} /> : label}
+    </button>
+  )
+}
+
+// ── DetailModal ───────────────────────────────────────────────────────────────
+
+function DetailModal({
+  schedule, onClose, onStatusChange,
+}: {
+  schedule: Schedule
+  onClose: () => void
+  onStatusChange: (s: Schedule) => void
+}) {
+  const [updating,    setUpdating]    = useState(false)
+  const [closingWith, setClosingWith] = useState("")
+  const [phase,       setPhase]       = useState<"view" | "close">("view")
+  const services = schedule.scheduleServices.map(ss => ss.service.name).join(", ")
+  const totalDur = schedule.scheduleServices.reduce((a, ss) => a + ss.service.durationMinutes, 0)
+
+  async function doStatus(status: string) {
+    setUpdating(true)
+    try {
+      const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/status`, { status })
+      onStatusChange(res.schedule)
+    } catch { /* silently */ } finally { setUpdating(false) }
+  }
+
+  async function doClose() {
+    if (!closingWith) return
+    setUpdating(true)
+    try {
+      const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/close`, { paymentMethod: closingWith })
+      onStatusChange(res.schedule)
+      onClose()
+    } catch { /* silently */ } finally { setUpdating(false) }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div onClick={onClose} style={{
+        position: "absolute", inset: 0,
+        backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)",
+      }} />
+      <div style={{
+        position: "relative", zIndex: 1,
+        backgroundColor: "#111", border: "1px solid #1F1F1F",
+        borderRadius: 20, padding: 24, width: "100%", maxWidth: 420,
+        maxHeight: "90vh", overflowY: "auto",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          <div>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+              {schedule.customer.name}
+            </p>
+            <p style={{ fontSize: 12, color: "#52525B", margin: "3px 0 0" }}>
+              {/* ✅ Usar formatScheduleTime em vez de formatTime */}
+              {formatScheduleTime(schedule.scheduledAt)}
+            </p>
+          </div>
+          <StatusBadge status={schedule.status} />
+        </div>
+
+        {phase === "view" && (
+          <>
+            <Row label="Telefone"    value={schedule.customer.phone} />
+            <Row label="Serviço"     value={services} />
+            <Row label="Duração"     value={`${totalDur}min`} />
+            <Row label="Veículo"     value={`${schedule.vehicle.brand} ${schedule.vehicle.model} · ${schedule.vehicle.plate}`} />
+            <Row label="Profissional" value={schedule.employee?.name ?? "Proprietário"} />
+            {schedule.notes && <Row label="Obs" value={schedule.notes} />}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", borderTop: "1px solid #1A1A1A", marginTop: 4 }}>
+              <span style={{ fontSize: 13, color: "#71717A" }}>Total</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{formatCurrency(schedule.totalPrice)}</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              {schedule.status === "PENDING" && (
+                <ActionBtn label="Confirmar" color="#3B82F6" onClick={() => doStatus("CONFIRMED")} loading={updating} />
+              )}
+              {(schedule.status === "PENDING" || schedule.status === "CONFIRMED") && (
+                <ActionBtn label="Iniciar" color="#8B5CF6" onClick={() => doStatus("IN_PROGRESS")} loading={updating} />
+              )}
+              {schedule.status === "IN_PROGRESS" && (
+                <ActionBtn label="Finalizar" color="#10B981" onClick={() => setPhase("close")} loading={false} />
+              )}
+              {schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
+                <ActionBtn label="Cancelar" color="#EF4444" onClick={() => doStatus("CANCELLED")} loading={updating} outline />
+              )}
+            </div>
+          </>
+        )}
+
+        {phase === "close" && (
+          <>
+            <p style={{ fontSize: 13, color: "#E5E7EB", marginBottom: 12 }}>
+              Selecione a forma de pagamento:
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.value}
+                  onClick={() => setClosingWith(m.value)}
+                  style={{
+                    height: 40, borderRadius: 9, fontSize: 12, fontWeight: 500,
+                    background: closingWith === m.value ? "rgba(16,185,129,0.12)" : "transparent",
+                    border: closingWith === m.value ? "1px solid #10B981" : "1px solid #252525",
+                    color: closingWith === m.value ? "#10B981" : "#71717A",
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <ActionBtn label="← Voltar" color="#52525B" onClick={() => setPhase("view")} loading={false} outline />
+              <ActionBtn label="Confirmar pagamento" color="#10B981" onClick={doClose} loading={updating} disabled={!closingWith} />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── ScheduleCard ──────────────────────────────────────────────────────────────
+
+function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
+  const color    = STATUS_META[s.status]?.color ?? "#71717A"
+  const services = s.scheduleServices.map(ss => ss.service.name).join(", ")
+  const [hov, setHov] = useState(false)
+
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        backgroundColor: hov ? "#121212" : "#0A0A0A",
+        borderTop: `1px solid ${hov ? "#222" : "#161616"}`,
+        borderRight: `1px solid ${hov ? "#222" : "#161616"}`,
+        borderBottom: `1px solid ${hov ? "#222" : "#161616"}`,
+        borderLeft: `3px solid ${color}`,
+        borderRadius: 12, padding: "12px 14px",
+        cursor: "pointer", transition: "all 0.15s",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {s.customer.name}
+          </p>
+          <p style={{ fontSize: 11, color: "#52525B", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {services}
+          </p>
+          {s.employee && (
+            <p style={{ fontSize: 10, color: "#3F3F46", margin: "2px 0 0" }}>
+              {s.employee.name}
+            </p>
+          )}
+        </div>
+        <div style={{ flexShrink: 0, textAlign: "right" }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0 }}>
+            {/* ✅ Usar formatScheduleTime */}
+            {formatScheduleTime(s.scheduledAt)}
+          </p>
+          <StatusBadge status={s.status} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── NewAgBtn ──────────────────────────────────────────────────────────────────
+
+function NewAgBtn({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 6,
+        height: 38, padding: "0 16px", borderRadius: 10,
+        background: hov ? "#0052CC" : "#0066FF",
+        border: "none", color: "#fff", fontSize: 13, fontWeight: 600,
+        cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s",
+      }}
+    >
+      <Plus size={14} /> Novo agendamento
+    </button>
   )
 }
 
@@ -159,324 +396,254 @@ function CalendarGridSkeleton() {
 export default function AgendaPage() {
   const router = useRouter()
 
-  const [schedules,        setSchedules]        = useState<Schedule[]>([])
-  const [loading,          setLoading]          = useState(true)
-  const [error,            setError]            = useState<string | null>(null)
-  const [currentMonth,     setCurrentMonth]     = useState(() => {
-    const d = new Date(); d.setDate(1); return d
-  })
-  const [selectedDate,     setSelectedDate]     = useState(todayStr)
-  const [daySchedules,     setDaySchedules]     = useState<Schedule[]>([])
-  const [loadingDay,       setLoadingDay]       = useState(false)
-  const [hoveredDay,       setHoveredDay]       = useState<string | null>(null)
+  const [schedules,      setSchedules]      = useState<Schedule[]>([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState<string | null>(null)
+  const [currentMonth,   setCurrentMonth]   = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [selectedDate,   setSelectedDate]   = useState(todayStr)
+  const [daySchedules,   setDaySchedules]   = useState<Schedule[]>([])
+  const [loadingDay,     setLoadingDay]     = useState(false)
+  const [hoveredDay,     setHoveredDay]     = useState<string | null>(null)
+  const [employees,      setEmployees]      = useState<Employee[]>([])
+  const [selectedEmp,    setSelectedEmp]    = useState<string>("all")
+  const [modalSchedule,  setModalSchedule]  = useState<Schedule | null>(null)
+  const [isMobile,       setIsMobile]       = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
 
-  // ── Funcionários ──────────────────────────────────────────────────────────
-  const [employees,         setEmployees]         = useState<Employee[]>([])
-  const [selectedEmployee,  setSelectedEmployee]  = useState<string>("all")
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   // ── Fetch employees ───────────────────────────────────────────────────────
   useEffect(() => {
     apiGet<{ employees: Employee[] }>("/employees")
-      .then(res => setEmployees(res.employees ?? []))
-      .catch(() => setEmployees([]))
+      .then(r => setEmployees(r.employees ?? []))
+      .catch(() => {})
   }, [])
 
-  // ── Fetch month schedules ─────────────────────────────────────────────────
-  const fetchMonthSchedules = useCallback(async () => {
-    setLoading(true)
+  // ── Fetch month ───────────────────────────────────────────────────────────
+  const fetchMonth = useCallback(async () => {
+    setLoading(true); setError(null)
     try {
-      const params = new URLSearchParams()
-      if (selectedEmployee !== "all") params.set("employeeId", selectedEmployee)
-      const query = params.toString() ? `?${params}` : ""
-      const res = await apiGet<{ schedules: Schedule[] }>(`/schedules${query}`)
+      const params: Record<string, string> = {}
+      if (selectedEmp !== "all")   params.employeeId = selectedEmp
+      if (selectedEmp === "owner") params.employeeId = "owner"
+      const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setSchedules(res.schedules ?? [])
-      setError(null)
     } catch {
       setError("Erro ao carregar agenda.")
     } finally {
       setLoading(false)
     }
-  }, [selectedEmployee])
+  }, [selectedEmp])
 
-  useEffect(() => { fetchMonthSchedules() }, [fetchMonthSchedules, currentMonth])
+  useEffect(() => { fetchMonth() }, [fetchMonth, currentMonth])
 
-  // ── Fetch day schedules ───────────────────────────────────────────────────
-  const fetchDaySchedules = useCallback(async (dateStr: string) => {
+  // ── Fetch day ─────────────────────────────────────────────────────────────
+  const fetchDay = useCallback(async (dateStr: string) => {
     setLoadingDay(true)
     try {
-      const params = new URLSearchParams({ date: dateStr })
-      if (selectedEmployee !== "all") params.set("employeeId", selectedEmployee)
-      const res = await apiGet<{ schedules: Schedule[] }>(`/schedules?${params}`)
+      const params: Record<string, string> = { date: dateStr }
+      if (selectedEmp !== "all")   params.employeeId = selectedEmp
+      if (selectedEmp === "owner") params.employeeId = "owner"
+      const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setDaySchedules(res.schedules ?? [])
     } catch {
       setDaySchedules([])
     } finally {
       setLoadingDay(false)
     }
-  }, [selectedEmployee])
+  }, [selectedEmp])
 
-  useEffect(() => { fetchDaySchedules(selectedDate) }, [selectedDate, fetchDaySchedules])
+  useEffect(() => { fetchDay(selectedDate) }, [selectedDate, fetchDay])
 
-  function handleSelectDay(dateStr: string) {
-    setSelectedDate(dateStr)
+  // Quando um status muda no modal, atualiza as listas
+  function handleStatusChange(updated: Schedule) {
+    setModalSchedule(updated)
+    setDaySchedules(prev => prev.map(s => s.id === updated.id ? updated : s))
+    setSchedules(prev => prev.map(s => s.id === updated.id ? updated : s))
   }
 
-  function prevMonth() {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
-  }
-  function nextMonth() {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
-  }
+  const calDays = buildCalendarDays(currentMonth, schedules, selectedDate)
 
-  const calDays   = buildCalendarDays(currentMonth, schedules, selectedDate)
-  const WEEKDAYS  = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-
-  // ── Estilos de botão do seletor ───────────────────────────────────────────
   function empBtnStyle(active: boolean): React.CSSProperties {
     return {
-      height: 34, padding: "0 14px", borderRadius: 10,
-      fontSize: 13, fontWeight: 500, cursor: "pointer",
-      transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
-      backgroundColor: active ? "#0066FF" : "transparent",
-      border: `1px solid ${active ? "transparent" : "#1F1F1F"}`,
-      color: active ? "#fff" : "#71717A",
-      fontFamily: "inherit", flexShrink: 0,
+      height: 30, padding: "0 12px", borderRadius: 8, fontSize: 12,
+      fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit",
+      border: active ? "1px solid rgba(0,102,255,0.4)" : "1px solid #1F1F1F",
+      background: active ? "rgba(0,102,255,0.1)" : "transparent",
+      color: active ? "#3B82F6" : "#71717A",
+      transition: "all 0.15s",
     }
   }
 
   return (
     <>
       <style>{`
-        @keyframes fadeAg {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes skeletonPulse {
-          0%,100% { opacity: 0.4; }
-          50%     { opacity: 0.9; }
-        }
-        .day-list::-webkit-scrollbar { width: 4px; }
-        .day-list::-webkit-scrollbar-track { background: transparent; }
-        .day-list::-webkit-scrollbar-thumb { background: #252525; border-radius: 4px; }
-        .ag-nav-btn:hover { background: #1F1F1F !important; color: #fff !important; }
-        .ag-day:hover { background: rgba(255,255,255,0.02) !important; }
-        .ag-new-btn:hover { background: rgba(0,102,255,0.1) !important; }
-        .ag-schedule-card:hover { background: #111111 !important; border-color: #252525 !important; }
-        .ag-empty-create:hover { background: rgba(0,102,255,0.1) !important; }
-        .ag-emp-btn:hover { opacity: 0.8; }
+        @keyframes fadeAg       { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes skeletonPulse{ 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+        @keyframes spin         { to{transform:rotate(360deg)} }
+        .ag-card:hover  { background:#121212!important; border-color:#222!important; }
+        .ag-day:hover   { background:#161616!important; }
+        .ag-empty-create:hover { background:rgba(0,102,255,0.14)!important; }
+        .day-list::-webkit-scrollbar      { width:4px; }
+        .day-list::-webkit-scrollbar-thumb{ background:#252525; border-radius:2px; }
+        * { box-sizing:border-box; }
       `}</style>
 
       <div style={{
         maxWidth: 1280, margin: "0 auto",
-        animation: "fadeAg 0.35s ease both",
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        padding: isMobile ? "16px 14px" : undefined,
+        fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif",
+        animation: "fadeAg 0.3s ease",
       }}>
 
-        {/* ── HEADER ─────────────────────────────────────────────────── */}
-        <div style={{
-          display: "flex", justifyContent: "space-between",
-          alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 0,
-        }}>
+        {/* ── HEADER ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "flex-start", flexWrap: "wrap", gap: isMobile ? 12 : 16, marginBottom: 20, flexDirection: isMobile ? "column" : "row" }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
-              Agenda
-            </h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
-              Visualize e gerencie seus agendamentos
-            </p>
+            <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Agenda</h1>
+            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>Visualize e gerencie seus agendamentos</p>
           </div>
           <NewAgBtn onClick={() => router.push("/dashboard/agendamentos")} />
         </div>
 
-        {/* ── SELETOR DE FUNCIONÁRIO ──────────────────────────────────── */}
-        <div style={{
-          display: "flex", gap: 8, flexWrap: "wrap",
-          marginTop: 16, marginBottom: 8,
-        }}>
-          {/* Todos */}
-          <button
-            className="ag-emp-btn"
-            onClick={() => setSelectedEmployee("all")}
-            style={empBtnStyle(selectedEmployee === "all")}
-          >
-            Todos
-          </button>
-
-          {/* Proprietário */}
-          <button
-            className="ag-emp-btn"
-            onClick={() => setSelectedEmployee("owner")}
-            style={empBtnStyle(selectedEmployee === "owner")}
-          >
-            Proprietário
-          </button>
-
-          {/* Funcionários */}
-          {employees.map(emp => {
-            const active = selectedEmployee === emp.id
-            return (
-              <button
-                key={emp.id}
-                className="ag-emp-btn"
-                onClick={() => setSelectedEmployee(emp.id)}
-                style={empBtnStyle(active)}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                  background: "linear-gradient(135deg, #0066FF, #7C3AED)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 700, color: "#fff",
-                }}>
-                  {emp.name.charAt(0).toUpperCase()}
-                </div>
-                <span>{emp.name}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* ── ERROR ──────────────────────────────────────────────────── */}
-        {error && !loading && (
-          <div style={{
-            backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-            borderRadius: 12, padding: "12px 16px", marginBottom: 20,
-            display: "flex", alignItems: "center", gap: 10,
+        {/* ── SELETOR DE FUNCIONÁRIO ── */}
+        {employees.length > 0 && (
+          <div ref={filterRef} style={{
+            display: "flex", gap: 6, flexWrap: "wrap",
+            marginBottom: 20, padding: "10px 14px",
+            backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 12,
           }}>
+            <button style={empBtnStyle(selectedEmp === "all")}   onClick={() => setSelectedEmp("all")}>Todos</button>
+            <button style={empBtnStyle(selectedEmp === "owner")} onClick={() => setSelectedEmp("owner")}>
+              <User size={11} style={{ marginRight: 4 }} />Proprietário
+            </button>
+            {employees.map(e => (
+              <button key={e.id} style={empBtnStyle(selectedEmp === e.id)} onClick={() => setSelectedEmp(e.id)}>
+                {e.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", backgroundColor: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
             <AlertCircle size={14} color="#EF4444" />
             <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
           </div>
         )}
 
-        {/* ── GRID LAYOUT ────────────────────────────────────────────── */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 320px",
-          gap: 20, marginTop: 16,
-          alignItems: "start",
-        }}>
+        {/* ── GRID: CALENDÁRIO + PAINEL DO DIA ── */}
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 20, alignItems: "start" }}>
 
-          {/* ── CALENDAR ───────────────────────────────────────────── */}
-          <div style={{
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
-            borderRadius: 20, overflow: "hidden",
-          }}>
-            {/* Header — sempre visível */}
-            <div style={{
-              padding: "20px 24px", borderBottom: "1px solid #1F1F1F",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              <button className="ag-nav-btn" onClick={prevMonth} disabled={loading} style={{
-                width: 34, height: 34, borderRadius: 10,
-                backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                color: "#A1A1AA", cursor: loading ? "default" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "all 0.15s",
-              }}>
+          {/* ── CALENDÁRIO ── */}
+          <div style={{ backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 20, overflow: "hidden" }}>
+
+            {/* Header do mês */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 12px" }}>
+              <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))}
+                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#161616", border: "1px solid #1F1F1F", color: "#A1A1AA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronLeft size={16} />
               </button>
-
-              <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", margin: 0 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0 }}>
                 {formatMonthYear(currentMonth)}
               </p>
-
-              <button className="ag-nav-btn" onClick={nextMonth} disabled={loading} style={{
-                width: 34, height: 34, borderRadius: 10,
-                backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                color: "#A1A1AA", cursor: loading ? "default" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "all 0.15s",
-              }}>
+              <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))}
+                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#161616", border: "1px solid #1F1F1F", color: "#A1A1AA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronRight size={16} />
               </button>
             </div>
 
-            {/* Weekday headers */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #1A1A1A" }}>
-              {WEEKDAYS.map((d) => (
-                <div key={d} style={{
-                  textAlign: "center", fontSize: 11, fontWeight: 600,
-                  color: "#3F3F46", letterSpacing: "0.5px", padding: "10px 0",
-                }}>
+            {/* Cabeçalho dias da semana */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid #1A1A1A" }}>
+              {WEEKDAYS.map(d => (
+                <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#3F3F46", letterSpacing: "0.5px", padding: "10px 0" }}>
                   {d}
                 </div>
               ))}
             </div>
 
-            {/* Grid — skeleton ou real */}
-            {loading ? <CalendarGridSkeleton /> : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-                {calDays.map((day, idx) => {
-                  const hov = hoveredDay === day.dateStr && !day.isSelected
+            {/* Grid de dias */}
+            {loading ? (
+              <div style={{ padding: "8px 12px 16px" }}><CalSkeleton /></div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+                {calDays.map((day, i) => {
+                  const isSel  = day.dateStr === selectedDate
+                  const isHov  = hoveredDay === day.dateStr
+
                   return (
                     <div
-                      key={idx}
+                      key={i}
                       className="ag-day"
-                      onClick={() => handleSelectDay(day.dateStr)}
-                      onMouseEnter={() => setHoveredDay(day.dateStr)}
+                      onClick={() => day.isCurrentMonth && setSelectedDate(day.dateStr)}
+                      onMouseEnter={() => day.isCurrentMonth && setHoveredDay(day.dateStr)}
                       onMouseLeave={() => setHoveredDay(null)}
                       style={{
-                        minHeight: 80, padding: 8, cursor: "pointer",
-                        borderRight: "1px solid #1A1A1A",
-                        borderBottom: "1px solid #1A1A1A",
-                        transition: "background 0.15s", position: "relative",
-                        backgroundColor: day.isSelected
-                          ? "rgba(0,102,255,0.08)"
-                          : day.isToday
-                            ? "rgba(0,102,255,0.03)"
-                            : hov
-                              ? "rgba(255,255,255,0.02)"
-                              : "transparent",
+                        minHeight: isMobile ? 48 : 72, padding: isMobile ? "6px 3px 3px" : "8px 6px 6px",
+                        borderBottom: "1px solid #111",
+                        borderRight: (i + 1) % 7 === 0 ? "none" : "1px solid #111",
+                        backgroundColor: isSel ? "#161616" : isHov ? "#131313" : "transparent",
+                        cursor: day.isCurrentMonth ? "pointer" : "default",
+                        transition: "background 0.12s",
                       }}
                     >
                       <div style={{
                         width: 26, height: 26, borderRadius: "50%",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: day.isToday || day.isSelected ? 700 : 400,
-                        color: day.isSelected
-                          ? "#0066FF"
-                          : day.isToday
-                            ? "#fff"
-                            : day.isCurrentMonth
-                              ? "#A1A1AA"
-                              : "#2A2A2A",
-                        backgroundColor: day.isToday && !day.isSelected ? "#0066FF" : "transparent",
+                        fontSize: 12, fontWeight: day.isToday || isSel ? 700 : 400,
+                        color: !day.isCurrentMonth ? "#1F1F1F" : day.isToday && !isSel ? "#fff" : day.isToday ? "#fff" : isSel ? "#0066FF" : "#A1A1AA",
+                        backgroundColor: day.isToday && !isSel ? "#0066FF" : isSel ? "rgba(0,102,255,0.1)" : "transparent",
                         marginBottom: 4, flexShrink: 0,
                       }}>
                         {day.date.getDate()}
                       </div>
 
-                      {/* Mini cards ≤2 */}
-                      {day.isCurrentMonth && day.schedules.length > 0 && day.schedules.length <= 2 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 2 }}>
-                          {day.schedules.map((s) => {
-                            const c = getStatusColor(s.status)
+                      {day.isCurrentMonth && day.schedules.length > 0 && !isMobile && day.schedules.length <= 2 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {day.schedules.map(s => {
+                            const c = STATUS_META[s.status]?.color ?? "#71717A"
                             return (
                               <div key={s.id} style={{
-                                backgroundColor: `${c}14`, border: `1px solid ${c}33`,
-                                borderRadius: 4, padding: "2px 5px",
+                                backgroundColor: `${c}14`, border: `1px solid ${c}30`,
+                                borderRadius: 4, padding: "1px 4px",
                                 fontSize: 9, color: c,
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                               }}>
-                                {formatTime(s.scheduledAt)} {s.customer.name.split(" ")[0]}
+                                {/* ✅ Usar formatScheduleTime */}
+                                {formatScheduleTime(s.scheduledAt)} {s.customer.name.split(" ")[0]}
                               </div>
                             )
                           })}
                         </div>
                       )}
 
-                      {/* Badge "+N" quando >2 */}
-                      {day.isCurrentMonth && day.schedules.length > 2 && (
-                        <div style={{ marginTop: 2 }}>
-                          <div style={{
-                            fontSize: 9, color: "#0066FF",
-                            backgroundColor: "rgba(0,102,255,0.1)",
-                            border: "1px solid rgba(0,102,255,0.2)",
-                            borderRadius: 4, padding: "2px 5px",
-                            display: "inline-block",
-                          }}>
-                            +{day.schedules.length}
-                          </div>
+                      {day.isCurrentMonth && day.schedules.length > 2 && !isMobile && (
+                        <div style={{
+                          fontSize: 9, color: "#0066FF",
+                          backgroundColor: "rgba(0,102,255,0.1)",
+                          border: "1px solid rgba(0,102,255,0.2)",
+                          borderRadius: 4, padding: "2px 5px", display: "inline-block",
+                        }}>
+                          +{day.schedules.length}
+                        </div>
+                      )}
+
+                      {/* Mobile: dot indicator */}
+                      {day.isCurrentMonth && day.schedules.length > 0 && isMobile && (
+                        <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 2 }}>
+                          {day.schedules.slice(0, 3).map((s, idx) => (
+                            <div key={idx} style={{
+                              width: 5, height: 5, borderRadius: "50%",
+                              backgroundColor: STATUS_META[s.status]?.color ?? "#71717A",
+                            }} />
+                          ))}
+                          {day.schedules.length > 3 && (
+                            <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: "#52525B" }} />
+                          )}
                         </div>
                       )}
                     </div>
@@ -486,68 +653,41 @@ export default function AgendaPage() {
             )}
           </div>
 
-          {/* ── DAY DETAIL ────────────────────────────────────────────── */}
-          <div style={{
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
-            borderRadius: 20, padding: 20, position: "sticky", top: 24,
-          }}>
+          {/* ── PAINEL DO DIA ── */}
+          <div style={{ backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 20, padding: isMobile ? 16 : 20, position: isMobile ? "relative" : "sticky", top: isMobile ? undefined : 24 }}>
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>
                 {formatDayHeader(selectedDate)}
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                 <p style={{ fontSize: 12, color: "#71717A", margin: 0 }}>
-                  {loadingDay
-                    ? "Carregando..."
-                    : `${daySchedules.length} agendamento${daySchedules.length !== 1 ? "s" : ""}`}
+                  {loadingDay ? "Carregando..." : `${daySchedules.length} agendamento${daySchedules.length !== 1 ? "s" : ""}`}
                 </p>
                 {selectedDate === todayStr() && (
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, color: "#0066FF",
-                    backgroundColor: "rgba(0,102,255,0.1)",
-                    border: "1px solid rgba(0,102,255,0.2)",
-                    borderRadius: 6, padding: "3px 8px",
-                  }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#0066FF", backgroundColor: "rgba(0,102,255,0.1)", border: "1px solid rgba(0,102,255,0.2)", borderRadius: 6, padding: "2px 8px" }}>
                     Hoje
                   </span>
                 )}
               </div>
             </div>
 
-            <div style={{ height: 1, backgroundColor: "#1A1A1A", marginBottom: 16 }} />
-
-            {/* Loading skeletons */}
+            {/* Skeleton day */}
             {loadingDay && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[0, 0.1, 0.2].map((delay, i) => (
-                  <div key={i} style={{
-                    backgroundColor: "#0A0A0A", border: "1px solid #161616",
-                    borderLeft: "3px solid #1F1F1F",
-                    borderRadius: 12, padding: "12px 14px",
-                    animation: `skeletonPulse 1.5s ease ${delay}s infinite`,
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                      <div>
-                        <div style={{ width: 52, height: 16, borderRadius: 4, backgroundColor: "#1F1F1F" }} />
-                        <div style={{ width: 80, height: 11, borderRadius: 4, backgroundColor: "#1A1A1A", marginTop: 6 }} />
-                      </div>
-                      <div style={{ width: 60, height: 18, borderRadius: 5, backgroundColor: "#1F1F1F" }} />
-                    </div>
-                    <div style={{ width: "60%", height: 10, borderRadius: 3, backgroundColor: "#161616", marginTop: 10 }} />
-                    <div style={{ width: "80%", height: 10, borderRadius: 3, backgroundColor: "#161616", marginTop: 6 }} />
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                      <div style={{ width: 52, height: 14, borderRadius: 4, backgroundColor: "#1F1F1F" }} />
-                    </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ backgroundColor: "#161616", borderRadius: 12, padding: "14px 16px", animation: `skeletonPulse 1.4s ease ${i * 0.1}s infinite` }}>
+                    <div style={{ height: 12, width: "60%", backgroundColor: "#1F1F1F", borderRadius: 4 }} />
+                    <div style={{ height: 10, width: "40%", backgroundColor: "#1A1A1A", borderRadius: 4, marginTop: 8 }} />
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Empty state */}
+            {/* Empty */}
             {!loadingDay && daySchedules.length === 0 && (
               <div style={{ textAlign: "center", padding: "32px 0" }}>
-                <Calendar size={32} color="#1F1F1F" style={{ margin: "0 auto" }} />
-                <p style={{ fontSize: 13, color: "#52525B", marginTop: 10, marginBottom: 4 }}>
+                <Calendar size={36} color="#1F1F1F" style={{ display: "block", margin: "0 auto" }} />
+                <p style={{ fontSize: 13, color: "#52525B", marginTop: 12, marginBottom: 4 }}>
                   Sem agendamentos
                 </p>
                 <p style={{ fontSize: 12, color: "#3F3F46", margin: 0 }}>neste dia</p>
@@ -559,131 +699,61 @@ export default function AgendaPage() {
                     backgroundColor: "rgba(0,102,255,0.08)",
                     border: "1px solid rgba(0,102,255,0.15)",
                     color: "#0066FF", fontSize: 12, fontWeight: 600,
-                    borderRadius: 10, cursor: "pointer", transition: "background 0.15s",
-                    fontFamily: "inherit",
+                    borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                    transition: "background 0.15s",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   }}
                 >
-                  Criar agendamento
+                  <Plus size={13} /> Criar agendamento
                 </button>
               </div>
             )}
 
-            {/* Schedule list */}
+            {/* Lista do dia */}
             {!loadingDay && daySchedules.length > 0 && (
               <div className="day-list" style={{
                 display: "flex", flexDirection: "column", gap: 8,
-                maxHeight: "calc(100vh - 320px)", overflowY: "auto", paddingRight: 4,
+                maxHeight: "calc(100vh - 380px)", overflowY: "auto", paddingRight: 2,
               }}>
-                {daySchedules.map((s) => {
-                  const color    = getStatusColor(s.status)
-                  const services = s.scheduleServices.map((ss) => ss.service.name).join(", ")
-                  return (
-                    <div
-                      key={s.id}
-                      className="ag-schedule-card"
-                      onClick={() => router.push("/dashboard/agendamentos")}
-                      style={{
-                        backgroundColor: "#0A0A0A",
-                        border: "1px solid #161616",
-                        borderLeft: `3px solid ${color}`,
-                        borderRadius: 12, padding: "12px 14px",
-                        cursor: "pointer", transition: "all 0.15s",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                        <div>
-                          <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
-                            {formatTime(s.scheduledAt)}
-                          </p>
-                          <p style={{ fontSize: 12, color: "#A1A1AA", marginTop: 2 }}>
-                            {s.customer.name}
-                          </p>
-                        </div>
-                        <span style={{
-                          fontSize: 10, fontWeight: 600, flexShrink: 0, color,
-                          backgroundColor: `${color}14`,
-                          border: `1px solid ${color}33`,
-                          borderRadius: 5, padding: "2px 7px", whiteSpace: "nowrap",
-                        }}>
-                          {getStatusLabel(s.status)}
-                        </span>
-                      </div>
-
-                      {services && (
-                        <p style={{ fontSize: 11, color: "#52525B", margin: "6px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {services}
-                        </p>
-                      )}
-
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-                        <Car size={10} color="#3F3F46" />
-                        <span style={{ fontSize: 11, color: "#3F3F46" }}>
-                          {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · {s.vehicle.plate}
-                        </span>
-                      </div>
-
-                      {/* ── Badge do responsável ── */}
-                      <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0" }}>
-                        Com: {s.employee?.name ?? "Proprietário"}
-                      </p>
-
-                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#A1A1AA" }}>
-                          {formatCurrency(s.totalPrice)}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+                {[...daySchedules]
+                  .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+                  .map(s => (
+                    <ScheduleCard key={s.id} s={s} onClick={() => setModalSchedule(s)} />
+                  ))}
               </div>
             )}
 
             {/* Footer */}
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #161616" }}>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #161616" }}>
               <button
-                className="ag-new-btn"
                 onClick={() => router.push("/dashboard/agendamentos")}
                 style={{
-                  width: "100%", height: 36,
-                  backgroundColor: "rgba(0,102,255,0.06)",
-                  border: "1px solid rgba(0,102,255,0.12)",
-                  color: "#0066FF", fontSize: 12, fontWeight: 600,
-                  borderRadius: 10, cursor: "pointer", transition: "background 0.2s",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  width: "100%", height: 34, borderRadius: 9,
+                  backgroundColor: "transparent",
+                  border: "1px solid #1F1F1F", color: "#52525B",
+                  fontSize: 12, fontWeight: 500, cursor: "pointer",
                   fontFamily: "inherit",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  transition: "all 0.15s",
                 }}
+                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#2A2A2A" }}
+                onMouseLeave={e => { e.currentTarget.style.color = "#52525B"; e.currentTarget.style.borderColor = "#1F1F1F" }}
               >
-                <Plus size={13} />
-                Novo agendamento
+                Ver todos <ArrowRight size={12} />
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── MODAL ── */}
+      {modalSchedule && (
+        <DetailModal
+          schedule={modalSchedule}
+          onClose={() => setModalSchedule(null)}
+          onStatusChange={handleStatusChange}
+        />
+      )}
     </>
-  )
-}
-
-// ── Atomic helpers ────────────────────────────────────────────────────────────
-
-function NewAgBtn({ onClick }: { onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-        border: "none", borderRadius: 12, padding: "10px 18px",
-        color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
-        boxShadow: hov ? "0 8px 30px rgba(0,102,255,0.5)" : "0 4px 20px rgba(0,102,255,0.3)",
-        transform: hov ? "scale(1.02)" : "scale(1)",
-        transition: "all 0.2s", fontFamily: "inherit",
-      }}
-    >
-      <Plus size={15} /> Novo agendamento
-    </button>
   )
 }

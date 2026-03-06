@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react"
 import {
   Search, Crown, Plus, X,
   CheckCircle2, XCircle,
-  AlertCircle,
+  AlertCircle, Clock,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -14,6 +16,8 @@ interface Subscription {
   id: string
   status: "PENDING" | "ACTIVE" | "CANCELLED" | "EXPIRED"
   startedAt: string | null
+  expiresAt: string | null
+  daysToExpire: number | null
   createdAt: string
   customer: { id: string; name: string; phone: string; email: string | null }
   customerPlan: { id: string; name: string; price: number; discountPercent: number }
@@ -38,6 +42,7 @@ function getStatusConfig(status: string) {
     ACTIVE:    { label: "Ativo",      color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.2)"  },
     CANCELLED: { label: "Cancelado",  color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.2)"   },
     EXPIRED:   { label: "Expirado",   color: "#A1A1AA", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" },
+    EXPIRING:  { label: "⏳ Expirando", color: "#F97316", bg: "rgba(249,115,22,0.08)",  border: "rgba(249,115,22,0.2)"  },
   }
   return map[status] ?? map["EXPIRED"]
 }
@@ -163,6 +168,21 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AssinantesPage() {
+  const { planStatus } = useUser()
+
+  if (planStatus && planStatus.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Assinantes"
+        description="Gerencie assinaturas de clientes, ative ou cancele planos recorrentes e acompanhe a receita previsível."
+      />
+    )
+  }
+
+  return <AssinantesContent />
+}
+
+function AssinantesContent() {
   const [subscriptions,  setSubscriptions]  = useState<Subscription[]>([])
   const [plans,          setPlans]          = useState<PlanOption[]>([])
   const [customers,      setCustomers]      = useState<CustomerOption[]>([])
@@ -190,7 +210,9 @@ export default function AssinantesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const params = filterStatus ? `?status=${filterStatus}` : ""
+      // "EXPIRING" is a frontend-only pseudo-filter (active + ≤7 days)
+      const apiStatus = filterStatus && filterStatus !== "EXPIRING" ? filterStatus : ""
+      const params = apiStatus ? `?status=${apiStatus}` : ""
       const [subsRes, plansRes, customersRes] = await Promise.all([
         apiGet<{ subscriptions: Subscription[] }>(`/customer-plans/subscriptions${params}`),
         apiGet<{ plans: PlanOption[] }>("/customer-plans"),
@@ -256,18 +278,28 @@ export default function AssinantesPage() {
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const filtered = subscriptions.filter((s) => {
-    if (!searchQuery) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      s.customer.name.toLowerCase().includes(q) ||
-      s.customer.phone.includes(q) ||
-      s.customerPlan.name.toLowerCase().includes(q)
-    )
+    // Status filter
+    if (filterStatus === "EXPIRING") {
+      if (!(s.status === "ACTIVE" && s.daysToExpire !== null && s.daysToExpire <= 7)) return false
+    } else if (filterStatus && s.status !== filterStatus) {
+      return false
+    }
+    // Text search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      return (
+        s.customer.name.toLowerCase().includes(q) ||
+        s.customer.phone.includes(q) ||
+        s.customerPlan.name.toLowerCase().includes(q)
+      )
+    }
+    return true
   })
 
   const countActive    = subscriptions.filter((s) => s.status === "ACTIVE").length
   const countPending   = subscriptions.filter((s) => s.status === "PENDING").length
   const countCancelled = subscriptions.filter((s) => s.status === "CANCELLED").length
+  const countExpiring  = subscriptions.filter((s) => s.status === "ACTIVE" && s.daysToExpire !== null && s.daysToExpire <= 7).length
 
   const selectedCustomerObj = customers.find((c) => c.id === formCustomerId)
   const selectedPlanObj     = plans.find((p) => p.id === formPlanId)
@@ -276,6 +308,7 @@ export default function AssinantesPage() {
     { value: "",          label: "Todos"     },
     { value: "ACTIVE",    label: "Ativo"     },
     { value: "PENDING",   label: "Pendente"  },
+    { value: "EXPIRING",  label: "⏳ Expirando" },
     { value: "CANCELLED", label: "Cancelado" },
     { value: "EXPIRED",   label: "Expirado"  },
   ]
@@ -397,13 +430,14 @@ export default function AssinantesPage() {
         {/* ── STATS ─────────────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(5, 1fr)",
           gap: isMobile ? 6 : 8,
           marginBottom: isMobile ? 12 : 16,
         }}>
           <StatCard label="Total"      value={subscriptions.length} color="#A1A1AA" bg="#111111"                  border="#1F1F1F"                   isMobile={isMobile} />
           <StatCard label="Ativos"     value={countActive}          color="#10B981" bg="rgba(16,185,129,0.06)"   border="rgba(16,185,129,0.2)"      isMobile={isMobile} />
           <StatCard label="Pendentes"  value={countPending}         color="#F59E0B" bg="rgba(245,158,11,0.06)"   border="rgba(245,158,11,0.2)"      isMobile={isMobile} />
+          <StatCard label="Expirando"  value={countExpiring}        color="#F97316" bg="rgba(249,115,22,0.06)"   border="rgba(249,115,22,0.2)"      isMobile={isMobile} />
           <StatCard label="Cancelados" value={countCancelled}       color="#EF4444" bg="rgba(239,68,68,0.06)"    border="rgba(239,68,68,0.2)"       isMobile={isMobile} />
         </div>
 
@@ -541,21 +575,37 @@ export default function AssinantesPage() {
                       <div style={{ marginTop: 3 }}>
                         <span style={{ fontSize: 11, color: "#52525B" }}>
                           Desde {formatDate(sub.startedAt ?? sub.createdAt)}
+                          {sub.expiresAt && (
+                            <> · Vence {formatDate(sub.expiresAt)}</>
+                          )}
                         </span>
                       </div>
                     </div>
 
-                    {/* Badge — sempre visível no topo direito */}
-                    <span style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: cfg.color, backgroundColor: cfg.bg,
-                      border: `1px solid ${cfg.border}`,
-                      borderRadius: 8, padding: "4px 10px",
-                      whiteSpace: "nowrap", flexShrink: 0,
-                      alignSelf: "flex-start",
-                    }}>
-                      {cfg.label}
-                    </span>
+                    {/* Badges: status + expiring soon */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0, alignSelf: "flex-start" }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: cfg.color, backgroundColor: cfg.bg,
+                        border: `1px solid ${cfg.border}`,
+                        borderRadius: 8, padding: "4px 10px",
+                        whiteSpace: "nowrap",
+                      }}>
+                        {cfg.label}
+                      </span>
+                      {sub.status === "ACTIVE" && sub.daysToExpire !== null && sub.daysToExpire <= 7 && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 600,
+                          color: "#F97316", backgroundColor: "rgba(249,115,22,0.08)",
+                          border: "1px solid rgba(249,115,22,0.2)",
+                          borderRadius: 6, padding: "3px 8px",
+                          whiteSpace: "nowrap",
+                          display: "flex", gap: 4, alignItems: "center",
+                        }}>
+                          <Clock size={10} /> {sub.daysToExpire === 0 ? "Expira hoje" : `${sub.daysToExpire}d restante${sub.daysToExpire > 1 ? "s" : ""}`}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* ── ACTIONS ── */}

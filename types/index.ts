@@ -27,7 +27,31 @@ export type PlanInterval = "MONTHLY" | "YEARLY"
 export type SubscriptionStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PENDING"
 
 /** Plano da Forbion (pago pelo dono) */
-export type BusinessPlan = "FREE" | "PRO"
+export type BusinessPlan = "FREE" | "BASIC" | "PRO"
+
+/** Status do plano retornado por /api/auth/me */
+export interface PlanStatus {
+  plan: BusinessPlan
+  isTrial: boolean
+  planExpiresAt: string | null
+  isExpired: boolean
+  /** Código detalhado de bloqueio (null se plano ativo) */
+  lockCode?: "PLAN_EXPIRED" | "NO_PLAN" | "BUSINESS_INACTIVE" | null
+  /** Total de agendamentos do negócio (para funil de upgrade) */
+  scheduleCount?: number
+  /** Total de clientes do negócio (para funil de upgrade) */
+  customerCount?: number
+}
+
+/** Dados de bloqueio da conta (plano inativo) */
+export interface AccountLock {
+  code: "PLAN_EXPIRED" | "NO_PLAN" | "BUSINESS_INACTIVE"
+  plan: BusinessPlan
+  isTrial: boolean
+  expiredAt: string | null
+  scheduleCount: number
+  customerCount: number
+}
 
 /** Role do usuário no sistema */
 export type UserRole = "OWNER" | "ADMIN" | "EMPLOYEE"
@@ -87,6 +111,8 @@ export interface Service {
   /** Preço em centavos */
   price: number
   durationMinutes: number
+  /** URL da imagem do serviço (UploadThing) */
+  imageUrl?: string
   isActive: boolean
   createdAt: string
   updatedAt?: string
@@ -185,6 +211,19 @@ export interface CustomerPlan {
   _count?: {
     subscriptions: number
   }
+  /** Regras de desconto por serviço */
+  planServices?: PlanServiceRule[]
+}
+
+/** Regra de desconto por serviço dentro de um plano */
+export type DiscountType = "FREE" | "PERCENTAGE" | "FIXED"
+
+export interface PlanServiceRule {
+  serviceId:     string
+  discountType:  DiscountType
+  discountValue: number | null
+  maxUsages:     number | null
+  service?: { id: string; name: string; price: number }
 }
 
 /** Assinatura de um cliente em um plano */
@@ -244,6 +283,8 @@ export interface PublicBusiness {
   coverImage?: string
   city?: string
   state?: string
+  /** Plano Forbion do negócio (FREE | BASIC | PRO) */
+  plan?: BusinessPlan
   services: Service[]
   hours: BusinessHours[]
   plans?: CustomerPlan[]

@@ -1,10 +1,24 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { setCustomerToken } from "@/lib/customer-auth"
 
 export default function CustomerAuthCallback() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+        <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <p style={{ fontSize: 14, color: "#52525B" }}>Autenticando...</p>
+      </div>
+    }>
+      <CustomerAuthCallbackContent />
+    </Suspense>
+  )
+}
+
+function CustomerAuthCallbackContent() {
   const router = useRouter()
   const params = useParams()
   const search = useSearchParams()
@@ -36,8 +50,10 @@ export default function CustomerAuthCallback() {
       } catch { /* ignora */ }
     }
 
-    // Redirect personalizado
-    const redirect = search.get("redirect")
+    // Redirect personalizado (via query param ou localStorage)
+    const redirect = search.get("redirect") || localStorage.getItem("forbion_login_redirect")
+    if (redirect) localStorage.removeItem("forbion_login_redirect")
+
     if (redirect === "planos") {
       router.replace(`/${slug}/cliente?tab=planos`)
       return

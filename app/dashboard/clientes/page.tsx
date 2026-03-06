@@ -91,6 +91,14 @@ export default function ClientesPage() {
   const [actionLoading,     setActionLoading]     = useState(false)
   const [formError,         setFormError]         = useState<string | null>(null)
   const [hoveredId,         setHoveredId]         = useState<string | null>(null)
+  const [isMobile,          setIsMobile]          = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   // Form — customer
   const [formName,  setFormName]  = useState("")
@@ -139,20 +147,20 @@ export default function ClientesPage() {
   }
 
   async function handleCreateCustomer() {
-    if (!formName.trim() || !formPhone.trim()) {
-      setFormError("Nome e telefone são obrigatórios."); return
-    }
+    // Apenas nome é obrigatório no fluxo manual. Telefone e e-mail são opcionais.
+    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
     setActionLoading(true)
     try {
       await apiPost("/customers", {
         name:  formName.trim(),
-        phone: formPhone.trim(),
+        phone: formPhone.trim() || undefined,
         email: formEmail.trim() || undefined,
       })
       closeModal()
       await fetchCustomers()
-    } catch {
-      setFormError("Erro ao criar cliente. Verifique os dados.")
+    } catch (e: unknown) {
+      // Mostra a mensagem retornada pelo backend (já tratada pelo axios interceptor)
+      setFormError(e instanceof Error ? e.message : "Erro ao criar cliente. Verifique os dados.")
     } finally {
       setActionLoading(false)
     }
@@ -160,20 +168,18 @@ export default function ClientesPage() {
 
   async function handleEditCustomer() {
     if (!selectedCustomer) return
-    if (!formName.trim() || !formPhone.trim()) {
-      setFormError("Nome e telefone são obrigatórios."); return
-    }
+    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
     setActionLoading(true)
     try {
       await apiPut(`/customers/${selectedCustomer.id}`, {
         name:  formName.trim(),
-        phone: formPhone.trim(),
+        phone: formPhone.trim() || undefined,
         email: formEmail.trim() || undefined,
       })
       closeModal()
       await fetchCustomers()
-    } catch {
-      setFormError("Erro ao atualizar cliente.")
+    } catch (e: unknown) {
+      setFormError(e instanceof Error ? e.message : "Erro ao atualizar cliente.")
     } finally {
       setActionLoading(false)
     }
@@ -245,6 +251,7 @@ export default function ClientesPage() {
         style={{
           maxWidth:   1280,
           margin:     "0 auto",
+          padding:    isMobile ? "16px 14px" : undefined,
           animation:  "fadePage 0.35s ease both",
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         }}
@@ -257,14 +264,15 @@ export default function ClientesPage() {
             justifyContent: "space-between",
             alignItems:     "flex-start",
             flexWrap:       "wrap",
-            gap:            16,
-            marginBottom:   32,
+            gap:            isMobile ? 12 : 16,
+            marginBottom:   isMobile ? 20 : 32,
+            flexDirection:  isMobile ? "column" : "row",
           }}
         >
           <div>
             <h1
               style={{
-                fontSize:      28,
+                fontSize:      isMobile ? 22 : 28,
                 fontWeight:    800,
                 color:         "#ffffff",
                 margin:        0,
@@ -292,10 +300,11 @@ export default function ClientesPage() {
             marginBottom: 20,
             flexWrap:    "wrap",
             alignItems:  "center",
+            flexDirection: isMobile ? "column" : "row",
           }}
         >
           {/* Search */}
-          <div style={{ flex: 1, minWidth: 240, position: "relative" }}>
+          <div style={{ flex: 1, minWidth: isMobile ? "100%" : 240, position: "relative", width: isMobile ? "100%" : undefined }}>
             <Search
               size={14}
               color="#52525B"
@@ -425,10 +434,11 @@ export default function ClientesPage() {
                     backgroundColor: "#111111",
                     border:          `1px solid ${hov ? "#252525" : "#1F1F1F"}`,
                     borderRadius:    16,
-                    padding:         "14px 18px",
+                    padding:         isMobile ? "14px 14px" : "14px 18px",
                     display:         "flex",
-                    alignItems:      "center",
-                    gap:             14,
+                    alignItems:      isMobile ? "flex-start" : "center",
+                    flexDirection:   isMobile ? "column" : "row",
+                    gap:             isMobile ? 12 : 14,
                     cursor:          "default",
                     transform:       hov ? "translateY(-1px)" : "translateY(0)",
                     boxShadow:       hov ? "0 8px 24px rgba(0,0,0,0.25)" : "none",
@@ -584,7 +594,7 @@ export default function ClientesPage() {
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0, width: isMobile ? "100%" : undefined, justifyContent: isMobile ? "flex-end" : undefined }}>
                     <IconBtn
                       title="Adicionar veículo"
                       bg="rgba(0,102,255,0.08)"
@@ -658,10 +668,12 @@ export default function ClientesPage() {
               transform:       "translate(-50%,-50%)",
               backgroundColor: "#111111",
               border:          "1px solid #1F1F1F",
-              borderRadius:    20,
-              padding:         28,
-              width:           "100%",
+              borderRadius:    isMobile ? 16 : 20,
+              padding:         isMobile ? 20 : 28,
+              width:           isMobile ? "calc(100% - 32px)" : "100%",
               maxWidth:        440,
+              maxHeight:       "90vh",
+              overflowY:       "auto",
               zIndex:          101,
               boxShadow:       "0 32px 64px rgba(0,0,0,0.7)",
               animation:       "slideUpModal 0.3s cubic-bezier(0.16,1,0.3,1)",
@@ -689,7 +701,7 @@ export default function ClientesPage() {
                 {/* Fields */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <FieldInput label="Nome completo" value={formName} onChange={setFormName} placeholder="João da Silva" required />
-                  <FieldInput label="Telefone" value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-0000" required />
+                  <FieldInput label="Telefone" value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-0000" />
                   <FieldInput label="E-mail" value={formEmail} onChange={setFormEmail} placeholder="cliente@email.com (opcional)" />
                 </div>
 
@@ -740,12 +752,12 @@ export default function ClientesPage() {
                     required
                   />
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                     <FieldInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand} placeholder="Honda" required />
                     <FieldInput label="Modelo" value={vehicleModel} onChange={setVehicleModel} placeholder="Civic" required />
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                     <FieldInput label="Cor" value={vehicleColor} onChange={setVehicleColor} placeholder="Prata" required />
 
                     {/* Type select */}

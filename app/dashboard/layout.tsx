@@ -1,19 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { isAuthenticated } from "@/lib/auth"
 import Sidebar from "@/components/layout/Sidebar"   // import direto, não barrel
 import Header from "@/components/layout/Header"
+import BillingLockScreen from "@/components/shared/BillingLockScreen"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const { loading } = useUser()
+  const router   = useRouter()
+  const pathname = usePathname()
+  const { loading, accountLock } = useUser()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -29,12 +31,13 @@ export default function DashboardLayout({
     }
   }, [loading, router])
 
+  // ── Loading spinner ─────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div
         style={{
           minHeight: "100vh",
-          backgroundColor: "#0A0A0A",
+          backgroundColor: "#09090B",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -48,6 +51,14 @@ export default function DashboardLayout({
         }} />
       </div>
     )
+  }
+
+  // ── Account locked — show BillingLockScreen ─────────────────────────────────
+  // Allow /dashboard/configuracoes through so the user can see plan info
+  const isConfigPage = pathname === "/dashboard/configuracoes"
+
+  if (accountLock && !isConfigPage) {
+    return <BillingLockScreen lock={accountLock} />
   }
 
   return (
