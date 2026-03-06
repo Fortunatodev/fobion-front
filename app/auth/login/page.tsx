@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { getToken, removeToken, setToken } from "@/lib/auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
@@ -344,9 +345,9 @@ function LoginContent() {
         {/* Rodapé */}
         <p style={{ fontSize: 11, color: "#52525B", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
           Ao entrar você concorda com os{" "}
-          <a href="/terms" style={{ color: "#71717A", textDecoration: "underline" }}>Termos de Serviço</a>
+          <Link href="/terms" style={{ color: "#71717A", textDecoration: "underline" }}>Termos de Serviço</Link>
           {" "}e{" "}
-          <a href="/privacy" style={{ color: "#71717A", textDecoration: "underline" }}>Política de Privacidade</a>
+          <Link href="/privacy" style={{ color: "#71717A", textDecoration: "underline" }}>Política de Privacidade</Link>
         </p>
       </div>
 
