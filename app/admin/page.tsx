@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import Link from "next/link"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -982,6 +983,18 @@ function AdminPageContent() {
         >
           + Nova Loja
         </button>
+
+        <Link
+          href="/admin/usuarios/novo"
+          style={{
+            padding: "9px 18px", background: "transparent", color: "#FAFAFA",
+            border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontWeight: 600, fontSize: 13,
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            fontFamily: "inherit", whiteSpace: "nowrap", textDecoration: "none",
+          }}
+        >
+          👤 Novo Usuário
+        </Link>
       </div>
 
       {/* ── Filter Pills ──────────────────────────────────────────────── */}
