@@ -86,7 +86,10 @@ function LoginContent() {
 
   const errorMessages: Record<string, string> = {
     auth_failed:      "Erro na autenticação. Tente novamente.",
+    auth_error:       "Erro na autenticação com Google. Tente novamente.",
     oauth_failed:     "Erro na autenticação com Google. Tente novamente.",
+    session_expired:  "Sessão expirada. Tente fazer login novamente.",
+    token_error:      "Erro ao gerar sessão. Tente novamente.",
     cancelled:        "Login cancelado. Tente novamente.",
     user_not_found:   "Usuário não encontrado.",
     account_disabled: "Conta desativada. Entre em contato com o suporte.",

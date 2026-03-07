@@ -41,8 +41,10 @@ function CustomerLoginContent() {
 
     // Mensagens de erro vindas do callback
     const error = searchParams.get("error")
-    if (error === "session_expired") setErrorMsg("Sua sessão expirou. Faça login novamente.")
-    if (error === "auth_failed")     setErrorMsg("Erro na autenticação. Tente novamente.")
+    if (error === "session_expired")       setErrorMsg("Sua sessão expirou. Faça login novamente.")
+    if (error === "auth_failed")            setErrorMsg("Erro na autenticação. Tente novamente.")
+    if (error === "customer_auth_failed")   setErrorMsg("Falha ao autenticar com o Google. Tente novamente.")
+    if (error === "server_error")           setErrorMsg("Erro interno. Tente novamente em instantes.")
 
     setChecked(true)
 
