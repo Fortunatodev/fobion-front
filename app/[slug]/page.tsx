@@ -149,14 +149,31 @@ export default function SlugPage() {
 
   useEffect(() => {
     if (!slug) return
-    fetch(`${API}/api/public/${slug}`)
-      .then(r => {
-        if (!r.ok) throw new Error("Loja não encontrada")
-        return r.json()
-      })
-      .then(d => setBusiness(d.business))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
+    let cancelled = false
+    async function load() {
+      try {
+        const r = await fetch(`${API}/api/public/${slug}`)
+        if (cancelled) return
+        if (r.status === 404) {
+          setError("Loja não encontrada.")
+          setLoading(false)
+          return
+        }
+        if (!r.ok) {
+          setError("Erro ao carregar loja. Tente novamente.")
+          setLoading(false)
+          return
+        }
+        const d = await r.json()
+        setBusiness(d.business)
+      } catch {
+        if (!cancelled) setError("Sem conexão com o servidor.")
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [slug])
 
   // ── Fetch active subscription when authenticated ──────────────────────────

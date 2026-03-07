@@ -68,18 +68,23 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("scroll", handler)
   }, [])
 
-  // ✅ CORRIGIDO: busca nome + avatar do dono no mesmo fetch
+  // ✅ CORRIGIDO: busca nome + avatar do dono no mesmo fetch, com error handling
   useEffect(() => {
     if (!slug) return
+    let cancelled = false
     fetch(`${API}/api/public/${slug}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) return null        // 404 ou 500 — usa slug como fallback
+        return r.json()
+      })
       .then((d) => {
+        if (cancelled || !d) return
         setBusinessName(d?.business?.name || slug)
-        // Ajuste o caminho conforme o que sua API retorna:
         setOwnerAvatarUrl(d?.business?.ownerAvatarUrl ?? d?.ownerAvatarUrl ?? null)
         setBusinessPlan(d?.business?.plan ?? null)
       })
-      .catch(() => setBusinessName(slug))
+      .catch(() => { if (!cancelled) setBusinessName(slug) })
+    return () => { cancelled = true }
   }, [slug])
 
   const handleLogout = useCallback(() => {
