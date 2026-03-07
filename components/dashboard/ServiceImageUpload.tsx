@@ -1,25 +1,52 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { useUploadThing } from "@/lib/uploadthing"
 import { Upload, X, ImageIcon, Loader2 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
-async function apiPut(path: string, body: unknown) {
+/** Upload via backend route POST /api/upload/service-image (multer + UTApi).
+ *  Mesma abordagem que já funciona no upload do avatar do proprietário. */
+async function uploadToBackend(file: File): Promise<string> {
   const token = typeof window !== "undefined"
     ? localStorage.getItem("forbion_token")
     : null
-  const res = await fetch(`${API}/api${path}`, {
+
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const res = await fetch(`${API}/api/upload/service-image`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as { error?: string }).error ?? "Falha no upload.")
+  }
+
+  const { url } = await res.json() as { url: string }
+  if (!url) throw new Error("Upload retornou URL vazia.")
+  return url
+}
+
+/** Persiste imageUrl no backend via PUT /api/services/:id */
+async function saveImageUrl(serviceId: string, imageUrl: string | null): Promise<void> {
+  const token = typeof window !== "undefined"
+    ? localStorage.getItem("forbion_token")
+    : null
+
+  const res = await fetch(`${API}/api/services/${serviceId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ imageUrl }),
   })
-  if (!res.ok) throw new Error("Erro ao salvar imagem")
-  return res.json()
+
+  if (!res.ok) throw new Error("Erro ao salvar imagem no serviço.")
 }
 
 interface Props {
@@ -39,38 +66,33 @@ export default function ServiceImageUpload({
   const [hovered,   setHovered]   = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const { startUpload } = useUploadThing("serviceImage")
-
   const handleFile = async (file: File) => {
+    if (file.size > 4 * 1024 * 1024) {
+      setError("Imagem muito grande. Máximo 4MB.")
+      return
+    }
+
     setError(null)
     setUploading(true)
 
-    // Preview local imediato
+    // Preview local imediato (base64) enquanto o upload acontece
     const reader = new FileReader()
     reader.onload = () => setPreview(reader.result as string)
     reader.readAsDataURL(file)
 
     try {
-      const res = await startUpload([file])
-      
-      const uploaded = res?.[0]
-      // Tenta todas as propriedades possíveis dependendo da versão
-      const url = uploaded?.ufsUrl 
-               ?? (uploaded as Record<string, string> | undefined)?.url 
-               ?? (uploaded as Record<string, string> | undefined)?.fileUrl
-               ?? (uploaded as Record<string, string> | undefined)?.appUrl
+      const url = await uploadToBackend(file)
 
-      if (!url) throw new Error("Upload falhou — nenhuma URL retornada")
-
-      // Atualiza preview com URL real (não mais base64)
+      // Atualiza preview com URL real
       setPreview(url)
 
-      // Salva no backend
-      await apiPut(`/services/${serviceId}`, { imageUrl: url })
+      // Persiste no backend
+      await saveImageUrl(serviceId, url)
       onUploadComplete(url)
     } catch (e) {
-      console.error("[UploadThing] erro:", e)
-      setError("Erro no upload. Tente novamente.")
+      console.error("[ServiceImageUpload] erro:", e)
+      setError(e instanceof Error ? e.message : "Erro no upload. Tente novamente.")
+      // Reverte preview para o original
       setPreview(currentImageUrl)
     } finally {
       setUploading(false)
@@ -79,18 +101,20 @@ export default function ServiceImageUpload({
 
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    const prev = preview
     setPreview(null)
     try {
-      await apiPut(`/services/${serviceId}`, { imageUrl: null })
+      await saveImageUrl(serviceId, null)
       onUploadComplete("")
     } catch {
       setError("Erro ao remover imagem.")
+      setPreview(prev) // reverte
     }
   }
 
   return (
     <div>
-      <style>{`@keyframes ut-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes svc-spin { to { transform: rotate(360deg); } }`}</style>
 
       <label style={{
         fontSize: 12, fontWeight: 500, color: "#A1A1AA",
@@ -191,7 +215,7 @@ export default function ServiceImageUpload({
             <Loader2
               size={24}
               color="#0066FF"
-              style={{ animation: "ut-spin 0.7s linear infinite" }}
+              style={{ animation: "svc-spin 0.7s linear infinite" }}
             />
             <span style={{ fontSize: 13, color: "#A1A1AA" }}>
               Enviando imagem...

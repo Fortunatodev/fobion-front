@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.googleusercontent.com",
       },
+      {
+        // UploadThing CDN (ufsUrl retornado pelo backend)
+        protocol: "https",
+        hostname: "utfs.io",
+      },
+      {
+        // UploadThing US/EU CDN alternativo
+        protocol: "https",
+        hostname: "*.ufs.sh",
+      },
     ],
   },
 };
