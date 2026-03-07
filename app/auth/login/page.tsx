@@ -26,11 +26,12 @@ export default function LoginPage() {
 function LoginContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const [loading,    setLoading] = useState(false)
-  const [error,      setError]   = useState<string | null>(null)
-  const [email,      setEmail]   = useState("")
-  const [password,   setPassword] = useState("")
-  const [showPass,   setShowPass] = useState(false)
+  const [loading,    setLoading]       = useState(false)
+  const [error,      setError]         = useState<string | null>(null)
+  const [email,      setEmail]         = useState("")
+  const [password,   setPassword]      = useState("")
+  const [showPass,   setShowPass]      = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
 
   // Roda UMA única vez — dependências vazias obrigatório
   useEffect(() => {
@@ -231,17 +232,40 @@ function LoginContent() {
               )}
             </button>
 
-            {/* Divisor */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
+            {/* Divisor + toggle */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0 0" }}>
               <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
-              <span style={{ fontSize: 12, color: "#3F3F46", whiteSpace: "nowrap" }}>ou entre com e-mail</span>
+              <button
+                type="button"
+                onClick={() => { setShowEmailForm(v => !v); setError(null) }}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 12, color: "#3F3F46", whiteSpace: "nowrap",
+                  padding: "0 4px", fontFamily: "inherit",
+                  textDecoration: "underline", textUnderlineOffset: 3,
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#71717A" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#3F3F46" }}
+              >
+                {showEmailForm ? "← Voltar" : "Entrar com e-mail e senha"}
+              </button>
               <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
             </div>
           </>
         )}
 
-        {/* ── Formulário e-mail / senha ── */}
-        <form onSubmit={handleEmailLogin} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* ── Formulário e-mail / senha (colapsável) ── */}
+        {(!ENABLE_GOOGLE_LOGIN || showEmailForm) && (
+          <>
+            {!ENABLE_GOOGLE_LOGIN && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
+                <span style={{ fontSize: 12, color: "#3F3F46", whiteSpace: "nowrap" }}>entre com e-mail</span>
+                <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
+              </div>
+            )}
+        <form onSubmit={handleEmailLogin} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
           <div>
             <label style={{ display: "block", fontSize: 12, color: "#71717A", marginBottom: 6, fontWeight: 500 }}>
               E-mail
@@ -344,6 +368,8 @@ function LoginContent() {
             )}
           </button>
         </form>
+          </>
+        )}
 
         {/* Rodapé */}
         <p style={{ fontSize: 11, color: "#52525B", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
