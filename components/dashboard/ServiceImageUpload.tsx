@@ -50,7 +50,7 @@ async function saveImageUrl(serviceId: string, imageUrl: string | null): Promise
 }
 
 interface Props {
-  serviceId: string
+  serviceId: string       // passa "" (string vazia) no modo criar — sem PUT após upload
   currentImageUrl: string | null
   onUploadComplete: (url: string) => void
 }
@@ -86,8 +86,10 @@ export default function ServiceImageUpload({
       // Atualiza preview com URL real
       setPreview(url)
 
-      // Persiste no backend
-      await saveImageUrl(serviceId, url)
+      // Persiste no backend apenas se já existe um serviceId (modo edição)
+      if (serviceId) {
+        await saveImageUrl(serviceId, url)
+      }
       onUploadComplete(url)
     } catch (e) {
       console.error("[ServiceImageUpload] erro:", e)
@@ -104,7 +106,10 @@ export default function ServiceImageUpload({
     const prev = preview
     setPreview(null)
     try {
-      await saveImageUrl(serviceId, null)
+      // Apenas persiste a remoção no backend se existe um serviço salvo
+      if (serviceId) {
+        await saveImageUrl(serviceId, null)
+      }
       onUploadComplete("")
     } catch {
       setError("Erro ao remover imagem.")

@@ -348,30 +348,20 @@ export default function ServicosPage() {
             </div>
 
             {/* Upload de imagem */}
-            {showModal === "edit" && selected ? (
-              <div style={{ marginBottom: 20 }}>
-                <ServiceImageUpload
-                  serviceId={selected.id}
-                  currentImageUrl={selected.imageUrl || null}
-                  onUploadComplete={url => {
-                    setFormImageUrl(url)
+            <div style={{ marginBottom: 20 }}>
+              <ServiceImageUpload
+                serviceId={showModal === "edit" && selected ? selected.id : ""}
+                currentImageUrl={formImageUrl || null}
+                onUploadComplete={url => {
+                  setFormImageUrl(url)
+                  if (showModal === "edit" && selected) {
                     setServices(prev => prev.map(sv =>
                       sv.id === selected.id ? { ...sv, imageUrl: url || null } : sv
                     ))
-                  }}
-                />
-              </div>
-            ) : (
-              <div style={{
-                backgroundColor: "rgba(245,158,11,0.06)",
-                border: "1px solid rgba(245,158,11,0.12)",
-                borderRadius: 10, padding: "10px 14px",
-                fontSize: 12, color: "#F59E0B",
-                marginBottom: 20,
-              }}>
-                💡 Crie o serviço primeiro, depois adicione a imagem editando-o.
-              </div>
-            )}
+                  }
+                }}
+              />
+            </div>
 
             {/* Campos */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
