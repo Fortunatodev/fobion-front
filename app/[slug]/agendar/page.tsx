@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle } from "lucide-react"
 import type { PublicBusiness, PlanServiceRule } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet } from "@/lib/customer-auth"
 
@@ -233,16 +233,18 @@ function AgendarContent() {
   useEffect(() => {
     if (!isCustomerAuthenticated()) return
     const payload = getCustomerPayload()
-    if (!payload) return
+    // Só prosseguir se o token é do tipo "customer" e pertence a este business
+    if (!payload || payload.type !== "customer") return
+    if (slug && payload.businessSlug && payload.businessSlug !== slug) return
     setIsLoggedIn(true)
     if (payload.name) setCustomerName(payload.name)
     // email + phone + subscriber status from /customer/me
     customerApiGet<{ customer: { email?: string; phone: string; subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
       .then(({ customer }) => {
-        if (customer.phone) setCustomerPhone(customer.phone)
-        if (customer.email) setCustomerEmail(customer.email)
+        if (customer?.phone) setCustomerPhone(customer.phone)
+        if (customer?.email) setCustomerEmail(customer.email)
         // Check for active subscription with per-service rules
-        const sub = customer.subscriptions?.find(s => s.status === "ACTIVE")
+        const sub = customer?.subscriptions?.find(s => s.status === "ACTIVE")
         if (sub?.customerPlan) {
           setActiveSub({
             planName: sub.customerPlan.name,
@@ -251,8 +253,12 @@ function AgendarContent() {
           })
         }
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {
+        // Token inválido ou customer não encontrado — limpar estado
+        setIsLoggedIn(false)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug])
 
   // ── fetchSlots — função estável com useCallback ───────────────────────────
   // ÚNICA definição — não duplicar abaixo
@@ -995,52 +1001,177 @@ function AgendarContent() {
             </div>
           )}
 
-          {/* ══════ STEP 3 ══════ */}
-          {step === 3 && (
-            <div style={{ animation: "fadeAg 0.25s ease", textAlign: "center", paddingTop: 48 }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: "50%",
-                background: "linear-gradient(135deg,#10B981,#059669)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                margin: "0 auto 20px",
-                boxShadow: "0 8px 32px rgba(16,185,129,0.3)",
-              }}>
-                <CheckCircle2 size={34} color="#fff" />
-              </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>
-                Agendamento confirmado! 🎉
-              </h2>
-              <p style={{ fontSize: 14, color: "#71717A", margin: "0 0 32px" }}>
-                Em breve você receberá uma confirmação.
-              </p>
+          {/* ══════ STEP 3 — CONFIRMAÇÃO ══════ */}
+          {step === 3 && (() => {
+            const displaySlot = confirmedSlot || selectedSlot
+            const displayDate = selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }) : ""
+            const displayDateShort = selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : ""
+            const finalPrice = hasAnyDiscount ? totalWithDiscount : totalSelected.price
+            const svcNames = selectedServices.map(s => s.name).join(", ")
+            const empName = showEmpStep
+              ? (selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? null)
+              : null
+            const hasPlans = business!.plans && business!.plans.length > 0 && !activeSub
+            const cheapestPlan = hasPlans
+              ? business!.plans!.reduce((min, p) => (p.price < min.price ? p : min), business!.plans![0])
+              : null
+            const ownerPhone = business!.phone?.replace(/\D/g, "") || ""
 
-              <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
-                borderRadius: 16, padding: "16px 20px", marginBottom: 24, textAlign: "left",
-              }}>
-                <SummaryRow label="Serviços" value={selectedServices.map(s => s.name).join(", ")} />
-                <SummaryRow label="Data" value={new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} />
-                <SummaryRow label="Horário" value={confirmedSlot || selectedSlot} />
-                <SummaryRow label="Valor" value={
-                  hasAnyDiscount
-                    ? formatCurrency(totalWithDiscount)
-                    : formatCurrency(totalSelected.price)
-                } />
-              </div>
+            return (
+              <div style={{ animation: "fadeAg 0.25s ease" }}>
 
-              <button
-                onClick={() => router.push(`/${slug}`)}
-                style={{
-                  width: "100%", height: 48, borderRadius: 14,
-                  background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
-                  border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
-                  cursor: "pointer", fontFamily: "inherit",
-                }}
-              >
-                Voltar para a loja
-              </button>
-            </div>
-          )}
+                {/* Ícone + título */}
+                <div style={{ textAlign: "center", paddingTop: 40, marginBottom: 24 }}>
+                  <div style={{
+                    width: 64, height: 64, borderRadius: "50%",
+                    background: `linear-gradient(135deg, ${theme}, #059669)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    margin: "0 auto 16px",
+                    boxShadow: `0 8px 32px rgba(${themeRgb}, 0.25)`,
+                  }}>
+                    <CheckCircle2 size={30} color="#fff" />
+                  </div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: "0 0 6px" }}>
+                    Agendamento confirmado
+                  </h2>
+                  <p style={{ fontSize: 13, color: "#71717A", margin: 0 }}>
+                    Tudo certo! Aqui está o resumo do seu agendamento.
+                  </p>
+                </div>
+
+                {/* Resumo */}
+                <div style={{
+                  backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                  borderRadius: 16, padding: "16px 20px", marginBottom: 16, textAlign: "left",
+                }}>
+                  <SummaryRow label="Serviços" value={svcNames} />
+                  <SummaryRow label="Data" value={displayDate} />
+                  <SummaryRow label="Horário" value={displaySlot} />
+                  {empName && <SummaryRow label="Profissional" value={empName} />}
+                  <SummaryRow label="Valor" value={formatCurrency(finalPrice)} />
+                  {business!.address && (
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, color: "#71717A", display: "flex", alignItems: "center", gap: 4 }}>
+                        <MapPin size={12} /> Local
+                      </span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business!.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 13, color: theme, fontWeight: 500, textAlign: "right", textDecoration: "none" }}
+                      >
+                        {business!.address}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* O que acontece agora */}
+                <div style={{
+                  backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                  borderRadius: 14, padding: "14px 16px", marginBottom: 16,
+                }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#52525B", margin: "0 0 10px", letterSpacing: "0.03em" }}>
+                    O QUE ACONTECE AGORA
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {customerEmail && (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Clock size={13} color={theme} />
+                        </div>
+                        <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Você receberá uma confirmação por e-mail</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Bell size={13} color={theme} />
+                      </div>
+                      <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Enviaremos um lembrete 24h antes do horário</span>
+                    </div>
+                    {business!.address && (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <MapPin size={13} color={theme} />
+                        </div>
+                        <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Compareça no endereço no horário marcado</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Botão WhatsApp — tirar dúvida */}
+                {ownerPhone && (
+                  <button
+                    onClick={() => {
+                      const msg = `Oi, acabei de agendar ${svcNames} pra ${displayDateShort} às ${displaySlot}. Tenho uma dúvida:`
+                      window.open(`https://api.whatsapp.com/send/?phone=55${ownerPhone}&text=${encodeURIComponent(msg)}`, "_blank")
+                    }}
+                    style={{
+                      width: "100%", height: 44, borderRadius: 12, fontSize: 13, fontWeight: 500,
+                      backgroundColor: "transparent",
+                      border: "1px solid #1F1F1F",
+                      color: "#A1A1AA", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      fontFamily: "inherit", transition: "all 0.15s", marginBottom: 12,
+                    }}
+                  >
+                    <MessageCircle size={15} color="#25D366" />
+                    Tirar dúvida via WhatsApp
+                  </button>
+                )}
+
+                {/* Sugestão de plano */}
+                {hasPlans && cheapestPlan && (
+                  <div style={{
+                    backgroundColor: "rgba(124,58,237,0.04)", border: "1px solid rgba(124,58,237,0.12)",
+                    borderRadius: 12, padding: "12px 16px", marginBottom: 16,
+                    display: "flex", alignItems: "center", gap: 12,
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: "rgba(124,58,237,0.1)",
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <Percent size={14} color="#7C3AED" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, color: "#D1D5DB", margin: "0 0 2px", fontWeight: 500 }}>
+                        Economize nas próximas visitas
+                      </p>
+                      <p style={{ fontSize: 11, color: "#71717A", margin: 0 }}>
+                        Planos a partir de {formatCurrency(cheapestPlan.price)}/mês com desconto em serviços
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => isLoggedIn ? router.push(`/${slug}/cliente?tab=planos`) : router.push(`/${slug}/login?redirect=planos`)}
+                      style={{
+                        fontSize: 11, fontWeight: 600, color: "#7C3AED",
+                        backgroundColor: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)",
+                        borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+                        fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
+                      }}
+                    >
+                      Ver planos
+                    </button>
+                  </div>
+                )}
+
+                {/* Voltar para a loja */}
+                <button
+                  onClick={() => router.push(`/${slug}`)}
+                  style={{
+                    width: "100%", height: 48, borderRadius: 14,
+                    background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
+                    border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Voltar para a loja
+                </button>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </>
