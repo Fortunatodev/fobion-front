@@ -12,6 +12,7 @@ import {
 import { apiGet, apiPut, apiPost } from "@/lib/api"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
+import { buildWhatsAppLink } from "@/lib/utils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -345,10 +346,11 @@ function NovoAgendamentoModal({
   isMobile: boolean; onClose: () => void; onSuccess: () => void
 }) {
   const { user } = useUser()
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
 
   // Business slug (needed for public endpoints)
   const [businessSlug, setBusinessSlug] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState("")
 
   // Services
   const [services,         setServices]         = useState<PublicService[]>([])
@@ -393,8 +395,9 @@ function NovoAgendamentoModal({
       setLoadingServices(true)
       try {
         // Fetch slug from /auth/me (includes business)
-        const meRes = await apiGet<{ user: { businessId: string }; business?: { slug: string } }>("/auth/me")
+        const meRes = await apiGet<{ user: { businessId: string }; business?: { slug: string; name?: string } }>("/auth/me")
         if (meRes.business?.slug) setBusinessSlug(meRes.business.slug)
+        if (meRes.business?.name) setBusinessName(meRes.business.name)
 
         const res = await apiGet<{ services: PublicService[] }>("/services")
         setServices(res.services ?? [])
@@ -574,7 +577,7 @@ function NovoAgendamentoModal({
         ),
       })
       onSuccess()
-      onClose()
+      setStep(4)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro ao criar agendamento."
       if (msg.includes("reservado") || msg.includes("conflito") || msg.includes("indisponível")) {
@@ -656,7 +659,7 @@ function NovoAgendamentoModal({
               Novo agendamento
             </h2>
             <p style={{ fontSize: 12, color: "#52525B", margin: "3px 0 0" }}>
-              {step === 1 ? "Escolha os serviços" : step === 2 ? "Escolha data e horário" : "Dados do cliente e veículo"}
+              {step === 1 ? "Escolha os serviços" : step === 2 ? "Escolha data e horário" : step === 3 ? "Dados do cliente e veículo" : "Confirmado"}
             </p>
           </div>
           <button onClick={onClose} style={{
@@ -669,7 +672,7 @@ function NovoAgendamentoModal({
         </div>
 
         {/* Steps */}
-        <div style={{
+        {step !== 4 && <div style={{
           display: "flex", padding: "0 20px",
           borderBottom: "1px solid #1A1A1A", flexShrink: 0,
         }}>
@@ -689,7 +692,7 @@ function NovoAgendamentoModal({
               {s.n}. {s.label}
             </button>
           ))}
-        </div>
+        </div>}
 
         {/* Body */}
         <div style={{ overflowY: "auto", flex: 1, padding: "18px 20px" }}>
@@ -1189,6 +1192,90 @@ function NovoAgendamentoModal({
               )}
             </div>
           )}
+
+          {/* ══════ STEP 4 — SUCESSO ══════ */}
+          {step === 4 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "24px 0" }}>
+
+              {/* Ícone de sucesso */}
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <CheckCircle2 size={28} color="#10B981" />
+              </div>
+
+              <div style={{ textAlign: "center" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>
+                  Agendamento criado
+                </h3>
+                <p style={{ fontSize: 13, color: "#52525B", margin: 0 }}>
+                  {selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} {selectedSlot && `às ${selectedSlot}`}
+                </p>
+              </div>
+
+              {/* Resumo */}
+              <div style={{
+                width: "100%", backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                borderRadius: 10, padding: "12px 14px",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: "#A1A1AA", fontWeight: 500 }}>{customerName || "Cliente"}</span>
+                  <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
+                </div>
+                <p style={{ fontSize: 12, color: "#52525B", margin: "4px 0 0" }}>
+                  {services.filter(s => selectedServices.includes(s.id)).map(s => s.name).join(", ")}
+                </p>
+                {showEmpStep && selectedEmployee && (
+                  <p style={{ fontSize: 12, color: "#3F3F46", margin: "4px 0 0" }}>
+                    Profissional: {selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? "—"}
+                  </p>
+                )}
+              </div>
+
+              {/* Botão WhatsApp */}
+              {(customerPhone.trim() || customerName.trim()) && (
+                <button
+                  onClick={() => {
+                    const phone = customerPhone.replace(/\D/g, "")
+                    const svcNames = services.filter(s => selectedServices.includes(s.id)).map(s => s.name).join(", ")
+                    const dateFormatted = selectedDate
+                      ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+                      : ""
+                    const msg = [
+                      `Olá${customerName ? ` ${customerName.split(" ")[0]}` : ""}! Seu agendamento foi confirmado:`,
+                      "",
+                      svcNames,
+                      `${dateFormatted} às ${selectedSlot}`,
+                      formatCurrency(totalPrice),
+                      "",
+                      `Te esperamos!${businessName ? ` — ${businessName}` : ""}`,
+                    ].join("\n")
+
+                    const url = phone
+                      ? buildWhatsAppLink(`55${phone}`, msg)
+                      : buildWhatsAppLink("", msg)
+                    window.open(url, "_blank")
+                  }}
+                  style={{
+                    width: "100%", height: 44, borderRadius: 10, fontSize: 13, fontWeight: 600,
+                    background: "linear-gradient(135deg, #25D366, #128C7E)",
+                    border: "none", color: "#fff", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    fontFamily: "inherit", transition: "opacity 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = "0.9")}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                  Enviar confirmação via WhatsApp
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -1253,7 +1340,7 @@ function NovoAgendamentoModal({
                 Continuar →
               </button>
             </>
-          ) : (
+          ) : step === 3 ? (
             <>
               <button onClick={() => setStep(2)} style={{
                 flex: 1, height: 42, backgroundColor: "#161616",
@@ -1275,6 +1362,16 @@ function NovoAgendamentoModal({
                 {submitting ? <><Spinner size={14} color="white" /> Criando...</> : <><CheckCircle2 size={14} /> Criar agendamento</>}
               </button>
             </>
+          ) : (
+            <button onClick={onClose} style={{
+              flex: 1, height: 42,
+              background: "linear-gradient(135deg,#0066FF,#7C3AED)",
+              border: "none", borderRadius: 10,
+              color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              fontFamily: "inherit",
+            }}>
+              Fechar
+            </button>
           )}
         </div>
       </div>
