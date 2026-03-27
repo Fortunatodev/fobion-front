@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useAnimatedNumber, formatAnimatedCurrency } from "@/lib/useAnimatedNumber"
 import { useRouter } from "next/navigation"
 import {
   AlertCircle, BarChart3, Calendar,
@@ -62,21 +63,24 @@ function getStatusConfig(status: string) {
 // ── MetricCard ────────────────────────────────────────────────────────────────
 
 function MetricCard({
-  title, value, subtitle, icon,
+  title, rawValue, isCurrency, subtitle, icon,
   iconColor, iconBg, accentColor, loading,
 }: {
-  title: string; value: string; subtitle: string
+  title: string; rawValue: number; isCurrency?: boolean; subtitle: string
   icon: React.ReactNode; iconColor: string; iconBg: string
   accentColor: string; loading: boolean
 }) {
+  const animated = useAnimatedNumber(loading ? 0 : rawValue, { duration: 1000 })
+  const display = isCurrency ? formatAnimatedCurrency(Math.round(animated)) : String(Math.round(animated))
   const [hov, setHov] = useState(false)
+
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         backgroundColor: "#111111",
-        border:    `1px solid ${hov ? accentColor + "50" : "#1F1F1F"}`,
+        border: `1px solid ${hov ? accentColor + "50" : "#1F1F1F"}`,
         borderRadius: 16,
         padding: 20,
         position: "relative",
@@ -100,7 +104,7 @@ function MetricCard({
               }} />
             ) : (
               <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>
-                {value}
+                {display}
               </span>
             )}
           </div>
@@ -120,13 +124,106 @@ function MetricCard({
         <ArrowUpRight size={11} color="#3F3F46" />
         <span style={{ fontSize: 11, color: "#3F3F46" }}>{subtitle}</span>
       </div>
-      {/* Glow */}
       <div style={{
         position: "absolute", bottom: -20, right: -20,
         width: 80, height: 80, borderRadius: "50%",
         background: `${accentColor}08`, filter: "blur(20px)",
         pointerEvents: "none",
       }} />
+    </div>
+  )
+}
+
+// ── SummaryCardGrid (PRO — animated) ──────────────────────────────────────────
+
+function MiniMetric({ icon, iconColor, label, rawValue, isCurrency, sub, delay }: {
+  icon: React.ReactNode; iconColor: string; label: string
+  rawValue: number; isCurrency?: boolean; sub?: React.ReactNode; delay?: number
+}) {
+  const animated = useAnimatedNumber(rawValue, { duration: 1000, delay: delay ?? 0 })
+  const display = isCurrency ? formatAnimatedCurrency(Math.round(animated)) : String(Math.round(animated))
+
+  return (
+    <div style={{
+      backgroundColor: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: 10, padding: "10px 12px",
+      transition: "border-color 0.2s",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: 5,
+          background: `linear-gradient(135deg, ${iconColor}25, ${iconColor}10)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: iconColor,
+        }}>
+          {icon}
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 500, color: "#6B7280" }}>{label}</span>
+      </div>
+      <p style={{ fontSize: 17, fontWeight: 700, color: "#F9FAFB", margin: 0, letterSpacing: "-0.3px" }}>
+        {display}
+      </p>
+      {sub && <div style={{ marginTop: 4 }}>{sub}</div>}
+    </div>
+  )
+}
+
+function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
+  const growthColor = summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444"
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <MiniMetric
+          icon={<CircleDollarSign size={11} />} iconColor="#10B981"
+          label="Faturamento" rawValue={summary.revenue} isCurrency delay={0}
+          sub={
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <TrendingUp size={10} color={growthColor} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: growthColor }}>
+                {summary.revenueGrowth >= 0 ? "+" : ""}{summary.revenueGrowth}%
+              </span>
+            </div>
+          }
+        />
+        <MiniMetric
+          icon={<Calendar size={11} />} iconColor="#3B82F6"
+          label="Concluidos" rawValue={summary.appointments} delay={100}
+          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>agendamentos</span>}
+        />
+        <MiniMetric
+          icon={<UserPlus size={11} />} iconColor="#F59E0B"
+          label="Novos clientes" rawValue={summary.newCustomers} delay={200}
+          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>no periodo</span>}
+        />
+        <MiniMetric
+          icon={<Star size={11} />} iconColor="#7C3AED"
+          label="Assinantes" rawValue={summary.activeSubscribers} delay={300}
+          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>ativos</span>}
+        />
+      </div>
+
+      {summary.topService && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          backgroundColor: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 10, padding: "8px 12px",
+        }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: 6,
+            background: "linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.05))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Crown size={11} color="#F59E0B" />
+          </div>
+          <span style={{ fontSize: 11, color: "#9CA3AF", flex: 1 }}>
+            Mais popular: <strong style={{ color: "#F9FAFB", fontWeight: 600 }}>{summary.topService.name}</strong>
+            <span style={{ color: "#4B5563" }}> ({summary.topService.count}x)</span>
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -267,29 +364,29 @@ export default function DashboardPage() {
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}
       <div className="metrics-grid">
         <MetricCard
-          title="Agendamentos hoje" value={schedulesToday.length.toString()}
+          title="Agendamentos hoje" rawValue={schedulesToday.length}
           subtitle="agendamentos neste dia"
           icon={<Calendar size={16} />}
           iconColor="#0066FF" iconBg="rgba(0,102,255,0.1)"
           accentColor="#0066FF" loading={loading}
         />
         <MetricCard
-          title="Receita paga hoje" value={formatCurrency(paidRevenue)}
-          subtitle="serviços confirmados como pagos"
+          title="Receita paga hoje" rawValue={paidRevenue} isCurrency
+          subtitle="servicos confirmados como pagos"
           icon={<CircleDollarSign size={16} />}
           iconColor="#10B981" iconBg="rgba(16,185,129,0.1)"
           accentColor="#10B981" loading={loading}
         />
         <MetricCard
-          title="Total de clientes" value={totalCustomers.toString()}
+          title="Total de clientes" rawValue={totalCustomers}
           subtitle="clientes cadastrados"
           icon={<Users size={16} />}
           iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)"
           accentColor="#F59E0B" loading={loading}
         />
         <MetricCard
-          title="Assinantes ativos" value={isPro ? activeSubscribers.toString() : "—"}
-          subtitle={isPro ? "planos ativos agora" : "disponível no plano PRO"}
+          title="Assinantes ativos" rawValue={isPro ? activeSubscribers : 0}
+          subtitle={isPro ? "planos ativos agora" : "disponivel no plano PRO"}
           icon={<Crown size={16} />}
           iconColor="#7C3AED" iconBg="rgba(124,58,237,0.1)"
           accentColor="#7C3AED" loading={loading}
@@ -412,16 +509,16 @@ export default function DashboardPage() {
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
-                  <h2 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
-                    📊 Resumo do mês
+                  <h2 style={{ fontSize: 14, fontWeight: 600, color: "#F9FAFB", margin: 0 }}>
+                    Resumo do mes
                   </h2>
-                  <p style={{ fontSize: 11, color: "#52525B", marginTop: 3 }}>
-                    Últimos 30 dias
+                  <p style={{ fontSize: 11, color: "#4B5563", marginTop: 3 }}>
+                    Ultimos 30 dias
                   </p>
                 </div>
                 <button
                   onClick={() => router.push("/dashboard/relatorios")}
-                  style={{ fontSize: 12, color: "#0066FF", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  style={{ fontSize: 12, color: "#0066FF", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
                 >
                   Ver completo →
                 </button>
@@ -439,86 +536,7 @@ export default function DashboardPage() {
               )}
 
               {!summaryLoading && summary && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {/* Mini metric rows */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{
-                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                      borderRadius: 10, padding: "10px 12px",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <CircleDollarSign size={12} color="#10B981" />
-                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Faturamento</span>
-                      </div>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
-                        {formatCurrency(summary.revenue)}
-                      </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 4 }}>
-                        <TrendingUp size={10} color={summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444"} />
-                        <span style={{ fontSize: 10, color: summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444" }}>
-                          {summary.revenueGrowth >= 0 ? "+" : ""}{summary.revenueGrowth}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{
-                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                      borderRadius: 10, padding: "10px 12px",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <Calendar size={12} color="#3B82F6" />
-                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Concluídos</span>
-                      </div>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
-                        {summary.appointments}
-                      </p>
-                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>agendamentos</span>
-                    </div>
-
-                    <div style={{
-                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                      borderRadius: 10, padding: "10px 12px",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <UserPlus size={12} color="#F59E0B" />
-                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Novos clientes</span>
-                      </div>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
-                        {summary.newCustomers}
-                      </p>
-                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>no período</span>
-                    </div>
-
-                    <div style={{
-                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                      borderRadius: 10, padding: "10px 12px",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <Star size={12} color="#7C3AED" />
-                        <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A" }}>Assinantes</span>
-                      </div>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
-                        {summary.activeSubscribers}
-                      </p>
-                      <span style={{ fontSize: 10, color: "#52525B", marginTop: 4, display: "block" }}>ativos</span>
-                    </div>
-                  </div>
-
-                  {/* Top service */}
-                  {summary.topService && (
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      backgroundColor: "#161616", border: "1px solid #1F1F1F",
-                      borderRadius: 10, padding: "8px 12px",
-                    }}>
-                      <span style={{ fontSize: 12 }}>🏆</span>
-                      <span style={{ fontSize: 11, color: "#A1A1AA", flex: 1 }}>
-                        Serviço mais popular: <strong style={{ color: "#fff" }}>{summary.topService.name}</strong>
-                        <span style={{ color: "#52525B" }}> ({summary.topService.count}x)</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <SummaryCardGrid summary={summary} />
               )}
 
               {!summaryLoading && !summary && (
