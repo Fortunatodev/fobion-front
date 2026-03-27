@@ -9,6 +9,11 @@ import {
   Activity, Repeat, ShieldCheck, Lightbulb, Clock,
   CreditCard, Banknote, QrCode,
 } from "lucide-react"
+import {
+  ResponsiveContainer, AreaChart as RArea, Area,
+  BarChart as RBar, Bar, XAxis, YAxis,
+  CartesianGrid, Tooltip as RTooltip,
+} from "recharts"
 import { apiGet } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
@@ -17,9 +22,9 @@ import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 type Period = "7d" | "30d" | "90d" | "12m"
 
-interface FaturamentoDia  { date: string; total: number }
+interface FaturamentoDia  { date: string; total: number; [key: string]: string | number }
 interface AgendamentoDia  { day: number; label: string; count: number }
-interface AgendamentoData { date: string; count: number }
+interface AgendamentoData { date: string; count: number; [key: string]: string | number }
 interface StatusCount     { status: string; count: number }
 interface ServicoPopular  { id: string; name: string; count: number; total: number }
 interface HourCount       { hour: number; count: number }
@@ -228,19 +233,16 @@ function ChartTooltip({ active, payload, label, formatValue, isCurrency }: any) 
 
 // ── Area Chart (Recharts) ─────────────────────────────────────────────────────
 
+type ChartDatum = { date: string } & { [key: string]: string | number }
+
 function AreaChartComponent({
   data, valueKey, color, formatValue, title, isMobile, height = 220,
 }: {
-  data: { date: string; [k: string]: number | string }[]
+  data: ChartDatum[]
   valueKey: string; color: string
   formatValue: (v: number) => string; title: string
   isMobile: boolean; height?: number
 }) {
-  const {
-    ResponsiveContainer, AreaChart: RArea, Area, XAxis, YAxis,
-    CartesianGrid, Tooltip: RTooltip,
-  } = require("recharts")
-
   const step = data.length > 60 ? Math.ceil(data.length / 60) : 1
   const sampled = data.filter((_, i) => i % step === 0)
 
@@ -295,16 +297,11 @@ function AreaChartComponent({
 function BarChartComponent({
   data, valueKey, color, formatValue, title, isMobile, height = 220,
 }: {
-  data: { date: string; [k: string]: number | string }[]
+  data: ChartDatum[]
   valueKey: string; color: string
   formatValue: (v: number) => string; title: string
   isMobile: boolean; height?: number
 }) {
-  const {
-    ResponsiveContainer, BarChart: RBar, Bar, XAxis, YAxis,
-    CartesianGrid, Tooltip: RTooltip,
-  } = require("recharts")
-
   const step = data.length > 60 ? Math.ceil(data.length / 45) : 1
   const sampled = data.filter((_, i) => i % step === 0)
 
@@ -358,16 +355,19 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
   const stroke = 20
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  let offset = 0
 
-  const slices = (data.length > 0 ? data : Object.keys(STATUS_CONFIG).map(s => ({ status: s, count: 0 }))).map(sc => {
-    const cfg = STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "#6B7280" }
-    const pct = total > 0 ? sc.count / total : 0
-    const dashLen = pct * circumference
-    const dashOffset = -offset
-    offset += dashLen
-    return { ...sc, ...cfg, pct, dashLen, dashOffset }
-  })
+  const slices = (() => {
+    const items = data.length > 0 ? data : Object.keys(STATUS_CONFIG).map(s => ({ status: s, count: 0 }))
+    let acc = 0
+    return items.map(sc => {
+      const cfg = STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "#6B7280" }
+      const pct = total > 0 ? sc.count / total : 0
+      const dashLen = pct * circumference
+      const dashOffset = -acc
+      acc += dashLen
+      return { ...sc, ...cfg, pct, dashLen, dashOffset }
+    })
+  })()
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
@@ -627,8 +627,8 @@ function PainelDeSaude() {
             <section>
               <SectionTitle icon={<BarChart2 size={14} color="#0066FF" />} text="Evolucao no Tempo" />
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-                <BarChartComponent data={data.agendamentosPorData as any} valueKey="count" color="#7C3AED" formatValue={(v: number) => `${v} agendamento${v !== 1 ? "s" : ""}`} title="Agendamentos por dia" isMobile={isMobile} />
-                <AreaChartComponent data={data.faturamentoPorDia as any} valueKey="total" color="#0066FF" formatValue={(v: number) => fmt(v)} title="Faturamento por dia" isMobile={isMobile} />
+                <BarChartComponent data={data.agendamentosPorData} valueKey="count" color="#7C3AED" formatValue={(v: number) => `${v} agendamento${v !== 1 ? "s" : ""}`} title="Agendamentos por dia" isMobile={isMobile} />
+                <AreaChartComponent data={data.faturamentoPorDia} valueKey="total" color="#0066FF" formatValue={(v: number) => fmt(v)} title="Faturamento por dia" isMobile={isMobile} />
               </div>
             </section>
 
