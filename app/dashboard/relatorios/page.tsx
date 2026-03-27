@@ -214,7 +214,10 @@ function SummaryCard({
 
 // ── Recharts custom tooltip ────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label, formatValue, isCurrency }: any) {
+function ChartTooltip({ active, payload, label, formatValue, isCurrency }: {
+  active?: boolean; payload?: Array<{ value?: number }>; label?: string
+  formatValue?: (v: number) => string; isCurrency?: boolean
+}) {
   if (!active || !payload?.length) return null
   const val = payload[0]?.value ?? 0
   return (
@@ -223,7 +226,7 @@ function ChartTooltip({ active, payload, label, formatValue, isCurrency }: any) 
       borderRadius: 10, padding: "10px 14px",
       boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
     }}>
-      <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>{fmtFull(label)}</p>
+      <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>{label ? fmtFull(label) : ""}</p>
       <p style={{ fontSize: 15, fontWeight: 700, color: "#F9FAFB", margin: "3px 0 0" }}>
         {formatValue ? formatValue(val) : isCurrency ? fmt(val) : val}
       </p>
@@ -356,18 +359,16 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
 
-  const slices = (() => {
-    const items = data.length > 0 ? data : Object.keys(STATUS_CONFIG).map(s => ({ status: s, count: 0 }))
-    let acc = 0
-    return items.map(sc => {
-      const cfg = STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "#6B7280" }
-      const pct = total > 0 ? sc.count / total : 0
-      const dashLen = pct * circumference
-      const dashOffset = -acc
-      acc += dashLen
-      return { ...sc, ...cfg, pct, dashLen, dashOffset }
-    })
-  })()
+  const items = data.length > 0 ? data : Object.keys(STATUS_CONFIG).map(s => ({ status: s, count: 0 }))
+  const dashLens = items.map(sc => (total > 0 ? sc.count / total : 0) * circumference)
+  const offsets = dashLens.map((_, i) => -dashLens.slice(0, i).reduce((a, b) => a + b, 0))
+  const slices = items.map((sc, i) => ({
+    ...sc,
+    ...(STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "#6B7280" }),
+    pct: total > 0 ? sc.count / total : 0,
+    dashLen: dashLens[i],
+    dashOffset: offsets[i],
+  }))
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
