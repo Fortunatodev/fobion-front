@@ -316,6 +316,27 @@ function CustomerSearch({ onSelect }: {
 
 // ── NovoAgendamentoModal ──────────────────────────────────────────────────────
 
+interface EmployeeOption {
+  id: string
+  name: string
+  avatarUrl: string | null
+  role?: string
+}
+
+interface SlotItem {
+  time: string
+  available: boolean
+}
+
+const MONTHS_PT   = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+const WEEKDAYS_PT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
+
+function isPastDate(dateStr: string): boolean {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const d = new Date(dateStr + "T00:00:00"); d.setHours(0,0,0,0)
+  return d < today
+}
+
 function NovoAgendamentoModal({
   isMobile,
   onClose,
@@ -324,19 +345,27 @@ function NovoAgendamentoModal({
   isMobile: boolean; onClose: () => void; onSuccess: () => void
 }) {
   const { user } = useUser()
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+
+  // Business slug (needed for public endpoints)
+  const [businessSlug, setBusinessSlug] = useState<string | null>(null)
 
   // Services
   const [services,         setServices]         = useState<PublicService[]>([])
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [loadingServices,  setLoadingServices]  = useState(true)
 
-  // Slots
-  const [scheduledDate, setScheduledDate] = useState(() => new Date().toISOString().split("T")[0])
-  const [scheduledTime, setScheduledTime] = useState("09:00")
-  const [availableSlots, setAvailableSlots] = useState<string[]>([])
-  const [loadingSlots,  setLoadingSlots]  = useState(false)
-  const [slotsError,    setSlotsError]    = useState<string | null>(null)
+  // Employees
+  const [employees,        setEmployees]        = useState<EmployeeOption[]>([])
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("owner")
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
+
+  // Calendar / Slots
+  const [calendarMonth,  setCalendarMonth]  = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [selectedDate,   setSelectedDate]   = useState("")
+  const [selectedSlot,   setSelectedSlot]   = useState("")
+  const [availableSlots, setAvailableSlots] = useState<SlotItem[]>([])
+  const [loadingSlots,   setLoadingSlots]   = useState(false)
 
   // Customer
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -344,9 +373,9 @@ function NovoAgendamentoModal({
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
 
-  // Vehicle — pode vir de um existente
-  const [existingVehicles,    setExistingVehicles]    = useState<CustomerResult["vehicles"]>([])
-  const [selectedVehicleId,   setSelectedVehicleId]   = useState<string | null>(null)
+  // Vehicle
+  const [existingVehicles,  setExistingVehicles]  = useState<CustomerResult["vehicles"]>([])
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
   const [vehiclePlate, setVehiclePlate] = useState("")
   const [vehicleBrand, setVehicleBrand] = useState("")
   const [vehicleModel, setVehicleModel] = useState("")
@@ -356,11 +385,17 @@ function NovoAgendamentoModal({
   const [submitting,  setSubmitting]  = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Load services
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
+  // ── Load business slug + services ────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       setLoadingServices(true)
       try {
+        // Fetch slug from /auth/me (includes business)
+        const meRes = await apiGet<{ user: { businessId: string }; business?: { slug: string } }>("/auth/me")
+        if (meRes.business?.slug) setBusinessSlug(meRes.business.slug)
+
         const res = await apiGet<{ services: PublicService[] }>("/services")
         setServices(res.services ?? [])
       } catch {
@@ -372,57 +407,101 @@ function NovoAgendamentoModal({
     load()
   }, [])
 
-  // Load slots when date or services change
+  // ── Load employees when slug is available ──────────────────────────────────
   useEffect(() => {
-    if (!scheduledDate || selectedServices.length === 0 || !user?.businessId) {
+    if (!businessSlug) return
+    setLoadingEmployees(true)
+    fetch(`${API}/api/public/${businessSlug}/employees`)
+      .then(r => r.json())
+      .then(d => {
+        const list: EmployeeOption[] = d.employees ?? []
+        setEmployees(list)
+        if (list.length === 0) setSelectedEmployee("owner")
+      })
+      .catch(() => setEmployees([]))
+      .finally(() => setLoadingEmployees(false))
+  }, [businessSlug, API])
+
+  // ── Fetch slots ────────────────────────────────────────────────────────────
+  const fetchSlots = useCallback(async (
+    date: string,
+    empId?: string,
+    svcIds?: string[]
+  ) => {
+    const employee = empId  ?? selectedEmployee
+    const svcs     = svcIds ?? selectedServices
+
+    if (!businessSlug || svcs.length === 0 || !date) {
       setAvailableSlots([])
-      setSlotsError(null)
       return
     }
-    async function loadSlots() {
-      setLoadingSlots(true)
-      setSlotsError(null)
-      try {
-        const params: Record<string, string> = {
-          date: scheduledDate,
-          businessId: user!.businessId,
-          serviceIds: selectedServices[0],
-        }
-        const res = await apiGet<{ date: string; slots: { time: string; available: boolean }[] }>(
-          "/schedules/available-slots", params
-        )
-        const freeSlots = (res.slots ?? []).filter(s => s.available).map(s => s.time)
-        setAvailableSlots(freeSlots)
-        if (freeSlots.length > 0) {
-          setScheduledTime(freeSlots[0])
-        }
-        if (freeSlots.length === 0) {
-          setSlotsError("Nenhum horário disponível para este serviço nesta data.")
-        }
-      } catch (err: unknown) {
-        console.warn("[loadSlots] erro:", err)
+
+    setLoadingSlots(true)
+    setSelectedSlot("")
+
+    const serviceParams = svcs.map(s => `serviceIds=${encodeURIComponent(s)}`).join("&")
+    const empParam =
+      employee === "owner" ? "" :
+      employee === "all"   ? "&employeeId=all" :
+                             `&employeeId=${encodeURIComponent(employee)}`
+
+    try {
+      const res = await fetch(
+        `${API}/api/public/${businessSlug}/slots?date=${date}&${serviceParams}${empParam}`
+      )
+      if (!res.ok) throw new Error("Erro ao buscar horários")
+      const data = await res.json()
+      const raw: unknown = data.slots
+
+      if (!Array.isArray(raw)) { setAvailableSlots([]); return }
+
+      if (raw.length === 0) {
         setAvailableSlots([])
-        setSlotsError("Não foi possível carregar os horários. Você pode digitar manualmente.")
-      } finally {
-        setLoadingSlots(false)
+      } else if (typeof raw[0] === "string") {
+        setAvailableSlots((raw as string[]).map(t => ({ time: t, available: true })))
+      } else {
+        setAvailableSlots(raw as SlotItem[])
       }
+    } catch {
+      setAvailableSlots([])
+    } finally {
+      setLoadingSlots(false)
     }
-    loadSlots()
+  }, [businessSlug, selectedEmployee, selectedServices, API])
+
+  // Refetch when employee or services change (keeping date)
+  useEffect(() => {
+    if (selectedDate && selectedServices.length > 0) {
+      fetchSlots(selectedDate)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scheduledDate, selectedServices, user?.businessId])
+  }, [selectedEmployee, selectedServices])
+
+  function handleSelectDate(dateStr: string) {
+    if (isPastDate(dateStr)) return
+    setSelectedDate(dateStr)
+    setSelectedSlot("")
+    fetchSlots(dateStr)
+  }
+
+  function handleSelectEmployee(empId: string) {
+    setSelectedEmployee(empId)
+    setSelectedSlot("")
+    setSelectedDate("")
+    setAvailableSlots([])
+  }
 
   function toggleService(id: string) {
     setSelectedServices((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id])
   }
 
-  // Preenche campos ao selecionar cliente existente
+  // ── Customer helpers ─────────────────────────────────────────────────────────
   function handleSelectCustomer(c: CustomerResult) {
     setSelectedCustomerId(c.id)
     setCustomerName(c.name)
     setCustomerPhone(c.phone)
     setCustomerEmail(c.email ?? "")
     setExistingVehicles(c.vehicles)
-    // auto-seleciona o primeiro veículo se houver apenas um
     if (c.vehicles.length === 1) {
       fillVehicle(c.vehicles[0])
       setSelectedVehicleId(c.vehicles[0].id)
@@ -453,11 +532,12 @@ function NovoAgendamentoModal({
     clearVehicle()
   }
 
+  // ── Submit ───────────────────────────────────────────────────────────────────
   async function handleSubmit() {
     setSubmitError(null)
     if (selectedServices.length === 0) { setSubmitError("Selecione pelo menos um serviço."); return }
+    if (!selectedDate || !selectedSlot) { setSubmitError("Selecione data e horário."); return }
     if (!customerName.trim()) { setSubmitError("Nome do cliente é obrigatório."); return }
-    // Telefone e e-mail são opcionais
     if (selectedVehicleId === null) {
       if (!vehicleModel.trim()) { setSubmitError("Modelo do veículo é obrigatório."); return }
       if (!vehicleColor.trim()) { setSubmitError("Cor do veículo é obrigatória."); return }
@@ -465,15 +545,15 @@ function NovoAgendamentoModal({
 
     setSubmitting(true)
     try {
-      // ✅ Construir scheduledAt como UTC — igual ao fluxo público
-      const [y, m, d] = scheduledDate.split("-").map(Number)
-      const [hh, mm]  = scheduledTime.split(":").map(Number)
+      const [y, m, d] = selectedDate.split("-").map(Number)
+      const [hh, mm]  = selectedSlot.split(":").map(Number)
       const scheduledAt = new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).toISOString()
 
       await apiPost("/schedules", {
         businessId: user?.businessId,
         serviceIds: selectedServices,
         scheduledAt,
+        ...(selectedEmployee !== "owner" ? { employeeId: selectedEmployee } : {}),
         ...(selectedCustomerId
           ? { customerId: selectedCustomerId }
           : { customer: {
@@ -497,9 +577,11 @@ function NovoAgendamentoModal({
       onClose()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro ao criar agendamento."
-      // Detecta conflito (mensagem vinda do backend)
       if (msg.includes("reservado") || msg.includes("conflito") || msg.includes("indisponível")) {
         setSubmitError("⚠️ " + msg)
+        // Refresh slots on conflict
+        setSelectedSlot("")
+        await fetchSlots(selectedDate)
       } else {
         setSubmitError(msg)
       }
@@ -512,15 +594,21 @@ function NovoAgendamentoModal({
     .filter((s) => selectedServices.includes(s.id))
     .reduce((a, s) => a + s.price, 0)
 
-  const inputStyle: React.CSSProperties = {
-    height: 40, backgroundColor: "#0D0D0D",
-    border: "1px solid #1F1F1F",
-    borderRadius: 9, padding: "0 12px",
-    fontSize: 13, color: "#fff", outline: "none",
-    fontFamily: "inherit", boxSizing: "border-box", width: "100%",
-  }
-
   const isCustomerLocked = !!selectedCustomerId
+  const showEmpStep = employees.length > 0
+
+  // Calendar rendering
+  const calYear  = calendarMonth.getFullYear()
+  const calMon   = calendarMonth.getMonth()
+  const firstDay = new Date(calYear, calMon, 1).getDay()
+  const totalDays = new Date(calYear, calMon + 1, 0).getDate()
+  const calCells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: totalDays }, (_, i) => i + 1),
+  ]
+  while (calCells.length % 7 !== 0) calCells.push(null)
+  const todayISO = new Date().toISOString().split("T")[0]
+  const daySize  = isMobile ? 32 : 36
 
   return (
     <>
@@ -546,7 +634,7 @@ function NovoAgendamentoModal({
         backgroundColor: "#111111",
         border: "1px solid #1F1F1F",
         borderRadius: isMobile ? "20px 20px 0 0" : 20,
-        width: isMobile ? "100%" : 520,
+        width: isMobile ? "100%" : 620,
         maxHeight: isMobile ? "92dvh" : "88vh",
         display: "flex", flexDirection: "column",
         zIndex: 101,
@@ -568,7 +656,7 @@ function NovoAgendamentoModal({
               Novo agendamento
             </h2>
             <p style={{ fontSize: 12, color: "#52525B", margin: "3px 0 0" }}>
-              {step === 1 ? "Serviços e horário" : "Dados do cliente e veículo"}
+              {step === 1 ? "Escolha os serviços" : step === 2 ? "Escolha data e horário" : "Dados do cliente e veículo"}
             </p>
           </div>
           <button onClick={onClose} style={{
@@ -585,10 +673,10 @@ function NovoAgendamentoModal({
           display: "flex", padding: "0 20px",
           borderBottom: "1px solid #1A1A1A", flexShrink: 0,
         }}>
-          {[{ n: 1, label: "Serviços" }, { n: 2, label: "Cliente" }].map((s) => (
+          {[{ n: 1, label: "Serviços" }, { n: 2, label: "Data e Horário" }, { n: 3, label: "Cliente" }].map((s) => (
             <button
               key={s.n}
-              onClick={() => s.n < step && setStep(s.n as 1 | 2)}
+              onClick={() => s.n < step && setStep(s.n as 1 | 2 | 3)}
               style={{
                 flex: 1, padding: "10px 0", background: "none",
                 border: "none", cursor: s.n < step ? "pointer" : "default",
@@ -606,7 +694,7 @@ function NovoAgendamentoModal({
         {/* Body */}
         <div style={{ overflowY: "auto", flex: 1, padding: "18px 20px" }}>
 
-          {/* ── STEP 1 ── */}
+          {/* ══════ STEP 1 — SERVIÇOS ══════ */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
@@ -647,9 +735,14 @@ function NovoAgendamentoModal({
                             }}>
                               {sel && <CheckCircle2 size={11} color="white" />}
                             </div>
-                            <span style={{ fontSize: 13, color: "#fff", fontWeight: sel ? 600 : 400 }}>
-                              {svc.name}
-                            </span>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                              <span style={{ fontSize: 13, color: "#fff", fontWeight: sel ? 600 : 400 }}>
+                                {svc.name}
+                              </span>
+                              <span style={{ fontSize: 11, color: "#52525B" }}>
+                                {svc.durationMinutes}min
+                              </span>
+                            </div>
                           </div>
                           <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600 }}>
                             {formatCurrency(svc.price)}
@@ -676,46 +769,6 @@ function NovoAgendamentoModal({
                 )}
               </div>
 
-              {/* Data e horário */}
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
-                  DATA E HORÁRIO
-                </p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <FInput label="Data" type="date" value={scheduledDate} onChange={setScheduledDate} required />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>
-                      Horário <span style={{ color: "#EF4444" }}>*</span>
-                    </label>
-                    {loadingSlots ? (
-                      <div style={{
-                        ...inputStyle, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        color: "#52525B", fontSize: 12,
-                      }}>
-                        <Spinner size={12} color="#52525B" /> Carregando horários...
-                      </div>
-                    ) : availableSlots.length > 0 ? (
-                      <div style={{ position: "relative" }}>
-                        <select value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)}
-                          style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none", paddingRight: 32, cursor: "pointer" }}>
-                          {availableSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-                        </select>
-                        <ChevronDown size={14} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#52525B", pointerEvents: "none" }} />
-                      </div>
-                    ) : (
-                      <div style={{ position: "relative" }}>
-                        <input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} style={inputStyle} />
-                      </div>
-                    )}
-                    {slotsError && !loadingSlots && (
-                      <p style={{ fontSize: 11, color: "#F59E0B", margin: "4px 0 0", lineHeight: 1.4 }}>
-                        {slotsError}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {submitError && (
                 <div style={{ backgroundColor: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 9, padding: "10px 13px", display: "flex", alignItems: "center", gap: 8 }}>
                   <AlertCircle size={14} color="#EF4444" style={{ flexShrink: 0 }} />
@@ -725,8 +778,226 @@ function NovoAgendamentoModal({
             </div>
           )}
 
-          {/* ── STEP 2 ── */}
+          {/* ══════ STEP 2 — DATA E HORÁRIO ══════ */}
           {step === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+              {/* ── Profissional ── */}
+              {showEmpStep && (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 10, letterSpacing: "0.04em" }}>
+                    PROFISSIONAL
+                  </p>
+                  {loadingEmployees ? (
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {[1,2,3].map(i => (
+                        <div key={i} style={{ width: 82, height: 90, borderRadius: 14, backgroundColor: "#161616", animation: `skeletonPulse 1.4s ease ${i*0.1}s infinite` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {/* Owner card */}
+                      {(employees.length === 0 || employees.every(e => e.role !== "OWNER")) && (
+                        <ModalEmployeeCard
+                          emp={{ id: "owner", name: "Proprietário", avatarUrl: null, role: "OWNER" }}
+                          selected={selectedEmployee === "owner"}
+                          onSelect={() => handleSelectEmployee("owner")}
+                        />
+                      )}
+                      {employees.map(emp => (
+                        <ModalEmployeeCard
+                          key={emp.id} emp={emp}
+                          selected={selectedEmployee === emp.id}
+                          onSelect={() => handleSelectEmployee(emp.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Calendário + Slots ── */}
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 10, letterSpacing: "0.04em" }}>
+                  DATA E HORÁRIO
+                </p>
+
+                <div style={isMobile ? {} : {
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)",
+                  gap: 16, alignItems: "start",
+                }}>
+
+                  {/* Calendar */}
+                  <div style={{
+                    backgroundColor: "#0D0D0D", border: "1px solid #1F1F1F",
+                    borderRadius: 14, padding: isMobile ? 12 : 14,
+                    marginBottom: isMobile ? 12 : 0,
+                  }}>
+                    {/* Month/year header */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <button
+                        onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n })}
+                        style={{
+                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "#161616",
+                          border: "1px solid #252525", color: "#A1A1AA",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}
+                      >
+                        <ChevronLeft size={13} />
+                      </button>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                        {MONTHS_PT[calMon]} {calYear}
+                      </span>
+                      <button
+                        onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n })}
+                        style={{
+                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "#161616",
+                          border: "1px solid #252525", color: "#A1A1AA",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}
+                      >
+                        <ChevronRight size={13} />
+                      </button>
+                    </div>
+
+                    {/* Weekday labels */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", marginBottom: 4 }}>
+                      {WEEKDAYS_PT.map(d => (
+                        <div key={d} style={{ textAlign: "center", fontSize: 10, color: "#52525B", fontWeight: 500, paddingBottom: 4 }}>
+                          {d.charAt(0)}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Day grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 3 }}>
+                      {calCells.map((day, i) => {
+                        if (!day) return <div key={i} style={{ height: daySize }} />
+                        const dStr = `${calYear}-${String(calMon+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`
+                        const past = isPastDate(dStr)
+                        const sel  = dStr === selectedDate
+                        const tod  = dStr === todayISO
+
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => !past && handleSelectDate(dStr)}
+                            disabled={past}
+                            style={{
+                              width: daySize, height: daySize,
+                              borderRadius: "50%",
+                              margin: "0 auto",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 12, fontWeight: sel || tod ? 600 : 400,
+                              border: tod && !sel ? "1px solid #0066FF" : "none",
+                              background: sel ? "#0066FF" : "transparent",
+                              color: past ? "#3F3F46" : sel ? "#fff" : tod ? "#0066FF" : "#D1D5DB",
+                              cursor: past ? "not-allowed" : "pointer",
+                              fontFamily: "inherit",
+                              transition: "all 0.12s",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {day}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Slots */}
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", margin: "0 0 8px" }}>
+                      {selectedDate
+                        ? `Horários — ${new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}`
+                        : "Selecione uma data"}
+                    </p>
+
+                    {!selectedDate && (
+                      <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                        Escolha um dia no calendário para ver os horários disponíveis.
+                      </p>
+                    )}
+
+                    {selectedDate && loadingSlots && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(70px,1fr))", gap: 6 }}>
+                        {Array.from({ length: 8 }).map((_, i) => (
+                          <div key={i} style={{
+                            height: 32, borderRadius: 8, backgroundColor: "#161616",
+                            animation: `skeletonPulse 1.4s ease ${i*0.05}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedDate && !loadingSlots && availableSlots.length === 0 && (
+                      <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                        Nenhum horário disponível. Tente outra data.
+                      </p>
+                    )}
+
+                    {selectedDate && !loadingSlots && availableSlots.length > 0 && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(70px,1fr))", gap: 6 }}>
+                        {availableSlots.map(slot => {
+                          const sel      = slot.time === selectedSlot
+                          const disabled = !slot.available
+                          return (
+                            <button
+                              key={slot.time}
+                              onClick={() => !disabled && setSelectedSlot(slot.time)}
+                              disabled={disabled}
+                              title={disabled ? "Horário indisponível" : undefined}
+                              style={{
+                                height: 32, borderRadius: 8, fontSize: 12, fontWeight: sel ? 700 : 500,
+                                background:  sel     ? "#0066FF" : disabled ? "#0D0D0D" : "#161616",
+                                border:      sel     ? "1px solid #0066FF" : disabled ? "1px solid #1A1A1A" : "1px solid #252525",
+                                color:       sel     ? "#fff"   : disabled ? "#3F3F46" : "#D1D5DB",
+                                opacity:     disabled ? 0.4     : 1,
+                                cursor:      disabled ? "not-allowed" : "pointer",
+                                pointerEvents: disabled ? "none" : "auto",
+                                fontFamily: "inherit",
+                                transition: "all 0.15s ease",
+                              }}
+                            >
+                              {slot.time}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {selectedDate && !loadingSlots && availableSlots.length > 0 &&
+                      availableSlots.every(s => !s.available) && (
+                      <p style={{ fontSize: 11, color: "#52525B", margin: "8px 0 0", textAlign: "center" }}>
+                        Nenhum horário disponível para este profissional neste dia.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected slot summary */}
+              {selectedDate && selectedSlot && (
+                <div style={{
+                  padding: "8px 12px",
+                  backgroundColor: "rgba(0,102,255,0.05)",
+                  border: "1px solid rgba(0,102,255,0.15)",
+                  borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <span style={{ fontSize: 12, color: "#71717A" }}>
+                    {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0066FF" }}>
+                    {selectedSlot}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════ STEP 3 — CLIENTE ══════ */}
+          {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* ── BUSCA CLIENTE ── */}
@@ -735,7 +1006,6 @@ function NovoAgendamentoModal({
                 borderRadius: 12, padding: "14px",
               }}>
                 {isCustomerLocked ? (
-                  /* Cliente selecionado — card resumo */
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
@@ -831,7 +1101,6 @@ function NovoAgendamentoModal({
                         </button>
                       )
                     })}
-                    {/* opção de novo veículo */}
                     <button onClick={() => { setSelectedVehicleId(null); clearVehicle() }} style={{
                       display: "flex", alignItems: "center", gap: 10,
                       padding: "10px 12px", borderRadius: 9, cursor: "pointer",
@@ -846,7 +1115,7 @@ function NovoAgendamentoModal({
                 </div>
               )}
 
-              {/* ── VEÍCULO campos ── (oculto se veículo existente selecionado) */}
+              {/* ── VEÍCULO campos ── */}
               {selectedVehicleId === null && (
                 <div>
                   <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
@@ -894,13 +1163,22 @@ function NovoAgendamentoModal({
                 borderRadius: 10, padding: "12px 14px",
               }}>
                 <p style={{ fontSize: 11, color: "#52525B", margin: "0 0 8px", letterSpacing: "0.04em" }}>RESUMO</p>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: "#71717A" }}>{scheduledDate} às {scheduledTime}</span>
-                  <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                    <span style={{ color: "#71717A" }}>
+                      {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às {selectedSlot}
+                    </span>
+                    <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                    {services.filter((s) => selectedServices.includes(s.id)).map((s) => s.name).join(", ") || "—"}
+                  </p>
+                  {showEmpStep && (
+                    <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                      Profissional: {selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? "—"}
+                    </p>
+                  )}
                 </div>
-                <p style={{ fontSize: 12, color: "#52525B", margin: "4px 0 0" }}>
-                  {services.filter((s) => selectedServices.includes(s.id)).map((s) => s.name).join(", ") || "—"}
-                </p>
               </div>
 
               {submitError && (
@@ -946,9 +1224,38 @@ function NovoAgendamentoModal({
                 Continuar →
               </button>
             </>
-          ) : (
+          ) : step === 2 ? (
             <>
               <button onClick={() => setStep(1)} style={{
+                flex: 1, height: 42, backgroundColor: "#161616",
+                border: "1px solid #252525", borderRadius: 10,
+                color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+              }}>
+                ← Voltar
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedDate || !selectedSlot) { setSubmitError("Selecione data e horário."); return }
+                  setSubmitError(null)
+                  setStep(3)
+                }}
+                disabled={!selectedDate || !selectedSlot}
+                style={{
+                  flex: 2, height: 42,
+                  background: selectedDate && selectedSlot ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "#1A1A1A",
+                  border: "none", borderRadius: 10,
+                  color: selectedDate && selectedSlot ? "white" : "#52525B",
+                  fontSize: 13, fontWeight: 600,
+                  cursor: selectedDate && selectedSlot ? "pointer" : "not-allowed",
+                  fontFamily: "inherit",
+                }}
+              >
+                Continuar →
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setStep(2)} style={{
                 flex: 1, height: 42, backgroundColor: "#161616",
                 border: "1px solid #252525", borderRadius: 10,
                 color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
@@ -972,6 +1279,70 @@ function NovoAgendamentoModal({
         </div>
       </div>
     </>
+  )
+}
+
+// ── ModalEmployeeCard ────────────────────────────────────────────────────────
+
+function ModalEmployeeCard({
+  emp, selected, onSelect,
+}: {
+  emp: EmployeeOption; selected: boolean; onSelect: () => void
+}) {
+  const initials = emp.name
+    .split(" ").filter(Boolean).slice(0,2).map(n => n[0].toUpperCase()).join("")
+
+  return (
+    <div
+      onClick={onSelect}
+      style={{
+        width: 82, padding: "10px 6px",
+        backgroundColor: selected ? "rgba(0,102,255,0.07)" : "#0D0D0D",
+        border: selected ? "1px solid rgba(0,102,255,0.4)" : "1px solid #1F1F1F",
+        borderRadius: 12, cursor: "pointer",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+        transition: "all 0.15s", flexShrink: 0,
+      }}
+    >
+      {emp.avatarUrl ? (
+        <img
+          src={emp.avatarUrl}
+          alt={emp.name}
+          style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover",
+            border: selected ? "2px solid #0066FF" : "2px solid #252525",
+          }}
+        />
+      ) : (
+        <div style={{
+          width: 38, height: 38, borderRadius: "50%",
+          background: selected
+            ? "linear-gradient(135deg, #0066FF, #0066FF99)"
+            : "linear-gradient(135deg,#252525,#1A1A1A)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, fontWeight: 700,
+          color: selected ? "#fff" : "#52525B",
+        }}>
+          {initials}
+        </div>
+      )}
+      <span style={{
+        fontSize: 10, fontWeight: 500, textAlign: "center", lineHeight: 1.3,
+        color: selected ? "#fff" : "#A1A1AA",
+        maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {emp.name}
+      </span>
+      {emp.role === "OWNER" && (
+        <span style={{
+          fontSize: 8, fontWeight: 600, color: "#0066FF",
+          backgroundColor: "rgba(0,102,255,0.12)",
+          borderRadius: 4, padding: "1px 4px", marginTop: -3,
+          lineHeight: 1.5,
+        }}>
+          Proprietário
+        </span>
+      )}
+    </div>
   )
 }
 

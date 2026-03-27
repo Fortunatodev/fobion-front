@@ -77,6 +77,17 @@ async function adminPatch<T>(path: string, body: object): Promise<T> {
   return res.json()
 }
 
+async function adminDelete(path: string): Promise<void> {
+  const res = await fetch(`${API}/api/admin${path}`, {
+    method: "DELETE",
+    headers: { "x-admin-token": getAdminToken() },
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error ?? `Erro ${res.status}`)
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
@@ -250,11 +261,13 @@ function MetricCard({ label, value, color, icon }: {
 
 // ── Business Card (Mobile) ────────────────────────────────────────────────────
 
-function BusinessCard({ biz, onEdit, onToggle, toggling }: {
+function BusinessCard({ biz, onEdit, onToggle, toggling, onDelete, deleting }: {
   biz: BusinessItem
   onEdit: () => void
   onToggle: () => void
   toggling: boolean
+  onDelete: () => void
+  deleting: boolean
 }) {
   return (
     <div style={{
@@ -320,6 +333,16 @@ function BusinessCard({ biz, onEdit, onToggle, toggling }: {
           fontFamily: "inherit", opacity: toggling ? 0.5 : 1,
         }}>
           {toggling ? "..." : biz.isActive ? "Desativar" : "Ativar"}
+        </button>
+        <button onClick={onDelete} disabled={deleting} className="admin-btn" style={{
+          flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 12, fontWeight: 600,
+          background: "rgba(239,68,68,0.06)",
+          border: "1px solid rgba(239,68,68,0.18)",
+          color: "#EF4444",
+          cursor: deleting ? "not-allowed" : "pointer",
+          fontFamily: "inherit", opacity: deleting ? 0.5 : 1,
+        }}>
+          {deleting ? "..." : "Excluir"}
         </button>
       </div>
     </div>
@@ -803,6 +826,7 @@ function AdminPageContent() {
 
   // Actions loading
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -863,6 +887,24 @@ function AdminPageContent() {
       // silent
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  // Delete business
+  async function handleDelete(biz: BusinessItem) {
+    const confirmed = window.confirm(
+      `Excluir a loja "${biz.name}"?\n\nEssa ação remove a loja e TODOS os dados vinculados (clientes, agendamentos, funcionários, etc.) permanentemente.\n\nEssa ação não pode ser desfeita.`
+    )
+    if (!confirmed) return
+
+    setDeletingId(biz.id)
+    try {
+      await adminDelete(`/businesses/${biz.id}`)
+      setBusinesses(prev => prev.filter(b => b.id !== biz.id))
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erro ao excluir loja.")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -1128,6 +1170,22 @@ function AdminPageContent() {
                           >
                             {togglingId === b.id ? "..." : b.isActive ? "Desativar" : "Ativar"}
                           </button>
+                          <button
+                            onClick={() => handleDelete(b)}
+                            disabled={deletingId === b.id}
+                            className="admin-btn"
+                            style={{
+                              padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                              background: "rgba(239,68,68,0.06)",
+                              border: "1px solid rgba(239,68,68,0.18)",
+                              color: "#EF4444",
+                              cursor: deletingId === b.id ? "not-allowed" : "pointer",
+                              fontFamily: "inherit", whiteSpace: "nowrap",
+                              opacity: deletingId === b.id ? 0.5 : 1,
+                            }}
+                          >
+                            {deletingId === b.id ? "Excluindo..." : "Excluir"}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1161,6 +1219,8 @@ function AdminPageContent() {
               onEdit={() => setEditBiz(b)}
               onToggle={() => handleToggleActive(b)}
               toggling={togglingId === b.id}
+              onDelete={() => handleDelete(b)}
+              deleting={deletingId === b.id}
             />
           ))}
         </div>
