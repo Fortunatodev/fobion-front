@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect } from "react"
-import { useRouter, useParams, useSearchParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { setCustomerToken } from "@/lib/customer-auth"
 
 export default function CustomerAuthCallback() {
@@ -19,7 +19,6 @@ export default function CustomerAuthCallback() {
 }
 
 function CustomerAuthCallbackContent() {
-  const router = useRouter()
   const params = useParams()
   const search = useSearchParams()
   const slug   = params.slug as string
@@ -29,7 +28,7 @@ function CustomerAuthCallbackContent() {
     const error = search.get("error")
 
     if (error || !token) {
-      router.replace(`/${slug}/login?error=auth_failed`)
+      window.location.replace(`/${slug}/login?error=auth_failed`)
       return
     }
 
@@ -44,7 +43,7 @@ function CustomerAuthCallbackContent() {
         const ids = JSON.parse(pending) as string[]
         if (Array.isArray(ids) && ids.length > 0) {
           const qs = ids.map((id) => `services=${id}`).join("&")
-          router.replace(`/${slug}/agendar?${qs}`)
+          window.location.replace(`/${slug}/agendar?${qs}`)
           return
         }
       } catch { /* ignora */ }
@@ -55,15 +54,15 @@ function CustomerAuthCallbackContent() {
     if (redirect) localStorage.removeItem("forbion_login_redirect")
 
     if (redirect === "planos") {
-      router.replace(`/${slug}/cliente?tab=planos`)
+      window.location.replace(`/${slug}/cliente?tab=planos`)
       return
     }
     if (redirect === "agendar") {
-      router.replace(`/${slug}/agendar`)
+      window.location.replace(`/${slug}/agendar`)
       return
     }
 
-    router.replace(`/${slug}/cliente`)
+    window.location.replace(`/${slug}/cliente`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

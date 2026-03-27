@@ -1,10 +1,10 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback, useReducer } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle } from "lucide-react"
 import type { PublicBusiness, PlanServiceRule } from "@/types"
-import { isCustomerAuthenticated, getCustomerPayload, customerApiGet } from "@/lib/customer-auth"
+import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
 
 type PublicService = PublicBusiness["services"][number]
 
@@ -189,6 +189,14 @@ function AgendarContent() {
   const [isMobile,      setIsMobile]      = useState(false)
   const [isLoggedIn,    setIsLoggedIn]    = useState(false)
   const [activeSub,     setActiveSub]     = useState<{ planName: string; discountPercent: number; planServices: PlanServiceRule[] } | null>(null)
+  const [authTick,      forceAuthRefresh] = useReducer((x: number) => x + 1, 0)
+
+  // ── Re-trigger pre-fill quando auth muda (pós-login redirect) ───────────
+  useEffect(() => {
+    const handler = () => forceAuthRefresh()
+    window.addEventListener(AUTH_CHANGE_EVENT, handler)
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, handler)
+  }, [])
 
   // ── Load business ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -258,7 +266,7 @@ function AgendarContent() {
         setIsLoggedIn(false)
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug])
+  }, [slug, authTick])
 
   // ── fetchSlots — função estável com useCallback ───────────────────────────
   // ÚNICA definição — não duplicar abaixo
@@ -809,7 +817,13 @@ function AgendarContent() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(80px,1fr))", gap: 8 }}>
                         {availableSlots.map(slot => {
                           const sel      = slot.time === selectedSlot
-                          const disabled = !slot.available
+                          // Desabilitar horários que já passaram pra hoje
+                          const isPastSlot = selectedDate === new Date().toISOString().split("T")[0] && (() => {
+                            const [h, m] = slot.time.split(":").map(Number)
+                            const now = new Date()
+                            return h * 60 + m <= now.getHours() * 60 + now.getMinutes()
+                          })()
+                          const disabled = !slot.available || isPastSlot
 
                           return (
                             <button
@@ -1011,7 +1025,7 @@ function AgendarContent() {
             const empName = showEmpStep
               ? (selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? null)
               : null
-            const hasPlans = business!.plans && business!.plans.length > 0 && !activeSub
+            const hasPlans = business!.plan === "PRO" && (business!.plans?.length ?? 0) > 0 && !activeSub
             const cheapestPlan = hasPlans
               ? business!.plans!.reduce((min, p) => (p.price < min.price ? p : min), business!.plans![0])
               : null
@@ -1144,7 +1158,7 @@ function AgendarContent() {
                       </p>
                     </div>
                     <button
-                      onClick={() => isLoggedIn ? router.push(`/${slug}/cliente?tab=planos`) : router.push(`/${slug}/login?redirect=planos`)}
+                      onClick={() => router.push(`/${slug}#planos`)}
                       style={{
                         fontSize: 11, fontWeight: 600, color: "#7C3AED",
                         backgroundColor: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)",

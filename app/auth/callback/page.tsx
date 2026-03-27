@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { setToken } from "@/lib/auth";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    localStorage.setItem("forbion_token", token);
+    setToken(token);
 
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -28,7 +29,7 @@ export default function AuthCallbackPage() {
         return res.json();
       })
       .then(() => {
-        router.replace("/dashboard");
+        window.location.replace("/dashboard");
       })
       .catch(() => {
         localStorage.removeItem("forbion_token");

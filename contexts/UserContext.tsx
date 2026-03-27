@@ -126,10 +126,12 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, router])
 
+  // Re-run loadUser on every route change (handles post-login redirect)
   useEffect(() => {
-    // Run once on mount — load user if token exists
     loadUser()
+  }, [pathname, loadUser])
 
+  useEffect(() => {
     // ── Listen for account lock events from the API interceptor ─────────
     function handleAccountLockEvent(e: Event) {
       const detail = (e as CustomEvent).detail
@@ -146,7 +148,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener(ACCOUNT_LOCK_EVENT, handleAccountLockEvent)
     return () => window.removeEventListener(ACCOUNT_LOCK_EVENT, handleAccountLockEvent)
-  }, []) // ← EMPTY DEPS — never re-runs automatically
+  }, [])
 
   const logout = useCallback(() => {
     removeToken()

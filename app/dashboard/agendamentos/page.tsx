@@ -944,7 +944,12 @@ function NovoAgendamentoModal({
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(70px,1fr))", gap: 6 }}>
                         {availableSlots.map(slot => {
                           const sel      = slot.time === selectedSlot
-                          const disabled = !slot.available
+                          const isPastSlot = selectedDate === new Date().toISOString().split("T")[0] && (() => {
+                            const [h, m] = slot.time.split(":").map(Number)
+                            const now = new Date()
+                            return h * 60 + m <= now.getHours() * 60 + now.getMinutes()
+                          })()
+                          const disabled = !slot.available || isPastSlot
                           return (
                             <button
                               key={slot.time}

@@ -6,6 +6,7 @@ import { Crown, Calendar, User, LogOut, AlertCircle, Percent, Clock, Pencil, Che
 import {
   removeCustomerToken,
   isCustomerAuthenticated,
+  getCustomerPayload,
   customerApiGet,
   customerApiPut,
 } from "@/lib/customer-auth"
@@ -120,6 +121,12 @@ function ClientAreaContent() {
   // ── Auth guard + tab inicial ─────────────────────────────────────────────
   useEffect(() => {
     if (!isCustomerAuthenticated()) {
+      router.replace(`/${slug}/login`)
+      return
+    }
+    const payload = getCustomerPayload()
+    if (payload?.businessSlug && payload.businessSlug !== slug) {
+      removeCustomerToken()
       router.replace(`/${slug}/login`)
       return
     }
