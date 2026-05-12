@@ -54,10 +54,10 @@ export async function middleware(request: NextRequest) {
 
   const SECRET = process.env.ADMIN_DASHBOARD_SECRET;
   if (!SECRET) {
-    // Mensagem genérica em produção — não revelar nomes de env vars para atacantes.
-    // O log do servidor (não exposto ao público) ainda registra o detalhe.
+    // 500 = erro do servidor (config faltante), não do cliente.
+    // Mensagem genérica pra não revelar nomes de env vars; detalhe só no log.
     console.error("[middleware] ADMIN_DASHBOARD_SECRET ausente — bloqueando /admin");
-    return new NextResponse("Acesso negado.", { status: 503 });
+    return new NextResponse("Erro interno.", { status: 500 });
   }
 
   const cookieValue = request.cookies.get("admin-session")?.value;
