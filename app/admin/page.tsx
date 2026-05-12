@@ -3,15 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-
-// ── Auth ──────────────────────────────────────────────────────────────────────
-
-function getAdminToken(): string {
-  if (typeof document === "undefined") return ""
-  const match = document.cookie.match(/(?:^|;\s*)admin-token=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : ""
-}
+// As chamadas vão para /api/admin/* (Next route handlers).
+// Esse proxy server-side valida o cookie httpOnly `admin-session` e injeta
+// o ADMIN_DASHBOARD_SECRET no header x-admin-token antes de bater no backend.
+// O browser NUNCA toca o secret.
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -41,9 +36,7 @@ interface CreateResult {
 // ── API helpers ───────────────────────────────────────────────────────────────
 
 async function adminGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}/api/admin${path}`, {
-    headers: { "x-admin-token": getAdminToken() },
-  })
+  const res = await fetch(`/api/admin${path}`)
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error ?? `Erro ${res.status}`)
@@ -52,9 +45,9 @@ async function adminGet<T>(path: string): Promise<T> {
 }
 
 async function adminPost<T>(path: string, body: object): Promise<T> {
-  const res = await fetch(`${API}/api/admin${path}`, {
+  const res = await fetch(`/api/admin${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-admin-token": getAdminToken() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -65,9 +58,9 @@ async function adminPost<T>(path: string, body: object): Promise<T> {
 }
 
 async function adminPatch<T>(path: string, body: object): Promise<T> {
-  const res = await fetch(`${API}/api/admin${path}`, {
+  const res = await fetch(`/api/admin${path}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", "x-admin-token": getAdminToken() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -78,10 +71,7 @@ async function adminPatch<T>(path: string, body: object): Promise<T> {
 }
 
 async function adminDelete(path: string): Promise<void> {
-  const res = await fetch(`${API}/api/admin${path}`, {
-    method: "DELETE",
-    headers: { "x-admin-token": getAdminToken() },
-  })
+  const res = await fetch(`/api/admin${path}`, { method: "DELETE" })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error ?? `Erro ${res.status}`)

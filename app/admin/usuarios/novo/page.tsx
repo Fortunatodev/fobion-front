@@ -5,16 +5,9 @@ import Link from "next/link"
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const API          = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.forbion.digital"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getAdminToken(): string {
-  if (typeof document === "undefined") return ""
-  const match = document.cookie.match(/(?:^|;\s*)admin-token=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : ""
-}
 
 function generatePassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#!"
@@ -90,11 +83,10 @@ export default function NovoUsuarioPage() {
     const phoneDigits = form.businessPhone.replace(/\D/g, "")
 
     try {
-      const res = await fetch(`${API}/api/auth/register-business`, {
+      const res = await fetch(`/api/admin/register-business`, {
         method:  "POST",
         headers: {
           "Content-Type":  "application/json",
-          "x-admin-token": getAdminToken(),
         },
         body: JSON.stringify({
           businessName:  form.businessName.trim(),

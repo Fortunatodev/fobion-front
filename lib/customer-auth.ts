@@ -132,3 +132,22 @@ export const customerApiPost = async <T>(path: string, body: unknown): Promise<T
   }
   return res.json() as Promise<T>
 }
+
+export const customerApiDelete = async <T>(path: string): Promise<T> => {
+  const token = getCustomerToken()
+  if (!token) throw new Error("Não autenticado")
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+  const res = await fetch(`${API}/api${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 401) {
+    removeCustomerToken()
+    throw new Error("Sessão expirada")
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error((err as Record<string, string>).message || "Erro na requisição")
+  }
+  return res.json() as Promise<T>
+}

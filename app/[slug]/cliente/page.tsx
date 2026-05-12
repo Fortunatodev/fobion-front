@@ -2,13 +2,15 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { Crown, Calendar, User, LogOut, AlertCircle, Percent, Clock, Pencil, Check } from "lucide-react"
+import { Crown, Calendar, User, LogOut, AlertCircle, Percent, Clock, Pencil, Check, CalendarCheck, X } from "lucide-react"
 import {
   removeCustomerToken,
   isCustomerAuthenticated,
   getCustomerPayload,
   customerApiGet,
   customerApiPut,
+  customerApiDelete,
+  getCustomerToken,
 } from "@/lib/customer-auth"
 import type { PlanServiceRule } from "@/types"
 
@@ -118,6 +120,12 @@ function ClientAreaContent() {
   const [saving,       setSaving]       = useState(false)
   const [saveMsg,      setSaveMsg]      = useState<{ type: "ok" | "err"; text: string } | null>(null)
 
+  // ── Google Calendar opt-in ───────────────────────────────────────────────
+  const [calConnected,  setCalConnected]  = useState<boolean | null>(null)  // null = ainda não carregou
+  const [calLoading,    setCalLoading]    = useState(false)
+  const [calMsg,        setCalMsg]        = useState<{ type: "ok" | "err"; text: string } | null>(null)
+  const [calBannerDismissed, setCalBannerDismissed] = useState(false)
+
   // ── Auth guard + tab inicial ─────────────────────────────────────────────
   useEffect(() => {
     if (!isCustomerAuthenticated()) {
@@ -216,6 +224,64 @@ function ClientAreaContent() {
     router.push(`/${slug}`)
   }
 
+  // ── Google Calendar: status + connect + disconnect ──────────────────────
+  const fetchCalStatus = useCallback(async () => {
+    if (!isCustomerAuthenticated()) return
+    try {
+      const res = await customerApiGet<{ connected: boolean }>("/customer/calendar/status")
+      setCalConnected(res.connected)
+    } catch {
+      // silently ignore (status optional)
+    }
+  }, [])
+
+  useEffect(() => { fetchCalStatus() }, [fetchCalStatus])
+
+  // Handle ?calendar=connected|error|needs_revoke from OAuth callback
+  useEffect(() => {
+    const cal = searchParams.get("calendar")
+    if (!cal) return
+    if (cal === "connected") {
+      setCalConnected(true)
+      setCalMsg({ type: "ok", text: "Google Calendar conectado! Próximos agendamentos vão aparecer na sua agenda automaticamente." })
+    } else if (cal === "error") {
+      setCalMsg({ type: "err", text: "Não foi possível conectar o Google Calendar. Tente novamente." })
+    } else if (cal === "needs_revoke") {
+      setCalMsg({ type: "err", text: "Você já autorizou antes — revogue o acesso em https://myaccount.google.com/permissions e tente de novo." })
+    }
+    // limpa o query param da URL pra não disparar de novo em refresh
+    router.replace(`/${slug}/cliente${tab !== "agendamentos" ? `?tab=${tab}` : ""}`)
+    setTimeout(() => setCalMsg(null), 6000)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  function handleConnectCalendar() {
+    const token = getCustomerToken()
+    if (!token) {
+      router.replace(`/${slug}/login`)
+      return
+    }
+    setCalLoading(true)
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+    // Redirect direto — backend manda pro Google OAuth com state assinado
+    window.location.href = `${API}/api/customer/calendar/connect?token=${encodeURIComponent(token)}`
+  }
+
+  async function handleDisconnectCalendar() {
+    if (!confirm("Desconectar Google Calendar? Os eventos já criados não serão removidos.")) return
+    setCalLoading(true)
+    try {
+      await customerApiDelete("/customer/calendar/disconnect")
+      setCalConnected(false)
+      setCalMsg({ type: "ok", text: "Google Calendar desconectado." })
+      setTimeout(() => setCalMsg(null), 4000)
+    } catch (e) {
+      setCalMsg({ type: "err", text: e instanceof Error ? e.message : "Erro ao desconectar." })
+    } finally {
+      setCalLoading(false)
+    }
+  }
+
   // ── Loading / error ──────────────────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
@@ -299,6 +365,170 @@ function ClientAreaContent() {
 
         {/* ── Conteúdo ── */}
         <main style={{ maxWidth: 720, margin: "0 auto", padding: "28px 20px 80px", animation: "fadeIn 0.25s ease" }}>
+
+          {/* ── Banner Google Calendar (opt-in, visível em todas as tabs) ── */}
+          {calConnected === false && !calBannerDismissed && (
+            <div
+              style={{
+                marginBottom: 20,
+                background: "linear-gradient(135deg, rgba(0,102,255,0.08), rgba(124,58,237,0.06))",
+                border: "1px solid rgba(0,102,255,0.18)",
+                borderRadius: 16,
+                padding: "16px 18px",
+                display: "flex",
+                gap: 14,
+                alignItems: "flex-start",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  background: `linear-gradient(135deg, ${themeColor}, #7C3AED)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  boxShadow: "0 4px 16px rgba(0,102,255,0.25)",
+                }}
+              >
+                <CalendarCheck size={20} color="#fff" />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0, lineHeight: 1.3 }}>
+                  Receba seus agendamentos no Google Calendar
+                </p>
+                <p style={{ fontSize: 12.5, color: "#A1A1AA", marginTop: 4, lineHeight: 1.5 }}>
+                  Conecte sua conta e cada agendamento que você fizer aqui aparece automaticamente
+                  na sua agenda, com lembrete antes do horário. Leva 10 segundos.
+                </p>
+                <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                  <button
+                    onClick={handleConnectCalendar}
+                    disabled={calLoading}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      height: 34,
+                      padding: "0 14px",
+                      borderRadius: 8,
+                      background: calLoading ? "#27272A" : `linear-gradient(135deg, ${themeColor}, #7C3AED)`,
+                      color: "#fff",
+                      border: "none",
+                      cursor: calLoading ? "wait" : "pointer",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      fontFamily: "inherit",
+                      transition: "transform 0.15s ease",
+                      boxShadow: calLoading ? "none" : "0 2px 8px rgba(0,102,255,0.3)",
+                    }}
+                  >
+                    <CalendarCheck size={14} />
+                    {calLoading ? "Abrindo..." : "Conectar Google Calendar"}
+                  </button>
+                  <button
+                    onClick={() => setCalBannerDismissed(true)}
+                    style={{
+                      height: 34,
+                      padding: "0 12px",
+                      borderRadius: 8,
+                      background: "transparent",
+                      color: "#71717A",
+                      border: "1px solid #27272A",
+                      cursor: "pointer",
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Agora não
+                  </button>
+                </div>
+              </div>
+
+              <button
+                aria-label="Fechar"
+                onClick={() => setCalBannerDismissed(true)}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: "#52525B",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* ── Badge quando já conectado (sutil, sem botão grande) ── */}
+          {calConnected === true && (
+            <div
+              style={{
+                marginBottom: 20,
+                background: "rgba(16,185,129,0.06)",
+                border: "1px solid rgba(16,185,129,0.18)",
+                borderRadius: 12,
+                padding: "10px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontSize: 12.5,
+              }}
+            >
+              <CalendarCheck size={16} color="#10B981" />
+              <span style={{ color: "#A1A1AA", flex: 1 }}>
+                <strong style={{ color: "#10B981" }}>Google Calendar conectado.</strong>{" "}
+                Seus agendamentos aparecem automaticamente na sua agenda.
+              </span>
+              <button
+                onClick={handleDisconnectCalendar}
+                disabled={calLoading}
+                style={{
+                  fontSize: 12,
+                  color: "#71717A",
+                  background: "transparent",
+                  border: "none",
+                  cursor: calLoading ? "wait" : "pointer",
+                  textDecoration: "underline",
+                  fontFamily: "inherit",
+                  padding: 0,
+                }}
+              >
+                Desconectar
+              </button>
+            </div>
+          )}
+
+          {/* ── Feedback message (success/error temporário) ── */}
+          {calMsg && (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "10px 14px",
+                borderRadius: 10,
+                background: calMsg.type === "ok" ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                border: `1px solid ${calMsg.type === "ok" ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
+                color: calMsg.type === "ok" ? "#10B981" : "#EF4444",
+                fontSize: 13,
+              }}
+            >
+              {calMsg.text}
+            </div>
+          )}
 
           {/* ═══ AGENDAMENTOS ═══ */}
           {tab === "agendamentos" && (
