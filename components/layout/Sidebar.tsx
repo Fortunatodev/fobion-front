@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X, Crown,
+  ChevronRight, UserCircle, Menu, X, Crown, Wallet,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
@@ -37,6 +37,7 @@ const navSections = [
       { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard   },
       { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck    },
       { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2    },
+      { href: "/dashboard/relatorios/repasses", label: "Repasses", icon: Wallet     },
     ],
   },
   {
@@ -56,6 +57,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
   function isActive(href: string) {
     if (href === "/dashboard") return pathname === "/dashboard"
+    // Itens com filhos (ex: /relatorios tem /relatorios/repasses) precisam
+    // de match exato — senão ambos ficam ativos quando estiver no filho.
+    if (href === "/dashboard/relatorios") return pathname === "/dashboard/relatorios"
     return pathname.startsWith(href)
   }
 
