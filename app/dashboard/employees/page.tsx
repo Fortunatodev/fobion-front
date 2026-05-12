@@ -2,7 +2,8 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2 } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent } from "lucide-react"
+import Link from "next/link"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
@@ -338,6 +339,13 @@ function EmployeesContent() {
                         <Calendar size={12} /> Vincular agenda
                       </button>
                     )}
+
+                    <Link
+                      href={`/dashboard/employees/${emp.id}/repasses`}
+                      style={{ flex: 1, minWidth: 80, height: 34, borderRadius: 8, border: "1px solid rgba(124,58,237,0.25)", backgroundColor: "transparent", color: "#A78BFA", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit", textDecoration: "none" }}
+                    >
+                      <Percent size={12} /> Repasses
+                    </Link>
 
                     <button
                       onClick={() => handleDeactivate(emp.id)}

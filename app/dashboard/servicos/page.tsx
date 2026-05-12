@@ -15,6 +15,7 @@ interface Service {
   durationMinutes: number
   isActive: boolean
   imageUrl?: string | null
+  commissionPercent?: number | null
   createdAt: string
 }
 
@@ -87,11 +88,12 @@ export default function ServicosPage() {
 
   // Form
   const [formName,     setFormName]     = useState("")
-  const [formDesc,     setFormDesc]     = useState("")
-  const [formPrice,    setFormPrice]    = useState("")
-  const [formDuration, setFormDuration] = useState("")
-  const [formActive,   setFormActive]   = useState(true)
-  const [formImageUrl, setFormImageUrl] = useState("")
+  const [formDesc,        setFormDesc]        = useState("")
+  const [formPrice,       setFormPrice]       = useState("")
+  const [formDuration,    setFormDuration]    = useState("")
+  const [formActive,      setFormActive]      = useState(true)
+  const [formImageUrl,    setFormImageUrl]    = useState("")
+  const [formCommissionPct, setFormCommissionPct] = useState("")  // string vazia = sem repasse default
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchServices = useCallback(async () => {
@@ -115,6 +117,7 @@ export default function ServicosPage() {
     setFormName(""); setFormDesc("")
     setFormPrice(""); setFormDuration("")
     setFormActive(true); setFormImageUrl("")
+    setFormCommissionPct("")
     setFormError(null)
     setShowModal("create")
   }
@@ -127,6 +130,7 @@ export default function ServicosPage() {
     setFormDuration(String(s.durationMinutes))
     setFormActive(s.isActive)
     setFormImageUrl(s.imageUrl || "")
+    setFormCommissionPct(s.commissionPercent != null ? String(s.commissionPercent) : "")
     setFormError(null)
     setShowModal("edit")
   }
@@ -152,6 +156,18 @@ export default function ServicosPage() {
     setSaving(true)
     setFormError(null)
     try {
+      // Repasse: vazio → null (sem default). Senão valida 0-100.
+      let commissionPercent: number | null = null
+      if (formCommissionPct.trim()) {
+        const pct = Number(formCommissionPct)
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+          setFormError("Repasse deve estar entre 0 e 100.")
+          setSaving(false)
+          return
+        }
+        commissionPercent = Math.round(pct)
+      }
+
       const body = {
         name:            formName.trim(),
         description:     formDesc.trim() || undefined,
@@ -159,6 +175,7 @@ export default function ServicosPage() {
         durationMinutes: Number(formDuration),
         isActive:        formActive,
         imageUrl:        formImageUrl || null,
+        commissionPercent,
       }
 
       if (showModal === "create") {
@@ -379,6 +396,52 @@ export default function ServicosPage() {
                   value={formDuration} onChange={setFormDuration}
                   placeholder="60"
                 />
+              </div>
+
+              {/* Repasse default ao funcionário ─────────────────────────── */}
+              <div style={{
+                background: "#0A0A0A", border: "1px solid #252525",
+                borderRadius: 10, padding: "12px 14px",
+                display: "flex", flexDirection: "column", gap: 8,
+              }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                      Repasse ao funcionário
+                    </p>
+                    <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                      % padrão que o funcionário recebe ao executar este serviço.
+                      Pode ser sobrescrito por exceção individual em cada funcionário.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={formCommissionPct}
+                    onChange={(e) => setFormCommissionPct(e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: 80, height: 36, padding: "0 10px",
+                      background: "#111", border: "1px solid #2A2A2A",
+                      borderRadius: 8, color: "#fff", fontSize: 13,
+                      outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                  <span style={{ color: "#71717A", fontSize: 13 }}>%</span>
+                  {formPrice && formCommissionPct && Number(formCommissionPct) > 0 && !isNaN(Number(formPrice)) && (
+                    <span style={{ marginLeft: 8, fontSize: 12, color: "#10B981" }}>
+                      = {formatCurrency(Math.floor(Number(formPrice) * 100 * Number(formCommissionPct) / 100))} por execução
+                    </span>
+                  )}
+                  {!formCommissionPct && (
+                    <span style={{ marginLeft: 8, fontSize: 12, color: "#52525B", fontStyle: "italic" }}>
+                      sem repasse
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Toggle ativo */}

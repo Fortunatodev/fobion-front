@@ -7,6 +7,7 @@ import {
   CreditCard,
   Crown,
   Settings,
+  Wallet,
   type LucideIcon,
 } from "lucide-react"
 
@@ -36,6 +37,7 @@ export const navGroups: NavGroup[] = [
       { label: "Serviços",     href: "/dashboard/servicos",     icon: Wrench },
       { label: "Planos",       href: "/dashboard/planos",       icon: CreditCard },
       { label: "Assinantes",   href: "/dashboard/assinantes",   icon: Crown },
+      { label: "Repasses",     href: "/dashboard/relatorios/repasses", icon: Wallet },
     ],
   },
   {
