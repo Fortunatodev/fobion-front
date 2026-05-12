@@ -1,19 +1,43 @@
 "use client"
 
-import Link from "next/link"
-import { AlertTriangle, Crown, MessageCircle } from "lucide-react"
+import { useState } from "react"
+import { AlertTriangle, Crown, MessageCircle, ArrowRight } from "lucide-react"
 import type { PlanStatus } from "@/types"
+import { apiGet } from "@/lib/api"
 
 /**
  * Full-page "plan expired" screen.
  * Shown when the dashboard is blocked because the plan/trial expired.
+ *
+ * CTA primário: assinar PRO via CactoPay (link global server-side).
+ * CTA secundário: WhatsApp para suporte humano.
  */
 export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) {
+  const [redirecting, setRedirecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const expiredDate = planStatus.planExpiresAt
     ? new Date(planStatus.planExpiresAt).toLocaleDateString("pt-BR")
     : null
 
   const planLabel = planStatus.plan === "PRO" ? "PRO" : "Basic"
+
+  async function handleSubscribe() {
+    setRedirecting(true)
+    setError(null)
+    try {
+      const res = await apiGet<{ paymentLink: string }>("/billing/payment-link")
+      if (res?.paymentLink) {
+        window.location.href = res.paymentLink
+        return
+      }
+      setError("Não foi possível abrir o checkout.")
+    } catch (err) {
+      setError((err as Error).message || "Erro ao abrir checkout.")
+    } finally {
+      setRedirecting(false)
+    }
+  }
 
   return (
     <div style={{
@@ -54,49 +78,58 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
             <>
               Seu teste gratuito do plano <strong style={{ color: "#fff" }}>{planLabel}</strong>{" "}
               {expiredDate ? <>terminou em <strong style={{ color: "#fff" }}>{expiredDate}</strong></> : "expirou"}.
-              Para continuar usando o dashboard, assine um plano.
+              Assine para continuar gerenciando seus agendamentos.
             </>
           ) : (
             <>
               Seu plano <strong style={{ color: "#fff" }}>{planLabel}</strong>{" "}
               {expiredDate ? <>expirou em <strong style={{ color: "#fff" }}>{expiredDate}</strong></> : "expirou"}.
-              Renove para continuar usando o dashboard.
+              Renove para voltar a usar o dashboard.
             </>
           )}
         </p>
 
         {/* CTA buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* PRIMARY: assinar PRO via CactoPay */}
+          <button
+            onClick={handleSubscribe}
+            disabled={redirecting}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "14px 24px", borderRadius: 12,
+              background: redirecting ? "#27272A" : "linear-gradient(135deg,#0066FF,#7C3AED)",
+              color: "#fff", fontSize: 15, fontWeight: 600,
+              border: "none", cursor: redirecting ? "wait" : "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <Crown size={18} />
+            {redirecting ? "Abrindo checkout..." : planStatus.isTrial ? "Assinar plano PRO" : "Renovar plano PRO"}
+            <ArrowRight size={16} />
+          </button>
+
+          {error && (
+            <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{error}</p>
+          )}
+
+          {/* SECONDARY: WhatsApp */}
           <a
-            href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20plano%20Forbion"
+            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20plano%20Forbion"
             target="_blank"
             rel="noopener noreferrer"
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "14px 24px", borderRadius: 12,
-              background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-              color: "#fff", fontSize: 15, fontWeight: 600,
-              textDecoration: "none", transition: "opacity 0.15s",
-            }}
-          >
-            <MessageCircle size={18} />
-            Falar com suporte
-          </a>
-
-          <Link
-            href="/dashboard/configuracoes?tab=plano"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "14px 24px", borderRadius: 12,
+              padding: "12px 24px", borderRadius: 12,
               backgroundColor: "#111113",
               border: "1px solid #1F1F1F",
               color: "#A1A1AA", fontSize: 14, fontWeight: 500,
               textDecoration: "none", transition: "all 0.15s",
             }}
           >
-            <Crown size={16} />
-            Ver planos
-          </Link>
+            <MessageCircle size={16} />
+            Precisa de ajuda? Fale no WhatsApp
+          </a>
         </div>
       </div>
     </div>

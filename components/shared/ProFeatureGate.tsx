@@ -70,7 +70,7 @@ export default function ProFeatureGate({
         {/* CTA */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <a
-            href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20PRO%20do%20Forbion"
+            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20PRO%20do%20Forbion"
             target="_blank"
             rel="noopener noreferrer"
             style={{

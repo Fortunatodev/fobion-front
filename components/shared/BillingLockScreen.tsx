@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import {
   Lock,
   Crown,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react"
 import type { AccountLock } from "@/types"
 import { useUser } from "@/contexts/UserContext"
+import { apiGet } from "@/lib/api"
 
 /* ─── Props ────────────────────────────────────────────────────────────────── */
 
@@ -44,11 +46,32 @@ function planLabel(plan: string): string {
 
 export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
   const { loadUser } = useUser()
+  const [redirecting, setRedirecting] = useState(false)
+  const [redirectError, setRedirectError] = useState<string | null>(null)
 
   const isNoPlan   = lock.code === "NO_PLAN"
   const isInactive = lock.code === "BUSINESS_INACTIVE"
   const isTrial    = lock.isTrial
   const hasStats   = lock.scheduleCount > 0 || lock.customerCount > 0
+
+  // Busca o link de checkout CactoPay e redireciona o usuário.
+  // Servidor decide se usa link custom do business ou o global (PRO padrão).
+  async function handleSubscribe() {
+    setRedirecting(true)
+    setRedirectError(null)
+    try {
+      const res = await apiGet<{ paymentLink: string }>("/billing/payment-link")
+      if (res?.paymentLink) {
+        window.location.href = res.paymentLink
+        return
+      }
+      setRedirectError("Não foi possível abrir o checkout. Tente novamente.")
+    } catch (err) {
+      setRedirectError((err as Error).message || "Erro ao abrir checkout.")
+    } finally {
+      setRedirecting(false)
+    }
+  }
 
   // ── Content variants ────────────────────────────────────────────────────
   let icon  = <Lock size={36} color="#EF4444" />
@@ -211,41 +234,54 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
 
         {/* ── CTA buttons ────────────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Primary: WhatsApp / Support */}
+          {/* PRIMARY: Subscribe via CactoPay (only for plan-related locks, not BUSINESS_INACTIVE) */}
+          {!isInactive && (
+            <button
+              onClick={handleSubscribe}
+              disabled={redirecting}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                padding: "15px 24px", borderRadius: 14,
+                background: redirecting
+                  ? "#27272A"
+                  : "linear-gradient(135deg, #0066FF, #7C3AED)",
+                color: "#fff", fontSize: 15, fontWeight: 700,
+                border: "none", cursor: redirecting ? "wait" : "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: redirecting ? "none" : "0 4px 20px rgba(0,102,255,0.25)",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={e => {
+                if (!redirecting) {
+                  e.currentTarget.style.transform = "translateY(-1px)"
+                  e.currentTarget.style.boxShadow = "0 6px 28px rgba(0,102,255,0.35)"
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "translateY(0)"
+                e.currentTarget.style.boxShadow = redirecting ? "none" : "0 4px 20px rgba(0,102,255,0.25)"
+              }}
+            >
+              <Crown size={18} />
+              {redirecting ? "Abrindo checkout..." : isNoPlan ? "Começar plano PRO" : "Renovar plano PRO"}
+              <ArrowRight size={16} />
+            </button>
+          )}
+
+          {redirectError && (
+            <p style={{ fontSize: 12, color: "#EF4444", textAlign: "center", margin: 0 }}>
+              {redirectError}
+            </p>
+          )}
+
+          {/* SECONDARY: WhatsApp / Support */}
           <a
-            href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20plano%20Forbion"
+            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20plano%20Forbion"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              padding: "15px 24px", borderRadius: 14,
-              background: "linear-gradient(135deg, #0066FF, #7C3AED)",
-              color: "#fff", fontSize: 15, fontWeight: 700,
-              textDecoration: "none",
-              transition: "all 0.2s ease",
-              boxShadow: "0 4px 20px rgba(0,102,255,0.25)",
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = "translateY(-1px)"
-              e.currentTarget.style.boxShadow = "0 6px 28px rgba(0,102,255,0.35)"
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "translateY(0)"
-              e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,102,255,0.25)"
-            }}
-          >
-            <MessageCircle size={18} />
-            {isInactive ? "Falar com suporte" : isNoPlan ? "Falar com vendas" : "Renovar agora via WhatsApp"}
-            <ArrowRight size={16} />
-          </a>
-
-          {/* Secondary: View plans (goes to configuracoes which is allowed) */}
-          {!isInactive && (
-          <Link
-            href="/dashboard/configuracoes?tab=plano"
-            style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "14px 24px", borderRadius: 14,
+              padding: "13px 24px", borderRadius: 14,
               backgroundColor: "#111113",
               border: "1px solid #27272A",
               color: "#A1A1AA", fontSize: 14, fontWeight: 600,
@@ -261,18 +297,17 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
               e.currentTarget.style.color = "#A1A1AA"
             }}
           >
-            <Crown size={16} />
-            Ver planos disponíveis
+            <MessageCircle size={16} />
+            {isInactive ? "Falar com suporte" : "Precisa de ajuda? WhatsApp"}
             <ChevronRight size={14} />
-          </Link>
-          )}
+          </a>
 
-          {/* Tertiary: Retry (check if plan was reactivated) */}
+          {/* TERTIARY: Retry (check if plan was reactivated) */}
           <button
             onClick={() => loadUser()}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "12px 24px", borderRadius: 14,
+              padding: "10px 24px", borderRadius: 14,
               background: "transparent", border: "none",
               color: "#52525B", fontSize: 13, fontWeight: 500,
               cursor: "pointer",
@@ -282,7 +317,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
             onMouseLeave={e => { e.currentTarget.style.color = "#52525B" }}
           >
             <RefreshCw size={14} />
-            Já renovei — verificar novamente
+            Já paguei — verificar novamente
           </button>
         </div>
 

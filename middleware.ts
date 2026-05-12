@@ -54,7 +54,10 @@ export async function middleware(request: NextRequest) {
 
   const SECRET = process.env.ADMIN_DASHBOARD_SECRET;
   if (!SECRET) {
-    return new NextResponse("Acesso negado: ADMIN_DASHBOARD_SECRET não configurado", { status: 503 });
+    // Mensagem genérica em produção — não revelar nomes de env vars para atacantes.
+    // O log do servidor (não exposto ao público) ainda registra o detalhe.
+    console.error("[middleware] ADMIN_DASHBOARD_SECRET ausente — bloqueando /admin");
+    return new NextResponse("Acesso negado.", { status: 503 });
   }
 
   const cookieValue = request.cookies.get("admin-session")?.value;
