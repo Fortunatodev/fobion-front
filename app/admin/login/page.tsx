@@ -19,14 +19,17 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError("")
 
-    // Verificar token chamando backend
+    // Validação server-side via API route do Next.
+    // Token é comparado com ADMIN_DASHBOARD_SECRET no servidor (server-only env)
+    // e o cookie httpOnly é setado direto na response — o client nunca toca o token.
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-      const res = await fetch(`${API}/api/admin/businesses`, {
-        headers: { "x-admin-token": token.trim() },
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token.trim() }),
       })
 
-      if (res.status === 403 || res.status === 401) {
+      if (res.status === 401) {
         setError("Token inválido.")
         setLoading(false)
         return
@@ -38,8 +41,6 @@ export default function AdminLoginPage() {
         return
       }
 
-      // Token válido → setar cookie e redirecionar
-      document.cookie = `admin-token=${token.trim()}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`
       router.push("/admin")
       router.refresh()
     } catch {

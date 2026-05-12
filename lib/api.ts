@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios"
+import axios, { AxiosError, AxiosRequestConfig } from "axios"
 
 /** Instância central do Axios para comunicação com a API */
 const api = axios.create({
@@ -8,6 +8,27 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 })
+
+// ── Retry com backoff exponencial ─────────────────────────────────────────────
+// Backend Railway Hobby pode ter cold start ou crash transitório. Sem retry,
+// o usuário via erro imediatamente no primeiro hiccup. Política:
+// - Retry em network error (sem response) e em 5xx
+// - NÃO retry em 4xx (erro do cliente, retentar não muda nada)
+// - NÃO retry em métodos não-idempotentes (POST/PATCH) por default — só GET/PUT/DELETE
+// - Máximo 2 retries (3 tentativas no total): 400ms, 1200ms
+type RetryConfig = AxiosRequestConfig & { _retryCount?: number }
+const MAX_RETRIES = 2
+const BACKOFF_MS  = [400, 1200]
+
+function isRetryableMethod(method?: string): boolean {
+  const m = (method || "GET").toUpperCase()
+  return m === "GET" || m === "PUT" || m === "DELETE" || m === "HEAD" || m === "OPTIONS"
+}
+
+function isRetryableStatus(status?: number): boolean {
+  if (!status) return true  // network error
+  return status >= 500 && status < 600
+}
 
 /** Interceptor de requisição: injeta o token JWT se disponível */
 api.interceptors.request.use((config) => {
@@ -36,10 +57,27 @@ export interface AccountLockEventDetail {
   customerCount: number
 }
 
-/** Interceptor de resposta: trata erros globais */
+/** Interceptor de resposta: trata erros globais (com retry antes do erro final) */
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string; code?: string }>) => {
+  async (error: AxiosError<{ message?: string; code?: string }>) => {
+    const config = error.config as RetryConfig | undefined
+
+    // ── Retry antes de tudo (só GET/HEAD/PUT/DELETE em network error/5xx) ──
+    if (
+      config &&
+      isRetryableMethod(config.method) &&
+      isRetryableStatus(error.response?.status)
+    ) {
+      const attempt = (config._retryCount ?? 0)
+      if (attempt < MAX_RETRIES) {
+        config._retryCount = attempt + 1
+        const delay = BACKOFF_MS[attempt] ?? BACKOFF_MS[BACKOFF_MS.length - 1]
+        await new Promise((r) => setTimeout(r, delay))
+        return api.request(config)
+      }
+    }
+
     if (!error.response) {
       return Promise.reject(new Error("Sem conexão com o servidor"))
     }

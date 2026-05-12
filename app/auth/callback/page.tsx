@@ -13,7 +13,7 @@ export default function AuthCallbackPage() {
     const token = url.searchParams.get("token");
 
     if (!token) {
-      setError("Erro na autenticação. Tente novamente."); // eslint-disable-line react-hooks/set-state-in-effect
+      setError("Erro na autenticação. Tente novamente.");
       return;
     }
 
@@ -21,13 +21,37 @@ export default function AuthCallbackPage() {
 
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
-    fetch(`${API}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("auth_failed");
-        return res.json();
-      })
+    // Retry com backoff exponencial: 500ms, 1s, 2s.
+    // Por quê: Railway Hobby às vezes está em cold start quando o callback dispara
+    // o primeiro /me. Sem retry, o front interpretava o timeout como "auth falhou"
+    // e jogava o usuário de volta no login — comportamento "às vezes não loga".
+    async function loadUserWithRetry(): Promise<unknown> {
+      const delays = [500, 1000, 2000];
+      let lastError: Error | null = null;
+      for (let attempt = 0; attempt < delays.length + 1; attempt++) {
+        try {
+          const res = await fetch(`${API}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) return await res.json();
+          // 401/403 são definitivos: token inválido, não adianta retry
+          if (res.status === 401 || res.status === 403) {
+            throw new Error("auth_invalid");
+          }
+          // 5xx ou network → vale tentar de novo
+          lastError = new Error(`http_${res.status}`);
+        } catch (e) {
+          lastError = e as Error;
+          if ((e as Error).message === "auth_invalid") throw e;
+        }
+        if (attempt < delays.length) {
+          await new Promise((r) => setTimeout(r, delays[attempt]));
+        }
+      }
+      throw lastError ?? new Error("auth_failed");
+    }
+
+    loadUserWithRetry()
       .then(() => {
         window.location.replace("/dashboard");
       })
