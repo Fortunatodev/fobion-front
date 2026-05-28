@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
+// connect-src precisa permitir o back. Em prod = só HTTPS (Railway + futuros
+// api.forbion.digital). Em dev = também http://localhost:3000 (back local).
+// Sem isso, CSP bloqueia fetch e front mostra "Erro na autenticação".
+const connectSrc = isDev
+  ? "'self' https: wss: http://localhost:3000 http://127.0.0.1:3000"
+  : "'self' https: wss:";
+
 const securityHeaders = [
   { key: "X-Frame-Options",        value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -16,7 +25,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.googleusercontent.com https://utfs.io https://*.ufs.sh",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "connect-src 'self' https: wss:",
+      `connect-src ${connectSrc}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
