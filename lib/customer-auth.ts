@@ -69,13 +69,35 @@ export const getCustomerPayload = (): {
 // Alias para compatibilidade
 export const clearCustomerSession = removeCustomerToken
 
-export const customerApiGet = async <T>(path: string): Promise<T> => {
+/**
+ * V6: helpers preparados pra cookie httpOnly cross-site.
+ *
+ * - `credentials: 'include'` faz o browser anexar cookies do domínio do back
+ *   (necessário pra cookie httpOnly cross-site). CORS no back já tem
+ *   `credentials: true` (lore-back/server.ts:72).
+ * - `Authorization: Bearer` mantido como back-compat — quando Bearer está
+ *   presente e cookie ausente, middleware aceita. Quando ambos, cookie ganha.
+ * - Quando o front migrar 100% pra cookie, basta remover o `getCustomerToken()`
+ *   + Bearer e usar só `credentials: 'include'`.
+ *
+ * Pré-requisito V6 pra cookie cross-site funcionar:
+ *   NEXT_PUBLIC_API_URL=https://api.forbion.digital (no Vercel)
+ *   COOKIE_DOMAIN=.forbion.digital (no Railway)
+ */
+
+const getApiBase = (): string =>
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
+// Headers padrão — Authorization opcional (back-compat localStorage)
+const buildHeaders = (extra: HeadersInit = {}): HeadersInit => {
   const token = getCustomerToken()
-  if (!token) throw new Error("Não autenticado")
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-  const res = await fetch(`${API}/api${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const headers: Record<string, string> = { ...(extra as Record<string, string>) }
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
+
+// Tratamento padronizado de 401/erro
+async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401) {
     removeCustomerToken()
     throw new Error("Sessão expirada")
@@ -85,69 +107,80 @@ export const customerApiGet = async <T>(path: string): Promise<T> => {
     throw new Error((err as Record<string, string>).message || "Erro na requisição")
   }
   return res.json() as Promise<T>
+}
+
+export const customerApiGet = async <T>(path: string): Promise<T> => {
+  const res = await fetch(`${getApiBase()}/api${path}`, {
+    headers: buildHeaders(),
+    credentials: "include", // V6: cookie httpOnly viaja com a requisição
+  })
+  return handleResponse<T>(res)
 }
 
 export const customerApiPut = async <T>(path: string, body: unknown): Promise<T> => {
-  const token = getCustomerToken()
-  if (!token) throw new Error("Não autenticado")
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-  const res = await fetch(`${API}/api${path}`, {
+  const res = await fetch(`${getApiBase()}/api${path}`, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: buildHeaders({ "Content-Type": "application/json" }),
+    credentials: "include",
     body: JSON.stringify(body),
   })
-  if (res.status === 401) {
-    removeCustomerToken()
-    throw new Error("Sessão expirada")
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error((err as Record<string, string>).message || "Erro na requisição")
-  }
-  return res.json() as Promise<T>
+  return handleResponse<T>(res)
 }
 
 export const customerApiPost = async <T>(path: string, body: unknown): Promise<T> => {
-  const token = getCustomerToken()
-  if (!token) throw new Error("Não autenticado")
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-  const res = await fetch(`${API}/api${path}`, {
+  const res = await fetch(`${getApiBase()}/api${path}`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: buildHeaders({ "Content-Type": "application/json" }),
+    credentials: "include",
     body: JSON.stringify(body),
   })
-  if (res.status === 401) {
-    removeCustomerToken()
-    throw new Error("Sessão expirada")
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error((err as Record<string, string>).message || "Erro na requisição")
-  }
-  return res.json() as Promise<T>
+  return handleResponse<T>(res)
 }
 
 export const customerApiDelete = async <T>(path: string): Promise<T> => {
-  const token = getCustomerToken()
-  if (!token) throw new Error("Não autenticado")
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-  const res = await fetch(`${API}/api${path}`, {
+  const res = await fetch(`${getApiBase()}/api${path}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: buildHeaders(),
+    credentials: "include",
   })
-  if (res.status === 401) {
-    removeCustomerToken()
-    throw new Error("Sessão expirada")
+  return handleResponse<T>(res)
+}
+
+/**
+ * Verifica sessão via cookie httpOnly (GET /api/customer/session).
+ * Use isto QUANDO migrar o front pra depender 100% de cookie e quiser
+ * checar autenticação sem ler localStorage.
+ */
+export const fetchCustomerSession = async (): Promise<{
+  id: string
+  name: string
+  picture: string | null
+  businessSlug: string
+  businessId: string
+} | null> => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/customer/session`, {
+      credentials: "include",
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
   }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error((err as Record<string, string>).message || "Erro na requisição")
+}
+
+/**
+ * Logout server-side (limpa cookie httpOnly) + cliente (limpa localStorage).
+ * Idempotente. Chama mesmo se não estiver autenticado.
+ */
+export const customerLogout = async (): Promise<void> => {
+  try {
+    await fetch(`${getApiBase()}/api/customer/logout`, {
+      method: "POST",
+      credentials: "include",
+    })
+  } catch {
+    // network error — ainda limpa localStorage
   }
-  return res.json() as Promise<T>
+  removeCustomerToken()
 }

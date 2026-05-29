@@ -4,6 +4,10 @@ import axios, { AxiosError, AxiosRequestConfig } from "axios"
 const api = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/api`,
   timeout: 15000,
+  // V6: cookie httpOnly viaja em requests cross-site (necessário quando
+  // back roda em api.forbion.digital e front em app.forbion.digital).
+  // CORS no back tem credentials:true (lore-back/server.ts:72).
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
