@@ -7,6 +7,7 @@ import {
   ChevronRight, Edit3, X, AlertCircle, Calendar,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
+import RichCustomerModal from "@/components/dashboard/RichCustomerModal"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface Customer {
   name: string
   phone: string
   email: string | null
+  allowWhatsApp: boolean
   createdAt: string
   vehicles: Vehicle[]
   _count?: { schedules: number }
@@ -100,11 +102,6 @@ export default function ClientesPage() {
     return () => window.removeEventListener("resize", check)
   }, [])
 
-  // Form — customer
-  const [formName,  setFormName]  = useState("")
-  const [formPhone, setFormPhone] = useState("")
-  const [formEmail, setFormEmail] = useState("")
-
   // Form — vehicle
   const [vehiclePlate, setVehiclePlate] = useState("")
   const [vehicleBrand, setVehicleBrand] = useState("")
@@ -133,48 +130,42 @@ export default function ClientesPage() {
 
   function closeModal() {
     setShowModal(null); setSelectedCustomer(null)
-    setFormName(""); setFormPhone(""); setFormEmail("")
     setVehiclePlate(""); setVehicleBrand(""); setVehicleModel("")
     setVehicleColor(""); setVehicleType("CAR"); setFormError(null)
   }
 
   function openEditModal(customer: Customer) {
     setSelectedCustomer(customer)
-    setFormName(customer.name)
-    setFormPhone(customer.phone)
-    setFormEmail(customer.email ?? "")
     setShowModal("edit")
   }
 
-  async function handleCreateCustomer() {
-    // Apenas nome é obrigatório no fluxo manual. Telefone e e-mail são opcionais.
-    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
+  async function handleCreateCustomer(payload: { name: string; phone: string; email?: string; allowWhatsApp: boolean }) {
     setActionLoading(true)
     try {
       await apiPost("/customers", {
-        name:  formName.trim(),
-        phone: formPhone.trim() || undefined,
-        email: formEmail.trim() || undefined,
+        name: payload.name,
+        phone: payload.phone || undefined,
+        email: payload.email || undefined,
+        allowWhatsApp: payload.allowWhatsApp,
       })
       closeModal()
       await fetchCustomers()
     } catch (e: unknown) {
-      // Mostra a mensagem retornada pelo backend (já tratada pelo axios interceptor)
       setFormError(e instanceof Error ? e.message : "Erro ao criar cliente. Verifique os dados.")
     } finally {
       setActionLoading(false)
     }
   }
 
-  async function handleEditCustomer() {
+  async function handleEditCustomer(payload: { name: string; phone: string; email?: string; allowWhatsApp: boolean }) {
     if (!selectedCustomer) return
-    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
     setActionLoading(true)
     try {
       await apiPut(`/customers/${selectedCustomer.id}`, {
-        name:  formName.trim(),
-        phone: formPhone.trim() || undefined,
-        email: formEmail.trim() || undefined,
+        name: payload.name,
+        phone: payload.phone || undefined,
+        email: payload.email || undefined,
+        allowWhatsApp: payload.allowWhatsApp,
       })
       closeModal()
       await fetchCustomers()
@@ -682,41 +673,17 @@ export default function ClientesPage() {
             }}
           >
 
-            {/* ── Modal: Create / Edit ─────────────────────────────────── */}
+            {/* ── Modal: Create / Edit (RichCustomerModal) ───────────── */}
             {(showModal === "create" || showModal === "edit") && (
-              <>
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "#ffffff", margin: 0 }}>
-                    {showModal === "create" ? "Novo cliente" : "Editar cliente"}
-                  </h2>
-                  <button onClick={closeModal} style={closeButtonStyle}>
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Form error */}
-                {formError && <FormErrorBanner message={formError} />}
-
-                {/* Fields */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <FieldInput label="Nome completo" value={formName} onChange={setFormName} placeholder="João da Silva" required />
-                  <FieldInput label="Telefone" value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-0000" />
-                  <FieldInput label="E-mail" value={formEmail} onChange={setFormEmail} placeholder="cliente@email.com (opcional)" />
-                </div>
-
-                {/* Footer */}
-                <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "flex-end" }}>
-                  <CancelBtn onClick={closeModal} />
-                  <SubmitBtn
-                    loading={actionLoading}
-                    label={showModal === "create" ? "Criar cliente" : "Salvar alterações"}
-                    loadingLabel={showModal === "create" ? "Criando..." : "Salvando..."}
-                    onClick={showModal === "create" ? handleCreateCustomer : handleEditCustomer}
-                    gradient="linear-gradient(135deg, #0066FF, #7C3AED)"
-                  />
-                </div>
-              </>
+              <RichCustomerModal
+                open
+                onClose={closeModal}
+                mode={showModal}
+                initialData={showModal === "edit" ? selectedCustomer : null}
+                onSubmit={showModal === "create" ? handleCreateCustomer : handleEditCustomer}
+                loading={actionLoading}
+                serverError={formError}
+              />
             )}
 
             {/* ── Modal: Add Vehicle ───────────────────────────────────── */}

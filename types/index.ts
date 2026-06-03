@@ -139,6 +139,7 @@ export interface Customer {
   name: string
   phone: string
   email?: string
+  allowWhatsApp: boolean
   createdAt: string
   updatedAt?: string
   vehicles?: Vehicle[]
