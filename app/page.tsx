@@ -356,6 +356,189 @@ export default function RootPage() {
               </div>
             ))}
           </section>
+
+          {/* Pricing tiers */}
+          <section style={{ padding: "60px 0 100px" }}>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <h2
+                style={{
+                  fontSize: "clamp(28px, 4vw, 40px)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  color: "#FAFAFA",
+                  margin: "0 0 12px",
+                }}
+              >
+                Planos simples,{" "}
+                <span
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #0066FF 0%, #3B82F6 50%, #0066FF 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  sem surpresa
+                </span>
+              </h2>
+              <p style={{ fontSize: 15, color: "#A1A1AA", margin: 0, maxWidth: 480, marginInline: "auto", lineHeight: 1.6 }}>
+                7 dias grátis em qualquer plano. Cancele quando quiser.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: 20,
+                maxWidth: 960,
+                margin: "0 auto",
+              }}
+            >
+              {[
+                {
+                  name: "Basic",
+                  price: "R$79",
+                  period: "/mês",
+                  desc: "Ideal para começar",
+                  features: [
+                    "Agendamento online ilimitado",
+                    "Gestão de clientes e veículos",
+                    "Notificações por e-mail",
+                    "1 funcionário incluso",
+                    "Suporte por e-mail",
+                  ],
+                  highlighted: false,
+                },
+                {
+                  name: "Pro",
+                  price: "R$129",
+                  period: "/mês",
+                  desc: "O mais popular",
+                  features: [
+                    "Tudo do Basic",
+                    "Relatórios e métricas",
+                    "Planos de fidelidade",
+                    "Até 5 funcionários",
+                    "Suporte prioritário",
+                  ],
+                  highlighted: true,
+                },
+                {
+                  name: "Business",
+                  price: "R$179",
+                  period: "/mês",
+                  desc: "Para crescer sem limites",
+                  features: [
+                    "Tudo do Pro",
+                    "Funcionários ilimitados",
+                    "Integrações avançadas",
+                    "API de acesso",
+                    "Suporte dedicado",
+                  ],
+                  highlighted: false,
+                },
+              ].map((tier) => (
+                <div
+                  key={tier.name}
+                  style={{
+                    position: "relative",
+                    background: tier.highlighted
+                      ? "rgba(0,102,255,0.06)"
+                      : "rgba(255,255,255,0.025)",
+                    border: tier.highlighted
+                      ? "1px solid rgba(0,102,255,0.25)"
+                      : "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 20,
+                    padding: "32px 28px",
+                    backdropFilter: "blur(8px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 20,
+                  }}
+                >
+                  {tier.highlighted && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -12,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        background: "linear-gradient(135deg, #0066FF, #2563EB)",
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "5px 14px",
+                        borderRadius: 100,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      Mais popular
+                    </div>
+                  )}
+
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: "#FAFAFA",
+                        margin: "0 0 4px",
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {tier.name}
+                    </h3>
+                    <p style={{ fontSize: 13, color: "#71717A", margin: 0 }}>{tier.desc}</p>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                    <span style={{ fontSize: 36, fontWeight: 700, color: "#FAFAFA", letterSpacing: "-0.03em" }}>
+                      {tier.price}
+                    </span>
+                    <span style={{ fontSize: 14, color: "#71717A", fontWeight: 500 }}>{tier.period}</span>
+                  </div>
+
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                    {tier.features.map((feat) => (
+                      <li key={feat} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#E4E4E7" }}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <circle cx="8" cy="8" r="8" fill={tier.highlighted ? "rgba(0,102,255,0.15)" : "rgba(255,255,255,0.06)"} />
+                          <path d="M5 8L7 10L11 6" stroke={tier.highlighted ? "#3B82F6" : "#A1A1AA"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/auth/login"
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      textDecoration: "none",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      padding: "12px 0",
+                      borderRadius: 12,
+                      background: tier.highlighted
+                        ? "linear-gradient(135deg, #0066FF, #2563EB)"
+                        : "rgba(255,255,255,0.04)",
+                      color: tier.highlighted ? "#fff" : "#E4E4E7",
+                      border: tier.highlighted ? "none" : "1px solid rgba(255,255,255,0.1)",
+                      boxShadow: tier.highlighted
+                        ? "0 8px 24px rgba(0,102,255,0.3)"
+                        : undefined,
+                      transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                    }}
+                  >
+                    Começar 7 dias grátis
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
         </main>
 
         {/* Footer */}
