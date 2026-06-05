@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
+import PasswordCard from "@/components/settings/PasswordCard"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
@@ -1057,6 +1058,9 @@ function ConfiguracoesContent() {
                 </button>
               )}
             </div>
+
+            {/* IMP-101 — troca/definição de senha */}
+            <PasswordCard isMobile={isMobile} />
 
             {/* Danger zone */}
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "#EF4444", margin: "0 0 12px" }}>
