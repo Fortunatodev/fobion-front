@@ -553,7 +553,9 @@ function NovoAgendamentoModal({
       const scheduledAt = new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).toISOString()
 
       await apiPost("/schedules", {
-        businessId: user?.businessId,
+        // V2-B0 (IDOR): NÃO enviar businessId no body. O backend deriva do token
+        // de owner (apiPost manda Authorization: Bearer). Mandar no body permitia
+        // criar agendamento em outra loja (cross-tenant).
         serviceIds: selectedServices,
         scheduledAt,
         ...(selectedEmployee !== "owner" ? { employeeId: selectedEmployee } : {}),

@@ -82,14 +82,14 @@ function fmtFull(iso: string): string {
 }
 
 function periodLabel(p: Period): string {
-  return { "7d": "Ultimos 7 dias", "30d": "Ultimos 30 dias", "90d": "Ultimos 90 dias", "12m": "Ultimos 12 meses" }[p]
+  return { "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", "90d": "Últimos 90 dias", "12m": "Últimos 12 meses" }[p]
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PENDING:     { label: "Pendente",     color: "#F59E0B" },
   CONFIRMED:   { label: "Confirmado",   color: "#0066FF" },
   IN_PROGRESS: { label: "Em andamento", color: "#7C3AED" },
-  DONE:        { label: "Concluido",    color: "#10B981" },
+  DONE:        { label: "Concluído",    color: "#10B981" },
   CANCELLED:   { label: "Cancelado",    color: "#EF4444" },
 }
 
@@ -372,7 +372,7 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 20px" }}>Distribuicao por Status</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 20px" }}>Distribuição por Status</h3>
       <div style={{ display: "flex", gap: 28, alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
         <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
@@ -495,8 +495,8 @@ export default function RelatoriosPage() {
   if (!isPro) {
     return (
       <ProFeatureGate
-        featureName="Painel de Saude da Loja"
-        description="Relatorios detalhados, graficos de faturamento e agendamentos, ranking de servicos, diagnostico inteligente do seu negocio e muito mais."
+        featureName="Painel de Saúde da Loja"
+        description="Relatórios detalhados, gráficos de faturamento e agendamentos, ranking de serviços, diagnóstico inteligente do seu negócio e muito mais."
       />
     )
   }
@@ -540,25 +540,38 @@ function PainelDeSaude() {
     const ins = d.insights
     const tips: { icon: React.ReactNode; title: string; description: string; accent: string }[] = []
 
-    if (ins.revenueGrowth > 0) tips.push({ icon: <TrendingUp size={16} />, title: `Faturamento cresceu ${ins.revenueGrowth}%`, description: `Comparado ao periodo anterior, seu faturamento subiu. Continue investindo no que esta funcionando.`, accent: "#10B981" })
-    else if (ins.revenueGrowth < 0) tips.push({ icon: <TrendingDown size={16} />, title: `Faturamento caiu ${Math.abs(ins.revenueGrowth)}%`, description: `Seu faturamento diminuiu em relacao ao periodo anterior. Considere promocoes para recuperar.`, accent: "#EF4444" })
+    // V2-B0 (estado vazio honesto): sem agendamentos no período, NÃO inventar
+    // "Dia mais movimentado: Dom" nem "Horário de pico: 00:00" (insight falso que
+    // parecia bug). Mostra um aviso honesto e para por aqui.
+    if (!d.totalAgendamentos) {
+      tips.push({
+        icon: <Lightbulb size={16} />,
+        title: "Dados insuficientes para gerar insights",
+        description: "Registre seus primeiros agendamentos para o Painel de Saúde diagnosticar seu negócio.",
+        accent: "#6B7280",
+      })
+      return tips
+    }
 
-    tips.push({ icon: <Calendar size={16} />, title: `Dia mais movimentado: ${ins.busiestDay}`, description: `A maioria dos agendamentos acontece na ${ins.busiestDay}. Ajuste equipe e promocoes.`, accent: "#7C3AED" })
+    if (ins.revenueGrowth > 0) tips.push({ icon: <TrendingUp size={16} />, title: `Faturamento cresceu ${ins.revenueGrowth}%`, description: `Comparado ao período anterior, seu faturamento subiu. Continue investindo no que está funcionando.`, accent: "#10B981" })
+    else if (ins.revenueGrowth < 0) tips.push({ icon: <TrendingDown size={16} />, title: `Faturamento caiu ${Math.abs(ins.revenueGrowth)}%`, description: `Seu faturamento diminuiu em relação ao período anterior. Considere promoções para recuperar.`, accent: "#EF4444" })
 
-    if (ins.peakHour) tips.push({ icon: <Clock size={16} />, title: `Horario de pico: ${ins.peakHour}`, description: `O horario mais procurado. Garanta disponibilidade nesse periodo.`, accent: "#0066FF" })
+    tips.push({ icon: <Calendar size={16} />, title: `Dia mais movimentado: ${ins.busiestDay}`, description: `A maioria dos agendamentos acontece na ${ins.busiestDay}. Ajuste equipe e promoções.`, accent: "#7C3AED" })
 
-    if (d.taxaConclusao >= 85) tips.push({ icon: <CheckCircle size={16} />, title: `Excelente taxa de conclusao: ${d.taxaConclusao.toFixed(0)}%`, description: "Seus clientes estao comparecendo. Otimo para a reputacao do negocio.", accent: "#10B981" })
-    else if (d.taxaConclusao < 70 && d.totalAgendamentos > 5) tips.push({ icon: <AlertCircle size={16} />, title: `Taxa de conclusao baixa: ${d.taxaConclusao.toFixed(0)}%`, description: "Muitos agendamentos nao concluidos. Considere lembretes automaticos.", accent: "#F59E0B" })
+    if (ins.peakHour) tips.push({ icon: <Clock size={16} />, title: `Horário de pico: ${ins.peakHour}`, description: `O horário mais procurado. Garanta disponibilidade nesse período.`, accent: "#0066FF" })
 
-    if (ins.cancellationRate > 15 && d.totalAgendamentos > 5) tips.push({ icon: <XCircle size={16} />, title: `Cancelamentos em ${ins.cancellationRate}%`, description: "Taxa de cancelamento alta. Tente confirmacao antecipada e lembretes.", accent: "#EF4444" })
+    if (d.taxaConclusao >= 85) tips.push({ icon: <CheckCircle size={16} />, title: `Excelente taxa de conclusão: ${d.taxaConclusao.toFixed(0)}%`, description: "Seus clientes estão comparecendo. Ótimo para a reputação do negócio.", accent: "#10B981" })
+    else if (d.taxaConclusao < 70 && d.totalAgendamentos > 5) tips.push({ icon: <AlertCircle size={16} />, title: `Taxa de conclusão baixa: ${d.taxaConclusao.toFixed(0)}%`, description: "Muitos agendamentos não concluídos. Considere lembretes automáticos.", accent: "#F59E0B" })
 
-    if ((ins.returningCustomerRate ?? 0) >= 40) tips.push({ icon: <Repeat size={16} />, title: `${ins.returningCustomerRate}% dos clientes retornaram`, description: "Excelente retencao! Continue oferecendo qualidade.", accent: "#10B981" })
+    if (ins.cancellationRate > 15 && d.totalAgendamentos > 5) tips.push({ icon: <XCircle size={16} />, title: `Cancelamentos em ${ins.cancellationRate}%`, description: "Taxa de cancelamento alta. Tente confirmação antecipada e lembretes.", accent: "#EF4444" })
+
+    if ((ins.returningCustomerRate ?? 0) >= 40) tips.push({ icon: <Repeat size={16} />, title: `${ins.returningCustomerRate}% dos clientes retornaram`, description: "Excelente retenção! Continue oferecendo qualidade.", accent: "#10B981" })
     else if ((ins.returningCustomerRate ?? 100) < 20 && d.totalCustomers > 5) tips.push({ icon: <Repeat size={16} />, title: `Apenas ${ins.returningCustomerRate}% retornaram`, description: "Poucos clientes voltaram. Considere programas de fidelidade.", accent: "#F59E0B" })
 
-    if (ins.subscriberRatio < 10 && d.totalCustomers > 3) tips.push({ icon: <Crown size={16} />, title: `Apenas ${ins.subscriberRatio}% sao assinantes`, description: "Assinantes geram receita recorrente. Destaque seus planos na loja.", accent: "#0066FF" })
-    else if (ins.subscriberRatio >= 30) tips.push({ icon: <ShieldCheck size={16} />, title: `${ins.subscriberRatio}% sao assinantes`, description: "Base de assinantes solida. Receita recorrente garantida.", accent: "#10B981" })
+    if (ins.subscriberRatio < 10 && d.totalCustomers > 3) tips.push({ icon: <Crown size={16} />, title: `Apenas ${ins.subscriberRatio}% são assinantes`, description: "Assinantes geram receita recorrente. Destaque seus planos na loja.", accent: "#0066FF" })
+    else if (ins.subscriberRatio >= 30) tips.push({ icon: <ShieldCheck size={16} />, title: `${ins.subscriberRatio}% são assinantes`, description: "Base de assinantes sólida. Receita recorrente garantida.", accent: "#10B981" })
 
-    if (ins.topServiceShare > 60 && d.servicosMaisPopulares.length > 1) tips.push({ icon: <Star size={16} />, title: `${d.servicosMaisPopulares[0].name} domina com ${ins.topServiceShare}%`, description: "Concentracao em um servico. Diversifique para reduzir risco.", accent: "#F59E0B" })
+    if (ins.topServiceShare > 60 && d.servicosMaisPopulares.length > 1) tips.push({ icon: <Star size={16} />, title: `${d.servicosMaisPopulares[0].name} domina com ${ins.topServiceShare}%`, description: "Concentração em um serviço. Diversifique para reduzir risco.", accent: "#F59E0B" })
 
     return tips
   }
@@ -579,7 +592,7 @@ function PainelDeSaude() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Activity size={20} color="#0066FF" />
-              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#F9FAFB", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saude</h1>
+              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#F9FAFB", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
             </div>
             <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
           </div>
@@ -615,18 +628,18 @@ function PainelDeSaude() {
 
             {/* RESUMO */}
             <section>
-              <SectionTitle icon={<Zap size={14} color="#F59E0B" />} text="Resumo do Periodo" />
+              <SectionTitle icon={<Zap size={14} color="#F59E0B" />} text="Resumo do Período" />
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 10 : 16 }}>
-                <SummaryCard label="Agendamentos" value={data.totalAgendamentos} sub={`${data.insights.avgDailyBookings}/dia em media`} icon={<Calendar size={18} />} color="#7C3AED" sparkData={spark7Ag} />
-                <SummaryCard label="Faturamento" value={data.faturamentoTotal} isCurrency sub={`Ticket medio: ${fmt(data.ticketMedio)}`} icon={<DollarSign size={18} />} color="#0066FF" trend={data.insights.revenueGrowth} sparkData={spark7Ft} />
+                <SummaryCard label="Agendamentos" value={data.totalAgendamentos} sub={`${data.insights.avgDailyBookings}/dia em média`} icon={<Calendar size={18} />} color="#7C3AED" sparkData={spark7Ag} />
+                <SummaryCard label="Faturamento" value={data.faturamentoTotal} isCurrency sub={`Ticket médio: ${fmt(data.ticketMedio)}`} icon={<DollarSign size={18} />} color="#0066FF" trend={data.insights.revenueGrowth} sparkData={spark7Ft} />
                 <SummaryCard label="Novos Clientes" value={data.novosClientes} sub={`${data.totalCustomers} total na base`} icon={<Users size={18} />} color="#10B981" />
-                <SummaryCard label="Conclusao" value={Math.round(data.taxaConclusao)} suffix="%" sub={`${data.agendamentosConcluidos} concluidos`} icon={<Target size={18} />} color={data.taxaConclusao >= 80 ? "#10B981" : data.taxaConclusao >= 60 ? "#F59E0B" : "#EF4444"} />
+                <SummaryCard label="Conclusão" value={Math.round(data.taxaConclusao)} suffix="%" sub={`${data.agendamentosConcluidos} concluídos`} icon={<Target size={18} />} color={data.taxaConclusao >= 80 ? "#10B981" : data.taxaConclusao >= 60 ? "#F59E0B" : "#EF4444"} />
               </div>
             </section>
 
             {/* GRAFICOS */}
             <section>
-              <SectionTitle icon={<BarChart2 size={14} color="#0066FF" />} text="Evolucao no Tempo" />
+              <SectionTitle icon={<BarChart2 size={14} color="#0066FF" />} text="Evolução no Tempo" />
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <BarChartComponent data={data.agendamentosPorData} valueKey="count" color="#7C3AED" formatValue={(v: number) => `${v} agendamento${v !== 1 ? "s" : ""}`} title="Agendamentos por dia" isMobile={isMobile} />
                 <AreaChartComponent data={data.faturamentoPorDia} valueKey="total" color="#0066FF" formatValue={(v: number) => fmt(v)} title="Faturamento por dia" isMobile={isMobile} />
@@ -639,7 +652,7 @@ function PainelDeSaude() {
                 <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                     <Star size={14} color="#F59E0B" />
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>Servicos que mais vendem</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>Serviços que mais vendem</h3>
                   </div>
                   {data.servicosMaisPopulares.length === 0 ? (
                     <p style={{ fontSize: 13, color: "#4B5563", textAlign: "center", padding: "24px 0" }}>Nenhum dado disponivel</p>
@@ -711,7 +724,7 @@ function PainelDeSaude() {
                     </div>
                     <div style={{ marginTop: 14 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: "#6B7280" }}>Conversao para assinante</span>
+                        <span style={{ fontSize: 11, color: "#6B7280" }}>Conversão para assinante</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: data.insights.subscriberRatio >= 20 ? "#10B981" : "#F59E0B" }}>{data.insights.subscriberRatio}%</span>
                       </div>
                       <div style={{ width: "100%", height: 5, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 3 }}>
@@ -755,7 +768,7 @@ function PainelDeSaude() {
 
             {/* INSIGHTS */}
             <section>
-              <SectionTitle icon={<Lightbulb size={14} color="#F59E0B" />} text="Diagnostico & Insights" />
+              <SectionTitle icon={<Lightbulb size={14} color="#F59E0B" />} text="Diagnóstico & Insights" />
               {(() => {
                 const tips = buildInsights(data)
                 return tips.length === 0 ? (

@@ -133,9 +133,17 @@ export default function RepassesReportPage() {
 
     setMarkingPaid(emp.employeeId)
     try {
+      // V2-B0: envia os IDs EXATOS das transações PENDENTES deste funcionário
+      // (não um intervalo de datas) — paga exatamente o que está na tela, sem
+      // risco de pagar um conjunto diferente se o período mudar entre o load e o
+      // clique. O backend ainda revalida businessId+employeeId+PENDING.
+      const transactionIds = (data?.transactions ?? [])
+        .filter(t => t.employeeId === emp.employeeId && t.status === "PENDING")
+        .map(t => t.id)
+      if (transactionIds.length === 0) { setMarkingPaid(null); return }
       const result = await apiPost<{ count: number; totalAmount: number }>(
         `/commissions/employees/${emp.employeeId}/mark-paid`,
-        { startDate: data?.period.startDate, endDate: data?.period.endDate }
+        { transactionIds }
       )
       setToast({
         kind: "ok",

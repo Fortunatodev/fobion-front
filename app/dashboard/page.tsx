@@ -189,13 +189,13 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
         />
         <MiniMetric
           icon={<Calendar size={11} />} iconColor="#3B82F6"
-          label="Concluidos" rawValue={summary.appointments} delay={100}
+          label="Concluídos" rawValue={summary.appointments} delay={100}
           sub={<span style={{ fontSize: 10, color: "#4B5563" }}>agendamentos</span>}
         />
         <MiniMetric
           icon={<UserPlus size={11} />} iconColor="#F59E0B"
           label="Novos clientes" rawValue={summary.newCustomers} delay={200}
-          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>no periodo</span>}
+          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>no período</span>}
         />
         <MiniMetric
           icon={<Star size={11} />} iconColor="#7C3AED"
@@ -510,10 +510,10 @@ export default function DashboardPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
                   <h2 style={{ fontSize: 14, fontWeight: 600, color: "#F9FAFB", margin: 0 }}>
-                    Resumo do mes
+                    Resumo do mês
                   </h2>
                   <p style={{ fontSize: 11, color: "#4B5563", marginTop: 3 }}>
-                    Ultimos 30 dias
+                    Últimos 30 dias
                   </p>
                 </div>
                 <button
