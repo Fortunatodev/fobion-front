@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
+import TelegramCard from "@/components/settings/TelegramCard"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
@@ -1057,6 +1058,9 @@ function ConfiguracoesContent() {
                 </button>
               )}
             </div>
+
+            {/* IMP-301 — alerta de novo agendamento no Telegram do dono */}
+            <TelegramCard isMobile={isMobile} initialChatId={(config as any)?.ownerTelegramChatId ?? ""} />
 
             {/* Danger zone */}
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "#EF4444", margin: "0 0 12px" }}>
