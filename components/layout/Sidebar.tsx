@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText,
+  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
@@ -25,6 +25,7 @@ const navSections = [
     items: [
       { href: "/dashboard",        label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/agenda", label: "Agenda",    icon: Calendar        },
+      { href: "/dashboard/patio",  label: "Pátio",     icon: LayoutGrid      },
     ],
   },
   {
