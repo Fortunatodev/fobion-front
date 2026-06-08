@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
 import { formatScheduleTime } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -359,6 +360,9 @@ export default function DashboardPage() {
           Nova comanda
         </button>
       </div>
+
+      {/* ── V2-B1: checklist de ativação (some quando 100% ou dispensado) ── */}
+      <OnboardingChecklist totalCustomers={totalCustomers} hasScheduleToday={schedulesToday.length > 0} />
 
       {/* ── Metric cards (.metrics-grid) ──────────────────────────────── */}
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}

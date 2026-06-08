@@ -111,6 +111,20 @@ export default function ServicosPage() {
 
   useEffect(() => { fetchServices() }, [fetchServices])
 
+  // ── V2-B1: pré-seed de ~30 serviços de estética (conta deixa de nascer vazia) ──
+  const [seeding, setSeeding] = useState(false)
+  const handleSeedDefaults = useCallback(async () => {
+    setSeeding(true)
+    try {
+      await apiPost<{ created: number }>("/services/seed-defaults", {})
+      await fetchServices()
+    } catch {
+      setError("Não foi possível adicionar os serviços prontos.")
+    } finally {
+      setSeeding(false)
+    }
+  }, [fetchServices])
+
   // ── Modal helpers ───────────────────────────────────────────────────────────
   const openCreate = () => {
     setSelected(null)
@@ -299,17 +313,35 @@ export default function ServicosPage() {
             <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
               Crie o primeiro serviço para começar a receber agendamentos.
             </p>
-            <button
-              onClick={openCreate}
-              style={{
-                marginTop: 20, height: 40, padding: "0 20px", borderRadius: 12,
-                background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                color: "#fff", fontSize: 13, fontWeight: 600,
-                border: "none", cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              + Criar primeiro serviço
-            </button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
+              <button
+                onClick={openCreate}
+                style={{
+                  height: 40, padding: "0 20px", borderRadius: 12,
+                  background: "linear-gradient(135deg,#0066FF,#7C3AED)",
+                  color: "#fff", fontSize: 13, fontWeight: 600,
+                  border: "none", cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                + Criar primeiro serviço
+              </button>
+              {/* V2-B1: catálogo pronto (referência CERA) — fricção zero de setup */}
+              <button
+                onClick={handleSeedDefaults}
+                disabled={seeding}
+                style={{
+                  height: 40, padding: "0 20px", borderRadius: 12,
+                  background: "transparent", color: seeding ? "#52525B" : "#A1A1AA",
+                  fontSize: 13, fontWeight: 600,
+                  border: "1px solid #1F1F1F", cursor: seeding ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                }}
+                onMouseEnter={(e) => { if (!seeding) e.currentTarget.style.borderColor = "#0066FF" }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1F1F1F" }}
+              >
+                {seeding ? "Adicionando…" : "✨ Adicionar 30 serviços prontos"}
+              </button>
+            </div>
           </div>
         )}
 
