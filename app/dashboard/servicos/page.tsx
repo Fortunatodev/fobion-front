@@ -17,6 +17,7 @@ interface Service {
   imageUrl?: string | null
   commissionPercent?: number | null
   warrantyDays?: number | null
+  priceByVehicleType?: Record<string, number> | null
   createdAt: string
 }
 
@@ -96,6 +97,8 @@ export default function ServicosPage() {
   const [formImageUrl,    setFormImageUrl]    = useState("")
   const [formCommissionPct, setFormCommissionPct] = useState("")  // string vazia = sem repasse default
   const [formWarranty, setFormWarranty] = useState("")  // V2-B3: garantia/recall em dias (vazio = sem)
+  // V2-B4: preço por porte (R$, string vazia = usa preço base). CAR/MOTO/TRUCK/SUV
+  const [formPorte, setFormPorte] = useState<Record<"CAR" | "MOTORCYCLE" | "TRUCK" | "SUV", string>>({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchServices = useCallback(async () => {
@@ -135,6 +138,7 @@ export default function ServicosPage() {
     setFormActive(true); setFormImageUrl("")
     setFormCommissionPct("")
     setFormWarranty("")
+    setFormPorte({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
     setFormError(null)
     setShowModal("create")
   }
@@ -149,6 +153,11 @@ export default function ServicosPage() {
     setFormImageUrl(s.imageUrl || "")
     setFormCommissionPct(s.commissionPercent != null ? String(s.commissionPercent) : "")
     setFormWarranty(s.warrantyDays != null ? String(s.warrantyDays) : "")
+    {
+      const p = s.priceByVehicleType || {}
+      const c = (v: number | undefined) => (v != null ? String(v / 100) : "")
+      setFormPorte({ CAR: c(p.CAR), MOTORCYCLE: c(p.MOTORCYCLE), TRUCK: c(p.TRUCK), SUV: c(p.SUV) })
+    }
     setFormError(null)
     setShowModal("edit")
   }
@@ -196,6 +205,15 @@ export default function ServicosPage() {
         commissionPercent,
         // V2-B3: garantia/recall em dias (vazio = sem recall)
         warrantyDays:    formWarranty.trim() ? Math.max(0, Math.round(Number(formWarranty))) : null,
+        // V2-B4: preço por porte (só os preenchidos, em centavos). null se nenhum.
+        priceByVehicleType: (() => {
+          const out: Record<string, number> = {}
+          for (const k of ["CAR", "MOTORCYCLE", "TRUCK", "SUV"] as const) {
+            const v = formPorte[k].trim()
+            if (v && !isNaN(Number(v)) && Number(v) > 0) out[k] = Math.round(Number(v) * 100)
+          }
+          return Object.keys(out).length ? out : null
+        })(),
       }
 
       if (showModal === "create") {
@@ -518,6 +536,42 @@ export default function ServicosPage() {
                       recall ~{Math.max(0, Number(formWarranty) - 7)} dias após o serviço
                     </span>
                   )}
+                </div>
+              </div>
+
+              {/* V2-B4: Preço por porte de veículo ─────────────────────────── */}
+              <div style={{
+                background: "#0A0A0A", border: "1px solid #252525",
+                borderRadius: 10, padding: "12px 14px",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                    Preço por porte <span style={{ color: "#71717A", fontWeight: 400 }}>(opcional)</span>
+                  </p>
+                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                    SUV/caminhonete costuma custar mais. Deixe vazio pra usar o preço base.
+                  </p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                  {([["CAR", "Carro"], ["MOTORCYCLE", "Moto"], ["TRUCK", "Caminhonete"], ["SUV", "SUV"]] as const).map(([key, label]) => (
+                    <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, color: "#A1A1AA", width: 88, flexShrink: 0 }}>{label}</span>
+                      <span style={{ fontSize: 12, color: "#52525B" }}>R$</span>
+                      <input
+                        type="number" min={0} step="0.01"
+                        value={formPorte[key]}
+                        onChange={(e) => setFormPorte(prev => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={formPrice || "base"}
+                        style={{
+                          flex: 1, minWidth: 0, height: 34, padding: "0 10px",
+                          background: "#111", border: "1px solid #2A2A2A",
+                          borderRadius: 8, color: "#fff", fontSize: 13,
+                          outline: "none", fontFamily: "inherit",
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
