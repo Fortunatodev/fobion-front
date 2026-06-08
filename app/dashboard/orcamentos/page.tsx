@@ -281,7 +281,7 @@ export default function OrcamentosPage() {
               <span style={{ fontSize: 15, fontWeight: 800, color: "var(--c-text)" }}>Total: {fmt(total)}</span>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
-                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "var(--c-text)", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
+                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
               </div>
             </div>
           </div>

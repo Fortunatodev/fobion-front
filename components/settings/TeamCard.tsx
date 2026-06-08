@@ -88,7 +88,7 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
             <option value="ADMIN">Admin (acesso total)</option>
           </select>
           {msg && <p style={{ color: msg.kind === "ok" ? "#10B981" : "#F87171", fontSize: 13, margin: "0 0 8px" }}>{msg.text}</p>}
-          <button onClick={create} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, border: "none", background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "var(--c-text)", fontSize: 14, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+          <button onClick={create} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, border: "none", background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", fontSize: 14, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
             {saving ? "Criando…" : "Criar acesso"}
           </button>
         </div>
