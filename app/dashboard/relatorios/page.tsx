@@ -595,6 +595,10 @@ function PainelDeSaude() {
               <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#F9FAFB", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
             </div>
             <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
+            {/* V2-B3: atalho pro painel de Retenção (RFM) */}
+            <a href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 30, marginTop: 8, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
+              👥 Ver retenção de clientes →
+            </a>
           </div>
           <div style={{ display: "flex", gap: 3, backgroundColor: "#0D0D0D", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 3 }}>
             {PERIODS.map(opt => {
