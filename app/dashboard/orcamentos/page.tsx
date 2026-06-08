@@ -160,6 +160,30 @@ export default function OrcamentosPage() {
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Monte propostas (ticket alto: vitrificação, PPF), envie no WhatsApp e converta em venda.</p>
 
+      {/* B19 — funil/conversão de orçamentos (métrica que a CERA exibe) */}
+      {!loading && quotes.length > 0 && (() => {
+        const sent = quotes.filter((q) => q.status !== "DRAFT").length
+        const conv = quotes.filter((q) => q.status === "CONVERTED").length
+        const appr = quotes.filter((q) => q.status === "APPROVED").length
+        const rate = sent > 0 ? Math.round((conv / sent) * 100) : 0
+        const KS = [
+          { label: "Orçamentos", value: String(quotes.length), color: "var(--c-text)" },
+          { label: "Aprovados", value: String(appr), color: "#10B981" },
+          { label: "Vendidos", value: String(conv), color: "#F59E0B" },
+          { label: "Conversão", value: `${rate}%`, color: "#0066FF" },
+        ]
+        return (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))", gap: 10, marginBottom: 22 }}>
+            {KS.map((k) => (
+              <div key={k.label} style={{ background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "12px 14px" }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{k.label}</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: k.color, margin: "4px 0 0" }}>{k.value}</p>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
+
       {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 

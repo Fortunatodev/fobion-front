@@ -32,6 +32,18 @@ export default function PatioPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [moving, setMoving] = useState<string | null>(null)
+  // B20 — capacidade do pátio (vagas/boxes) por dia; config local sem migração
+  const [capacity, setCapacity] = useState(10)
+  useEffect(() => {
+    const v = Number(localStorage.getItem("forbion_patio_capacity"))
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (v > 0) setCapacity(v)
+  }, [])
+  function editCapacity() {
+    const v = window.prompt("Quantas vagas/boxes seu pátio comporta por dia?", String(capacity))
+    const n = Number(v)
+    if (n > 0) { setCapacity(n); localStorage.setItem("forbion_patio_capacity", String(n)) }
+  }
 
   const fetchData = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -56,9 +68,21 @@ export default function PatioPage() {
           <LayoutGrid size={22} color="#0066FF" />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Pátio</h1>
         </div>
-        <button onClick={fetchData} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-          <RefreshCw size={14} /> Atualizar
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {(() => {
+            const occupied = schedules.filter((s) => s.status !== "DONE" && s.status !== "CANCELLED").length
+            const full = occupied >= capacity
+            const col = full ? "#EF4444" : occupied >= capacity * 0.8 ? "#F59E0B" : "#10B981"
+            return (
+              <button onClick={editCapacity} title="Definir capacidade do pátio" style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", borderRadius: 9, background: `${col}14`, border: `1px solid ${col}40`, color: col, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                {occupied}/{capacity} vagas{full ? " · lotado" : ""}
+              </button>
+            )
+          })()}
+          <button onClick={fetchData} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <RefreshCw size={14} /> Atualizar
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Mova os carros conforme avançam.</p>
 
