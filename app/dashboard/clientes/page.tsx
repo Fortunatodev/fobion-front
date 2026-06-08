@@ -503,6 +503,19 @@ export default function ClientesPage() {
                         <span style={{ fontSize: 12, color: "#71717A" }}>{customer.phone}</span>
                       </span>
 
+                      {/* V2-B3: falar com o cliente no WhatsApp em 1 toque */}
+                      {(() => {
+                        const d = (customer.phone || "").replace(/\D/g, "")
+                        if (d.length < 10) return null
+                        const href = `https://wa.me/${d.startsWith("55") ? d : "55" + d}`
+                        return (
+                          <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#10B981", textDecoration: "none", fontWeight: 600 }}>
+                            💬 WhatsApp
+                          </a>
+                        )
+                      })()}
+
                       {customer.email && (
                         <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                           <Mail size={11} color="#52525B" />
