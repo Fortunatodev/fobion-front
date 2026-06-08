@@ -868,7 +868,7 @@ function AgendarContent() {
                   style={{
                     width: "100%", height: 50, borderRadius: 14,
                     background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
-                    border: "none", color: "var(--c-text)", fontSize: 15, fontWeight: 700,
+                    border: "none", color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700,
                     cursor: "pointer", fontFamily: "inherit",
                     boxShadow: `0 4px 24px rgba(${themeRgb},0.3)`,
                     animation: "fadeAg 0.2s ease",
@@ -1177,7 +1177,7 @@ function AgendarContent() {
                   style={{
                     width: "100%", height: 48, borderRadius: 14,
                     background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
-                    border: "none", color: "var(--c-text)", fontSize: 15, fontWeight: 700,
+                    border: "none", color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700,
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >

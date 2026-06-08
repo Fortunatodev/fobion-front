@@ -132,7 +132,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
           backgroundColor: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
           backdropFilter:  scrolled ? "blur(24px)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(24px)" : "none",
-          borderBottom:    scrolled ? "1px solid rgba(255,255,255,0.07)" : "1px solid transparent",
+          borderBottom:    scrolled ? "1px solid var(--c-border)" : "1px solid transparent",
           boxShadow:       scrolled ? "0 1px 40px rgba(0,0,0,0.4)" : "none",
         }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", height: 64, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -181,7 +181,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                 <>
                   <button
                     onClick={() => router.push(`/${slug}/cliente`)}
-                    style={{ display: "flex", gap: 8, alignItems: "center", height: 36, padding: "0 12px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text)", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
+                    style={{ display: "flex", gap: 8, alignItems: "center", height: 36, padding: "0 12px", borderRadius: 10, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text)", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.09)" }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
                   >
@@ -220,7 +220,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
             {/* ✅ Burger — só aparece no mobile */}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
-              style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text-2)", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text-2)", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               className="slug-burger"
             >
               <span style={{ fontSize: 18, lineHeight: 1 }}>{mobileMenuOpen ? "✕" : "☰"}</span>
@@ -269,7 +269,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   <>
                     <button
                       onClick={() => { setMobileMenuOpen(false); router.push(`/${slug}/cliente`) }}
-                      style={{ height: 48, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                      style={{ height: 48, borderRadius: 12, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                     >
                       Minha conta
                     </button>
@@ -299,7 +299,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
 
         {/* ── Powered by Forbion footer ── */}
         <footer style={{
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid var(--c-border)",
           padding: "20px 24px",
           display: "flex",
           alignItems: "center",

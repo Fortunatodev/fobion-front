@@ -52,7 +52,7 @@ export default function CarlaWidget() {
           position: "fixed", bottom: 20, right: 20, zIndex: 60,
           width: 54, height: 54, borderRadius: "50%", border: "none",
           background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-          color: "var(--c-text)", cursor: "pointer", boxShadow: "0 8px 30px rgba(0,102,255,0.4)",
+          color: "var(--c-on-primary)", cursor: "pointer", boxShadow: "0 8px 30px rgba(0,102,255,0.4)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
@@ -87,7 +87,7 @@ export default function CarlaWidget() {
                 <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: "0 0 6px" }}>⚡ Ative o assistente</p>
                 <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: 0, lineHeight: 1.6 }}>
                   A Carla responde clientes e tira dúvidas com IA. Pra ligar (grátis): crie uma chave em
-                  <strong style={{ color: "var(--c-text)" }}> console.groq.com</strong> e defina <code style={{ color: "#0066FF" }}>GROQ_API_KEY</code> no servidor.
+                  <strong style={{ color: "var(--c-on-primary)" }}> console.groq.com</strong> e defina <code style={{ color: "#0066FF" }}>GROQ_API_KEY</code> no servidor.
                   O motor já está pronto — é só a chave.
                 </p>
               </div>

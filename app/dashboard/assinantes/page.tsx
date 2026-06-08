@@ -737,7 +737,7 @@ function AssinantesContent() {
               <button
                 onClick={() => { setShowModal(false); setFormError(null) }}
                 style={{
-                  background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-2)",
+                  background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
                   borderRadius: 8, width: 32, height: 32, display: "flex",
                   alignItems: "center", justifyContent: "center",
                   cursor: "pointer", color: "var(--c-text-3)", flexShrink: 0,

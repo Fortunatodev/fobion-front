@@ -64,7 +64,7 @@ function FieldInput({
           height: 42, backgroundColor: "var(--c-bg)",
           border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "0 14px",
-          fontSize: 14, color: "var(--c-text)",
+          fontSize: 14, color: "var(--c-on-primary)",
           outline: "none", width: "100%",
           boxSizing: "border-box",
           transition: "border-color 0.15s ease",

@@ -236,7 +236,7 @@ export default function RepassesReportPage() {
               <div style={{
                 display: "flex", gap: 3,
                 backgroundColor: "var(--c-elevated)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                border: "1px solid var(--c-border)",
                 borderRadius: 12, padding: 3,
               }}>
                 {PERIODS.map(opt => {
@@ -267,7 +267,7 @@ export default function RepassesReportPage() {
                   height: 36, padding: "0 14px", borderRadius: 10,
                   fontSize: 12, fontWeight: 600,
                   cursor: !data || data.transactions.length === 0 ? "not-allowed" : "pointer",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid var(--c-border)",
                   backgroundColor: "var(--c-elevated)",
                   color: !data || data.transactions.length === 0 ? "var(--c-text-4)" : "var(--c-text)",
                   fontFamily: "inherit",
@@ -334,7 +334,7 @@ export default function RepassesReportPage() {
             {[1,2,3].map(i => (
               <div key={i} style={{
                 backgroundColor: "var(--c-elevated)",
-                border: "1px solid rgba(255,255,255,0.04)",
+                border: "1px solid var(--c-border)",
                 borderRadius: 16, height: 110,
                 animation: "skR 1.4s ease infinite",
               }} />
@@ -375,7 +375,7 @@ export default function RepassesReportPage() {
             {/* POR FUNCIONÁRIO */}
             <div style={{
               backgroundColor: "var(--c-elevated)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid var(--c-border)",
               borderRadius: 16, padding: isMobile ? "18px 14px" : "20px 24px",
               marginBottom: 16,
             }}>
@@ -405,9 +405,9 @@ export default function RepassesReportPage() {
 
                     return (
                       <div key={emp.employeeId} style={{
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        border: "1px solid var(--c-border)",
                         borderRadius: 12,
-                        backgroundColor: "rgba(255,255,255,0.01)",
+                        backgroundColor: "var(--c-surface-2)",
                         overflow: "hidden",
                       }}>
                         <div style={{
@@ -438,7 +438,7 @@ export default function RepassesReportPage() {
                                 {!emp.employeeActive && (
                                   <span style={{
                                     fontSize: 10, color: "var(--c-text-3)", marginLeft: 8,
-                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    border: "1px solid var(--c-border)",
                                     borderRadius: 4, padding: "1px 6px",
                                   }}>
                                     inativo
@@ -483,7 +483,7 @@ export default function RepassesReportPage() {
 
                         {isExpanded && (
                           <div style={{
-                            borderTop: "1px solid rgba(255,255,255,0.04)",
+                            borderTop: "1px solid var(--c-border)",
                             backgroundColor: "rgba(0,0,0,0.2)",
                             padding: isMobile ? "10px" : "8px 16px 12px",
                           }}>
@@ -501,7 +501,7 @@ export default function RepassesReportPage() {
                                       : "1.5fr 1fr 80px 100px 90px",
                                     gap: 8, alignItems: "center",
                                     padding: "8px 0",
-                                    borderBottom: "1px dashed rgba(255,255,255,0.04)",
+                                    borderBottom: "1px dashed var(--c-border)",
                                     fontSize: 12,
                                   }}>
                                     <div style={{ minWidth: 0 }}>
@@ -572,7 +572,7 @@ function TotalCard({ label, value, icon, color }: {
   return (
     <div style={{
       backgroundColor: "var(--c-elevated)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      border: "1px solid var(--c-border)",
       borderRadius: 16,
       padding: "20px 18px",
     }}>

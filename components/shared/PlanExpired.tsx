@@ -99,7 +99,7 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "14px 24px", borderRadius: 12,
               background: redirecting ? "var(--c-text-4)" : "linear-gradient(135deg,#0066FF,#7C3AED)",
-              color: "var(--c-text)", fontSize: 15, fontWeight: 600,
+              color: "var(--c-on-primary)", fontSize: 15, fontWeight: 600,
               border: "none", cursor: redirecting ? "wait" : "pointer",
               fontFamily: "inherit",
             }}

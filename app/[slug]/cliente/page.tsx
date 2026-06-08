@@ -417,7 +417,7 @@ function ClientAreaContent() {
                       padding: "0 14px",
                       borderRadius: 8,
                       background: calLoading ? "var(--c-text-4)" : `linear-gradient(135deg, ${themeColor}, #7C3AED)`,
-                      color: "var(--c-text)",
+                      color: "var(--c-on-primary)",
                       border: "none",
                       cursor: calLoading ? "wait" : "pointer",
                       fontSize: 12.5,

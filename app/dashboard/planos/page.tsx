@@ -103,7 +103,7 @@ function FieldInput({
           height: 42, backgroundColor: "var(--c-bg)",
           border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "0 14px",
-          fontSize: 14, color: "var(--c-text)", outline: "none",
+          fontSize: 14, color: "var(--c-on-primary)", outline: "none",
           width: "100%", boxSizing: "border-box",
           transition: "border-color 0.15s", fontFamily: "inherit",
         }}
@@ -130,7 +130,7 @@ function FieldTextarea({
           backgroundColor: "var(--c-bg)",
           border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "10px 14px",
-          fontSize: 14, color: "var(--c-text)", outline: "none",
+          fontSize: 14, color: "var(--c-on-primary)", outline: "none",
           width: "100%", boxSizing: "border-box", resize: "vertical",
           transition: "border-color 0.15s", fontFamily: "inherit", minHeight: 72,
         }}
@@ -253,7 +253,7 @@ function ServiceRuleCard({
         <div style={{
           display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10,
           marginTop: 12, paddingTop: 12,
-          borderTop: "1px solid rgba(255,255,255,0.05)",
+          borderTop: "1px solid var(--c-border)",
         }}>
           {/* Discount Type */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -827,7 +827,7 @@ function PlanosContent() {
                 {showModal === "create" ? "Novo plano" : "Editar plano"}
               </h2>
               <button onClick={closeModal} style={{
-                background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-2)",
+                background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
                 borderRadius: 8, width: 32, height: 32, display: "flex",
                 alignItems: "center", justifyContent: "center",
                 cursor: "pointer", color: "var(--c-text-3)", flexShrink: 0,

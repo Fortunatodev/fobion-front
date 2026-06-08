@@ -147,8 +147,8 @@ function MiniMetric({ icon, iconColor, label, rawValue, isCurrency, sub, delay }
 
   return (
     <div style={{
-      backgroundColor: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.05)",
+      backgroundColor: "var(--c-surface-2)",
+      border: "1px solid var(--c-border)",
       borderRadius: 10, padding: "10px 12px",
       transition: "border-color 0.2s",
     }}>
@@ -209,8 +209,8 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
       {summary.topService && (
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
-          backgroundColor: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.05)",
+          backgroundColor: "var(--c-surface-2)",
+          border: "1px solid var(--c-border)",
           borderRadius: 10, padding: "8px 12px",
         }}>
           <div style={{
@@ -687,10 +687,10 @@ export default function DashboardPage() {
                         onClick={() => router.push("/dashboard/agendamentos")}
                         style={{
                           cursor: "pointer", transition: "background-color 0.1s",
-                          backgroundColor: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)",
+                          backgroundColor: idx % 2 === 0 ? "transparent" : "var(--c-surface-2)",
                         }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--c-surface-2)" }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? "transparent" : "var(--c-surface-2)" }}
                       >
                         <td style={{ padding: "11px 12px", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-2)" }}>

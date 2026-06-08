@@ -1269,7 +1269,7 @@ function NovoAgendamentoModal({
                   style={{
                     width: "100%", height: 44, borderRadius: 10, fontSize: 13, fontWeight: 600,
                     background: "linear-gradient(135deg, #25D366, #128C7E)",
-                    border: "none", color: "var(--c-text)", cursor: "pointer",
+                    border: "none", color: "var(--c-on-primary)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     fontFamily: "inherit", transition: "opacity 0.15s",
                   }}

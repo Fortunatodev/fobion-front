@@ -381,7 +381,7 @@ export default function SlugPage() {
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 10, justifyContent: "center", alignItems: "center", width: isMobile ? "100%" : "auto" }}>
               <button
                 onClick={() => document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" })}
-                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 24px", borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--c-text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 24px", borderRadius: 14, backgroundColor: "var(--c-surface-2)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--c-text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
               >
                 Ver serviços
               </button>
@@ -427,7 +427,7 @@ export default function SlugPage() {
               )}
               {/* Marketing sutil para quem não é assinante */}
               {!activeSub && hasPlans && (
-                <div style={{ marginBottom: 20, background: "rgba(255,255,255,0.02)", border: "1px solid var(--c-surface-2)", borderRadius: 14, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+                <div style={{ marginBottom: 20, background: "var(--c-surface-2)", border: "1px solid var(--c-surface-2)", borderRadius: 14, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
                   <Percent size={13} color="var(--c-text-4)" />
                   <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                     Assinantes dos planos desta loja têm descontos em todos os serviços.{" "}
@@ -477,7 +477,7 @@ export default function SlugPage() {
         <section id="horarios" style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: isMobile ? 32 : 64, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 280px" }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--c-text-4)", letterSpacing: 3, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: "5px 12px", borderRadius: 100 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--c-text-4)", letterSpacing: 3, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", padding: "5px 12px", borderRadius: 100 }}>
                 HORÁRIOS
               </span>
               <h2 style={{ fontSize: "clamp(22px,3vw,36px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-0.5px", margin: "12px 0 0" }}>Quando estamos abertos</h2>
@@ -701,7 +701,7 @@ function FloatingBar({
   onClear: () => void; onSchedule: () => void
 }) {
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)", backgroundColor: "rgba(10,10,10,0.97)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.08)", padding: isMobile ? "12px 16px" : "16px 24px" }}>
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)", backgroundColor: "rgba(10,10,10,0.97)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid var(--c-border)", padding: isMobile ? "12px 16px" : "16px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 10 : 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>

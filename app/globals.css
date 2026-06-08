@@ -38,6 +38,8 @@
   --c-text-2: #A1A1AA;
   --c-text-3: #71717A;
   --c-text-4: #52525B;
+  --c-on-primary: #FFFFFF; /* texto sobre botão de cor sólida/gradiente — branco nos 2 temas */
+  --c-shadow: rgba(0,0,0,0.4);
 }
 html[data-theme="light"] {
   --c-bg: #F4F5F7;
@@ -51,6 +53,8 @@ html[data-theme="light"] {
   --c-text-2: #52525B;
   --c-text-3: #6B7280;
   --c-text-4: #9CA3AF;
+  --c-on-primary: #FFFFFF;
+  --c-shadow: rgba(0,0,0,0.08);
   color-scheme: light;
 }
 

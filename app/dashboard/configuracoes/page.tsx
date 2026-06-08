@@ -308,7 +308,7 @@ function UserAvatar({ name, picture }: { name: string; picture?: string | null }
       width: 52, height: 52, borderRadius: 14, flexShrink: 0,
       background: "linear-gradient(135deg,#7C3AED,#0066FF)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 18, fontWeight: 700, color: "var(--c-text)",
+      fontSize: 18, fontWeight: 700, color: "var(--c-on-primary)",
     }}>
       {initials}
     </div>
@@ -369,7 +369,7 @@ function UpgradeBtn({ onClick }: { onClick: () => void }) {
       style={{
         width: "100%", height: 46, borderRadius: 12, border: "none",
         background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-        color: "var(--c-text)", fontSize: 14, fontWeight: 700,
+        color: "var(--c-on-primary)", fontSize: 14, fontWeight: 700,
         cursor: "pointer", fontFamily: "inherit",
         boxShadow: hov ? "0 8px 30px rgba(0,102,255,0.4)" : "0 4px 20px rgba(0,102,255,0.2)",
         transform: hov ? "scale(1.01)" : "scale(1)",
@@ -773,7 +773,7 @@ function ConfiguracoesContent() {
                       width: 80, height: 80, borderRadius: "50%",
                       background: `linear-gradient(135deg, ${themeColor}, ${themeColor}99)`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 28, fontWeight: 800, color: "var(--c-text)",
+                      fontSize: 28, fontWeight: 800, color: "var(--c-on-primary)",
                     }}>
                       {(formName || config?.name || "?").charAt(0).toUpperCase()}
                     </div>
@@ -907,7 +907,7 @@ function ConfiguracoesContent() {
                     width: 32, height: 32, borderRadius: "50%",
                     background: `linear-gradient(135deg, ${themeColor}, ${themeColor}99)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 700, color: "var(--c-text)",
+                    fontSize: 13, fontWeight: 700, color: "var(--c-on-primary)",
                   }}>
                     {(formName || "M").charAt(0).toUpperCase()}
                   </div>
@@ -1068,7 +1068,7 @@ function ConfiguracoesContent() {
                     height: 32, padding: "0 14px", borderRadius: 8,
                     border: "none",
                     background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                    color: "var(--c-text)", fontSize: 12, fontWeight: 600,
+                    color: "var(--c-on-primary)", fontSize: 12, fontWeight: 600,
                     cursor: "pointer", fontFamily: "inherit",
                     transition: "all 0.15s",
                     display: "flex", alignItems: "center", gap: 6,

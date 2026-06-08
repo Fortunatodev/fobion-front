@@ -113,7 +113,7 @@ export default function Header() {
             <button
               onClick={() => setOpen(false)}
               style={{
-                background: "rgba(255,255,255,0.05)",
+                background: "var(--c-surface-2)",
                 border: "none", cursor: "pointer",
                 padding: 6, borderRadius: 8,
                 color: "var(--c-text-2)", display: "flex",

@@ -289,7 +289,7 @@ export default function ServicosPage() {
             style={{
               display: "flex", gap: 8, alignItems: "center",
               background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-              border: "none", color: "var(--c-text)", height: 40, padding: "0 18px",
+              border: "none", color: "var(--c-on-primary)", height: 40, padding: "0 18px",
               borderRadius: 12, fontSize: 13, fontWeight: 600,
               cursor: "pointer", fontFamily: "inherit",
               boxShadow: "0 4px 16px rgba(0,102,255,0.25)",
@@ -343,7 +343,7 @@ export default function ServicosPage() {
                 style={{
                   height: 40, padding: "0 20px", borderRadius: 12,
                   background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                  color: "var(--c-text)", fontSize: 13, fontWeight: 600,
+                  color: "var(--c-on-primary)", fontSize: 13, fontWeight: 600,
                   border: "none", cursor: "pointer", fontFamily: "inherit",
                 }}
               >
@@ -637,7 +637,7 @@ export default function ServicosPage() {
                 style={{
                   background: "linear-gradient(135deg,#0066FF,#7C3AED)",
                   height: 40, padding: "0 20px", borderRadius: 10,
-                  color: "var(--c-text)", fontSize: 13, fontWeight: 600,
+                  color: "var(--c-on-primary)", fontSize: 13, fontWeight: 600,
                   border: "none", cursor: saving ? "not-allowed" : "pointer",
                   fontFamily: "inherit", opacity: saving ? 0.7 : 1,
                   display: "flex", gap: 8, alignItems: "center",
@@ -755,8 +755,8 @@ function ServiceCard({
             onClick={() => onEdit(service)}
             style={{
               flex: 1, height: 34, borderRadius: 10,
-              backgroundColor: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "var(--c-surface-2)",
+              border: "1px solid var(--c-border)",
               color: "var(--c-text-2)", fontSize: 12, fontWeight: 500,
               cursor: "pointer", display: "flex",
               alignItems: "center", justifyContent: "center", gap: 6,

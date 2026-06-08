@@ -115,7 +115,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   return (
     <div style={{
       backgroundColor: "var(--c-elevated)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      border: "1px solid var(--c-border)",
       borderRadius: 16,
       boxShadow: "0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02)",
       transition: "border-color 0.2s, box-shadow 0.2s",
@@ -131,7 +131,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function SkeletonBlock({ h = 120 }: { h?: number }) {
-  return <div style={{ backgroundColor: "var(--c-elevated)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, height: h, animation: "skR 1.4s ease infinite" }} />
+  return <div style={{ backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 16, height: h, animation: "skR 1.4s ease infinite" }} />
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
@@ -606,7 +606,7 @@ function PainelDeSaude() {
               </Link>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 3 }}>
+          <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
             {PERIODS.map(opt => {
               const active = period === opt.value
               return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
@@ -681,7 +681,7 @@ function PainelDeSaude() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ width: "100%", height: 4, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 2 }}>
+                        <div style={{ width: "100%", height: 4, backgroundColor: "var(--c-surface-2)", borderRadius: 2 }}>
                           <div style={{ height: 4, borderRadius: 2, background: i === 0 ? "linear-gradient(90deg,#0066FF,#7C3AED)" : "rgba(255,255,255,0.08)", width: `${pct}%`, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                         </div>
                       </div>
@@ -701,7 +701,7 @@ function PainelDeSaude() {
                       return (
                         <div key={dia.day} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-3)", width: 28, flexShrink: 0 }}>{WEEK_LABELS[dia.day] ?? dia.label}</span>
-                          <div style={{ flex: 1, height: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 4 }}>
+                          <div style={{ flex: 1, height: 8, backgroundColor: "var(--c-surface-2)", borderRadius: 4 }}>
                             <div style={{ height: 8, borderRadius: 4, width: `${Math.max(pct, 2)}%`, background: isTop ? "linear-gradient(90deg,#10B981,#0066FF)" : "rgba(0,102,255,0.5)", transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                           </div>
                           <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-2)", width: 24, textAlign: "right", flexShrink: 0 }}>{dia.count}</span>
@@ -721,12 +721,12 @@ function PainelDeSaude() {
                   <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
                     <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 14px" }}>Base de Clientes</h3>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 14, textAlign: "center" }}>
+                      <div style={{ backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Users size={18} color="#0066FF" style={{ margin: "0 auto 6px", display: "block" }} />
                         <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalCustomers}</p>
                         <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Total clientes</p>
                       </div>
-                      <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 14, textAlign: "center" }}>
+                      <div style={{ backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Crown size={18} color="#F59E0B" style={{ margin: "0 auto 6px", display: "block" }} />
                         <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalActiveSubscribers}</p>
                         <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Assinantes ativos</p>
@@ -737,7 +737,7 @@ function PainelDeSaude() {
                         <span style={{ fontSize: 11, color: "var(--c-text-3)" }}>Conversão para assinante</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: data.insights.subscriberRatio >= 20 ? "#10B981" : "#F59E0B" }}>{data.insights.subscriberRatio}%</span>
                       </div>
-                      <div style={{ width: "100%", height: 5, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 3 }}>
+                      <div style={{ width: "100%", height: 5, backgroundColor: "var(--c-surface-2)", borderRadius: 3 }}>
                         <div style={{ height: 5, borderRadius: 3, width: `${Math.min(data.insights.subscriberRatio, 100)}%`, background: data.insights.subscriberRatio >= 20 ? "linear-gradient(90deg,#10B981,#0066FF)" : "linear-gradient(90deg,#F59E0B,#EF4444)", transition: "width 0.6s ease" }} />
                       </div>
                     </div>
@@ -758,7 +758,7 @@ function PainelDeSaude() {
                                 </div>
                                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)" }}>{fmt(m.total)}</span>
                               </div>
-                              <div style={{ width: "100%", height: 4, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 2 }}>
+                              <div style={{ width: "100%", height: 4, backgroundColor: "var(--c-surface-2)", borderRadius: 2 }}>
                                 <div style={{ height: 4, borderRadius: 2, background: "linear-gradient(90deg,#0066FF,#7C3AED)", width: `${pct}%`, transition: "width 0.6s ease" }} />
                               </div>
                             </div>

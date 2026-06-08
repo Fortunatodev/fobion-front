@@ -104,7 +104,7 @@ function CustomerLoginContent() {
           <div style={{
             maxWidth: 400, width: "100%",
             backgroundColor: "rgba(17,17,17,0.88)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--c-border)",
             borderRadius: 24, padding: "40px 36px",
             backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
             boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
@@ -141,7 +141,7 @@ function CustomerLoginContent() {
               style={{
                 marginTop: 28, width: "100%", height: 48,
                 borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: "var(--c-surface-2)",
                 color: "var(--c-text)", fontSize: 15, fontWeight: 600,
                 cursor: loading ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",

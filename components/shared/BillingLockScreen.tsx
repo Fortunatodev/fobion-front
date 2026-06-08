@@ -245,7 +245,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
                 background: redirecting
                   ? "var(--c-text-4)"
                   : "linear-gradient(135deg, #0066FF, #7C3AED)",
-                color: "var(--c-text)", fontSize: 15, fontWeight: 700,
+                color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700,
                 border: "none", cursor: redirecting ? "wait" : "pointer",
                 transition: "all 0.2s ease",
                 boxShadow: redirecting ? "none" : "0 4px 20px rgba(0,102,255,0.25)",

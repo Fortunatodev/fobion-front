@@ -184,7 +184,7 @@ function ActionBtn({
         flex: 1, height: 36, borderRadius: 9, fontSize: 12, fontWeight: 600,
         background: outline ? "transparent" : color,
         border: outline ? `1px solid ${color}` : "none",
-        color: outline ? color : "var(--c-text)",
+        color: outline ? color : "var(--c-on-primary)",
         cursor: loading || disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
         fontFamily: "inherit",
@@ -382,7 +382,7 @@ function NewAgBtn({ onClick }: { onClick: () => void }) {
         display: "flex", alignItems: "center", gap: 6,
         height: 38, padding: "0 16px", borderRadius: 10,
         background: hov ? "#0052CC" : "#0066FF",
-        border: "none", color: "var(--c-text)", fontSize: 13, fontWeight: 600,
+        border: "none", color: "var(--c-on-primary)", fontSize: 13, fontWeight: 600,
         cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s",
       }}
     >
@@ -586,7 +586,7 @@ export default function AgendaPage() {
                         minHeight: isMobile ? 48 : 72, padding: isMobile ? "6px 3px 3px" : "8px 6px 6px",
                         borderBottom: "1px solid var(--c-surface)",
                         borderRight: (i + 1) % 7 === 0 ? "none" : "1px solid var(--c-surface)",
-                        backgroundColor: isSel ? "var(--c-surface-2)" : isHov ? "#131313" : "transparent",
+                        backgroundColor: isSel ? "var(--c-surface-2)" : isHov ? "var(--c-surface-2)" : "transparent",
                         cursor: day.isCurrentMonth ? "pointer" : "default",
                         transition: "background 0.12s",
                       }}

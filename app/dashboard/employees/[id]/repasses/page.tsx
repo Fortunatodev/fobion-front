@@ -168,7 +168,7 @@ export default function EmployeeRepassesPage() {
       )}
 
       {/* Default geral (informativo) */}
-      <div style={{ marginBottom: 20, padding: "14px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid var(--c-border)", borderRadius: 12 }}>
+      <div style={{ marginBottom: 20, padding: "14px 16px", background: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 12 }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", margin: 0 }}>
           Repasse padrão por serviço (configurável em cada serviço)
         </p>
@@ -257,7 +257,7 @@ export default function EmployeeRepassesPage() {
           <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, zIndex: 101, boxShadow: "0 24px 48px rgba(0,0,0,0.6)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Nova exceção</h3>
-              <button onClick={() => setShowAdd(false)} style={{ width: 28, height: 28, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => setShowAdd(false)} style={{ width: 28, height: 28, borderRadius: 6, background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} />
               </button>
             </div>

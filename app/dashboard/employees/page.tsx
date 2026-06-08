@@ -270,7 +270,7 @@ function EmployeesContent() {
                       width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
                       background: "linear-gradient(135deg, #0066FF, #7C3AED)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, fontWeight: 700, color: "var(--c-text)",
+                      fontSize: 16, fontWeight: 700, color: "var(--c-on-primary)",
                     }}>
                       {getInitials(emp.name)}
                     </div>

@@ -77,7 +77,7 @@ export default function ProFeatureGate({
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "12px 20px", borderRadius: 10,
               background: "linear-gradient(135deg, #F59E0B, #D97706)",
-              color: "var(--c-text)", fontSize: 14, fontWeight: 600,
+              color: "var(--c-on-primary)", fontSize: 14, fontWeight: 600,
               textDecoration: "none", transition: "opacity 0.15s",
             }}
           >

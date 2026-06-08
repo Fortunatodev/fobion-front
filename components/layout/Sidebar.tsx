@@ -187,7 +187,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               width: 30, height: 30, borderRadius: "50%",
               background: "linear-gradient(135deg,#7C3AED,#0066FF)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 700, color: "var(--c-text)", flexShrink: 0,
+              fontSize: 11, fontWeight: 700, color: "var(--c-on-primary)", flexShrink: 0,
             }}>
               {initials}
             </div>
