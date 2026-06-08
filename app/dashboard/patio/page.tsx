@@ -52,8 +52,8 @@ export default function PatioPage() {
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 48px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LayoutGrid size={20} color="#0066FF" />
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: 0 }}>Pátio</h1>
+          <LayoutGrid size={22} color="#0066FF" />
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Pátio</h1>
         </div>
         <button onClick={fetchData} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, background: "transparent", border: "1px solid #1F1F1F", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <RefreshCw size={14} /> Atualizar
@@ -65,7 +65,7 @@ export default function PatioPage() {
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
       {!loading && !error && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
           {COLUMNS.map((col) => {
             const cards = schedules.filter(col.match).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
             return (

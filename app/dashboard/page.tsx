@@ -336,7 +336,7 @@ export default function DashboardPage() {
       {/* .page-header = flex wrap justify-between com gap */}
       <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: 0, letterSpacing: "-0.3px" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
             Olá, {firstName} 👋
           </h1>
           <p style={{ fontSize: 13, color: "#52525B", marginTop: 4, textTransform: "capitalize" }}>
@@ -369,18 +369,18 @@ export default function DashboardPage() {
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}
       <div className="metrics-grid">
         <MetricCard
-          title="Agendamentos hoje" rawValue={schedulesToday.length}
-          subtitle="agendamentos neste dia"
-          icon={<Calendar size={16} />}
-          iconColor="#0066FF" iconBg="rgba(0,102,255,0.1)"
-          accentColor="#0066FF" loading={loading}
-        />
-        <MetricCard
           title="Receita paga hoje" rawValue={paidRevenue} isCurrency
           subtitle="servicos confirmados como pagos"
           icon={<CircleDollarSign size={16} />}
           iconColor="#10B981" iconBg="rgba(16,185,129,0.1)"
           accentColor="#10B981" loading={loading}
+        />
+        <MetricCard
+          title="Agendamentos hoje" rawValue={schedulesToday.length}
+          subtitle="agendamentos neste dia"
+          icon={<Calendar size={16} />}
+          iconColor="#0066FF" iconBg="rgba(0,102,255,0.1)"
+          accentColor="#0066FF" loading={loading}
         />
         <MetricCard
           title="Total de clientes" rawValue={totalCustomers}
