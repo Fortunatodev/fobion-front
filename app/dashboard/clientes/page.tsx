@@ -714,7 +714,14 @@ export default function ClientesPage() {
                 {/* Fields */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <FieldInput label="Nome completo" value={formName} onChange={setFormName} placeholder="João da Silva" required />
-                  <FieldInput label="Telefone" value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-0000" />
+                  <div>
+                    <FieldInput label="Telefone" value={formPhone} onChange={setFormPhone} placeholder="(47) 99999-0000" />
+                    {!formPhone.trim() && (
+                      <p style={{ fontSize: 11, color: "#F59E0B", margin: "6px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
+                        <AlertCircle size={12} style={{ flexShrink: 0 }} /> Sem telefone, lembrete e recall de garantia não chegam no cliente.
+                      </p>
+                    )}
+                  </div>
                   <FieldInput label="E-mail" value={formEmail} onChange={setFormEmail} placeholder="cliente@email.com (opcional)" />
                 </div>
 
