@@ -1086,6 +1086,33 @@ function ConfiguracoesContent() {
               Seu plano atual
             </h2>
 
+            {/* V2-B1: contador de vencimento do trial/plano (QW-06) */}
+            {config?.planExpiresAt && (() => {
+              const days = Math.ceil((new Date(config.planExpiresAt as string).getTime() - Date.now()) / 86400000)
+              const expired = days < 0
+              const urgent = expired || days <= 3
+              const warn = !urgent && days <= 7
+              const color = urgent ? "#EF4444" : warn ? "#F59E0B" : "#10B981"
+              const label = expired
+                ? `${config?.isTrial ? "Seu teste" : "Seu plano"} venceu há ${Math.abs(days)} dia${Math.abs(days) !== 1 ? "s" : ""}`
+                : `${config?.isTrial ? "Seu teste grátis" : "Seu plano"} expira em ${days} dia${days !== 1 ? "s" : ""}`
+              return (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  backgroundColor: `${color}14`, border: `1px solid ${color}33`,
+                  borderRadius: 12, padding: "11px 16px", marginBottom: 20,
+                }}>
+                  <Clock size={15} color={color} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color }}>{label}</span>
+                  {(urgent || warn) && config?.plan !== "PRO" && (
+                    <span style={{ fontSize: 12, color: "#A1A1AA", marginLeft: "auto" }}>
+                      Garanta o acesso fazendo o upgrade 👇
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
+
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
               {/* BASIC */}
               <div style={{
@@ -1136,7 +1163,21 @@ function ConfiguracoesContent() {
             </div>
 
             {config?.plan !== "PRO" && (
-              <UpgradeBtn onClick={() => router.push("/dashboard/configuracoes?tab=plano")} />
+              <UpgradeBtn onClick={async () => {
+                // V2-B1 (QW-13): botão de upgrade agora ABRE o checkout real
+                // (antes navegava pra própria página — morto). Busca o link
+                // CactoPay do tenant e redireciona.
+                try {
+                  const res = await apiGet<{ paymentLink?: string | null }>("/billing/payment-link")
+                  if (res?.paymentLink) {
+                    window.location.href = res.paymentLink
+                  } else {
+                    alert("Link de pagamento ainda não configurado. Fale com o suporte.")
+                  }
+                } catch {
+                  alert("Não foi possível abrir o checkout. Tente de novo.")
+                }
+              }} />
             )}
           </SectionCard>
         )}
