@@ -13,6 +13,7 @@ import { apiGet, apiPut, apiPost } from "@/lib/api"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
 import { buildWhatsAppLink } from "@/lib/utils"
+import NfseButton from "@/components/dashboard/NfseButton"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1853,7 +1854,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981", flex: 1 }}><CheckCircle2 size={13} /> Concluído</div>)}
+                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={13} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "#3F3F46" }}>Cancelado</span>)}
                         </div>
                       </div>
@@ -1889,7 +1890,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</div>)}
+                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "#3F3F46" }}>Cancelado</span>)}
                         </div>
                       </div>

@@ -30,6 +30,7 @@ interface BusinessConfig {
   email: string
   address: string | null
   description: string | null
+  cnpj?: string | null
   plan: "FREE" | "BASIC" | "PRO"
   isTrial?: boolean
   planExpiresAt?: string | null
@@ -420,6 +421,7 @@ function ConfiguracoesContent() {
   const [formEmail,       setFormEmail]       = useState("")
   const [formAddress,     setFormAddress]     = useState("")
   const [formDescription, setFormDescription] = useState("")
+  const [formCnpj,        setFormCnpj]        = useState("")
   const [ownerAvatarUrl,  setOwnerAvatarUrl]  = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [themeColor,      setThemeColor]      = useState("#0066FF")
@@ -442,6 +444,7 @@ function ConfiguracoesContent() {
       setFormEmail(biz.email ?? "")
       setFormAddress(biz.address ?? "")
       setFormDescription(biz.description ?? "")
+      setFormCnpj(biz.cnpj ?? "")
       setOwnerAvatarUrl(biz.ownerAvatarUrl ?? null)
       setThemeColor(biz.themeColor ?? "#0066FF")
 
@@ -527,6 +530,7 @@ function ConfiguracoesContent() {
         email:       formEmail.trim() || undefined,
         address:     formAddress.trim() || undefined,
         description: formDescription.trim() || undefined,
+        cnpj:        formCnpj.trim(),
       })
       showSuccess("Alterações salvas com sucesso!")
     } catch {
@@ -733,6 +737,10 @@ function ConfiguracoesContent() {
               <div>
                 <FieldLabel>Descrição</FieldLabel>
                 <DescTextarea value={formDescription} onChange={setFormDescription} placeholder="Conte um pouco sobre seu negócio..." />
+              </div>
+              <div>
+                <FieldLabel>CNPJ <span style={{ color: "#52525B", fontWeight: 400 }}>(necessário pra emitir NF-e)</span></FieldLabel>
+                <TextInput value={formCnpj} onChange={setFormCnpj} placeholder="00.000.000/0000-00" />
               </div>
             </div>
 
