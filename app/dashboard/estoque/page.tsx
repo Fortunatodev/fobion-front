@@ -41,6 +41,14 @@ export default function EstoquePage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Erro.")).finally(() => setLoading(false))
   }
   useEffect(fetchData, [])
+  // B05 (ext) — ESC fecha + trava scroll do fundo quando algum modal está aberto
+  useEffect(() => {
+    if (!modal && !adjFor) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setModal(false); setAdjFor(null) } }
+    document.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden"
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev }
+  }, [modal, adjFor])
 
   function openCreate() { setEditingId(null); setF(EMPTY_FORM); setFErr(""); setModal(true) }
   function openEdit(p: Product) {

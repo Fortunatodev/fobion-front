@@ -77,6 +77,14 @@ export default function OrcamentosPage() {
       .finally(() => setLoading(false))
   }
   useEffect(fetchQuotes, [])
+  // B05 (ext) — ESC fecha + trava scroll do fundo quando o modal está aberto
+  useEffect(() => {
+    if (!modal) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setModal(false) }
+    document.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden"
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev }
+  }, [modal])
   useEffect(() => { apiGet<{ services: ServiceItem[] }>("/services").then((r) => setServices(r.services ?? [])).catch(() => {}) }, [])
 
   // busca cliente (simples, on-change)
