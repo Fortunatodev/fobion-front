@@ -7,6 +7,7 @@ import { isAuthenticated } from "@/lib/auth"
 import Sidebar from "@/components/layout/Sidebar"   // import direto, não barrel
 import Header from "@/components/layout/Header"
 import BillingLockScreen from "@/components/shared/BillingLockScreen"
+import CarlaWidget from "@/components/dashboard/CarlaWidget"
 
 export default function DashboardLayout({
   children,
@@ -94,6 +95,8 @@ export default function DashboardLayout({
           <div style={{ padding: isMobile ? "16px" : "24px" }}>{children}</div>
         </main>
       </div>
+      {/* V2-B2: assistente Carla (flutuante; ativa com GROQ_API_KEY) */}
+      <CarlaWidget />
     </div>
   )
 }
