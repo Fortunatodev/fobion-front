@@ -12,6 +12,7 @@ import {
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
+import RevenueActionsCard from "@/components/dashboard/RevenueActionsCard"
 import { formatScheduleTime } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -396,6 +397,9 @@ export default function DashboardPage() {
           accentColor="#7C3AED" loading={loading}
         />
       </div>
+
+      {/* ── V2-B3: ações de receita (retornos a cobrar + clientes a recuperar) ── */}
+      <RevenueActionsCard />
 
       {/* ── Middle row (.middle-grid) ─────────────────────────────────── */}
       {/* 1 col → 2 col (1024px) */}
