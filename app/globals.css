@@ -22,6 +22,38 @@
   --breakpoint-2xl: 1536px;
 }
 
+/* ── Tokens de tema (claro/escuro) ─────────────────────────────────────────────
+   Semânticos: fundo, superfície, borda e texto FLIPAM por tema.
+   Marca (#0066FF/#7C3AED) e status (verde/vermelho/âmbar) ficam iguais nos dois.
+   Troca de tema = só mudar data-theme no <html> (ThemeToggle). Default escuro. */
+:root {
+  --c-bg: #0A0A0A;
+  --c-surface: #111111;
+  --c-elevated: #0D0D0D;
+  --c-surface-2: #161616;
+  --c-border: #1F1F1F;
+  --c-border-2: #2A2A2A;
+  --c-input-bg: #0A0A0A;
+  --c-text: #FFFFFF;
+  --c-text-2: #A1A1AA;
+  --c-text-3: #71717A;
+  --c-text-4: #52525B;
+}
+html[data-theme="light"] {
+  --c-bg: #F4F5F7;
+  --c-surface: #FFFFFF;
+  --c-elevated: #FFFFFF;
+  --c-surface-2: #EEF0F3;
+  --c-border: #E3E5EA;
+  --c-border-2: #D3D6DD;
+  --c-input-bg: #FFFFFF;
+  --c-text: #18181B;
+  --c-text-2: #52525B;
+  --c-text-3: #6B7280;
+  --c-text-4: #9CA3AF;
+  color-scheme: light;
+}
+
 *,
 *::before,
 *::after {
@@ -35,17 +67,18 @@ html {
 }
 
 body {
-  background-color: #0A0A0A;
-  color: #ffffff;
+  background-color: var(--c-bg);
+  color: var(--c-text);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2F2F2F; border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: var(--c-border-2); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #3F3F3F; }
 
 ::selection { background: rgba(0,102,255,0.3); color: #fff; }

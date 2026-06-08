@@ -38,7 +38,7 @@ export default function DashboardLayout({
       <div
         style={{
           minHeight: "100vh",
-          backgroundColor: "#09090B",
+          backgroundColor: "var(--c-bg)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -66,7 +66,7 @@ export default function DashboardLayout({
     <div style={{
       display: "flex",
       minHeight: "100vh",
-      backgroundColor: "#0A0A0A",
+      backgroundColor: "var(--c-bg)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
       {/* Sidebar: .sidebar-desktop = none mobile / flex desktop */}

@@ -11,6 +11,7 @@ import {
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
 import ForbionLogo from "@/components/shared/ForbionLogo"
+import ThemeToggle from "@/components/shared/ThemeToggle"
 
 // PRO-only paths — shown with a badge on BASIC plan
 const PRO_ONLY_PATHS = new Set([
@@ -79,11 +80,11 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      backgroundColor: "#0A0A0A",
+      backgroundColor: "var(--c-bg)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
       {/* Logo + Notificações */}
-      <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #1A1A1A", flexShrink: 0 }}>
+      <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--c-border)", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ForbionLogo size="md" as="div" style={{ flex: 1 }} />
           <NotificationBell />
@@ -99,7 +100,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           return (
           <div key={section.label} style={{ marginBottom: 20 }}>
             <p style={{
-              fontSize: 10, fontWeight: 700, color: "#3F3F46",
+              fontSize: 10, fontWeight: 700, color: "var(--c-text-4)",
               letterSpacing: "0.08em", padding: "0 10px", marginBottom: 6,
             }}>
               {section.label}
@@ -117,14 +118,14 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                     display: "flex", alignItems: "center", gap: 10,
                     padding: "8px 10px", borderRadius: 10,
                     backgroundColor: active ? "rgba(0,102,255,0.1)" : "transparent",
-                    color: active ? "#fff" : isProOnly ? "#52525B" : "#71717A",
+                    color: active ? "var(--c-text)" : isProOnly ? "var(--c-text-4)" : "var(--c-text-3)",
                     textDecoration: "none", fontSize: 13,
                     fontWeight: active ? 600 : 400,
                     transition: "all 0.15s", marginBottom: 2,
                     opacity: isProOnly ? 0.7 : 1,
                   }}
                 >
-                  <Icon size={15} style={{ flexShrink: 0, color: active ? "#0066FF" : "#52525B" }} />
+                  <Icon size={15} style={{ flexShrink: 0, color: active ? "#0066FF" : "var(--c-text-4)" }} />
                   <span style={{ flex: 1 }}>{item.label}</span>
                   {isProOnly && (
                     <span style={{
@@ -164,7 +165,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               </span>
             </div>
             {planStatus.planExpiresAt && (
-              <p style={{ fontSize: 9, color: "#52525B", margin: 0 }}>
+              <p style={{ fontSize: 9, color: "var(--c-text-4)", margin: 0 }}>
                 {planStatus.isTrial ? "Teste até " : "Válido até "}
                 {new Date(planStatus.planExpiresAt).toLocaleDateString("pt-BR")}
               </p>
@@ -174,7 +175,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       )}
 
       {/* User footer */}
-      <div style={{ padding: "12px 10px", borderTop: "1px solid #1A1A1A", flexShrink: 0 }}>
+      <div style={{ padding: "12px 10px", borderTop: "1px solid var(--c-border)", flexShrink: 0 }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
           padding: "8px 10px", borderRadius: 10, marginBottom: 4,
@@ -192,21 +193,22 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user?.name ?? "—"}
             </p>
-            <p style={{ fontSize: 10, color: "#52525B", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user?.email ?? ""}
             </p>
           </div>
         </div>
+        <ThemeToggle />
         <button
           onClick={handleLogout}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "8px 10px", borderRadius: 10, width: "100%",
             backgroundColor: "transparent", border: "none",
-            color: "#52525B", cursor: "pointer", fontSize: 13,
+            color: "var(--c-text-4)", cursor: "pointer", fontSize: 13,
             fontFamily: "inherit", transition: "all 0.15s",
           }}
         >
@@ -233,7 +235,7 @@ export default function Sidebar() {
     return (
       <div style={{
         position: "fixed", top: 0, left: 0, bottom: 0, width: 220,
-        borderRight: "1px solid #1A1A1A", zIndex: 40, overflowY: "auto",
+        borderRight: "1px solid var(--c-border)", zIndex: 40, overflowY: "auto",
       }}>
         <SidebarContent />
       </div>
@@ -249,7 +251,7 @@ export default function Sidebar() {
         position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 60,
         backgroundColor: "rgba(10,10,10,0.97)",
         backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid #1A1A1A",
+        borderBottom: "1px solid var(--c-border)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 16px",
       }}>
@@ -279,12 +281,12 @@ export default function Sidebar() {
       {mobileMenuOpen && (
         <div style={{
           position: "fixed", top: 0, left: 0, bottom: 0, width: 260,
-          zIndex: 55, borderRight: "1px solid #1A1A1A", overflowY: "auto",
+          zIndex: 55, borderRight: "1px solid var(--c-border)", overflowY: "auto",
           animation: "slideInLeft 0.3s cubic-bezier(0.16,1,0.3,1)",
         }}>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            style={{ position: "absolute", top: 16, right: 16, zIndex: 1, background: "none", border: "none", color: "#71717A", cursor: "pointer", padding: 4 }}
+            style={{ position: "absolute", top: 16, right: 16, zIndex: 1, background: "none", border: "none", color: "var(--c-text-3)", cursor: "pointer", padding: 4 }}
           >
             <X size={18} />
           </button>
