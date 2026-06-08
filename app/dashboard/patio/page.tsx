@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck } from "lucide-react"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
@@ -100,6 +101,9 @@ export default function PatioPage() {
                           {moving === s.id ? "..." : <>{col.cta} <ChevronRight size={13} /></>}
                         </button>
                       )}
+                      <Link href={`/dashboard/vistoria/${s.id}`} style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid #1F1F1F", color: "#71717A", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}>
+                        <ShieldCheck size={12} /> Vistoria
+                      </Link>
                     </div>
                   ))}
                 </div>
