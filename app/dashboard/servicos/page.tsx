@@ -16,6 +16,7 @@ interface Service {
   isActive: boolean
   imageUrl?: string | null
   commissionPercent?: number | null
+  warrantyDays?: number | null
   createdAt: string
 }
 
@@ -94,6 +95,7 @@ export default function ServicosPage() {
   const [formActive,      setFormActive]      = useState(true)
   const [formImageUrl,    setFormImageUrl]    = useState("")
   const [formCommissionPct, setFormCommissionPct] = useState("")  // string vazia = sem repasse default
+  const [formWarranty, setFormWarranty] = useState("")  // V2-B3: garantia/recall em dias (vazio = sem)
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchServices = useCallback(async () => {
@@ -132,6 +134,7 @@ export default function ServicosPage() {
     setFormPrice(""); setFormDuration("")
     setFormActive(true); setFormImageUrl("")
     setFormCommissionPct("")
+    setFormWarranty("")
     setFormError(null)
     setShowModal("create")
   }
@@ -145,6 +148,7 @@ export default function ServicosPage() {
     setFormActive(s.isActive)
     setFormImageUrl(s.imageUrl || "")
     setFormCommissionPct(s.commissionPercent != null ? String(s.commissionPercent) : "")
+    setFormWarranty(s.warrantyDays != null ? String(s.warrantyDays) : "")
     setFormError(null)
     setShowModal("edit")
   }
@@ -190,6 +194,8 @@ export default function ServicosPage() {
         isActive:        formActive,
         imageUrl:        formImageUrl || null,
         commissionPercent,
+        // V2-B3: garantia/recall em dias (vazio = sem recall)
+        warrantyDays:    formWarranty.trim() ? Math.max(0, Math.round(Number(formWarranty))) : null,
       }
 
       if (showModal === "create") {
@@ -471,6 +477,45 @@ export default function ServicosPage() {
                   {!formCommissionPct && (
                     <span style={{ marginLeft: 8, fontSize: 12, color: "#52525B", fontStyle: "italic" }}>
                       sem repasse
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* V2-B3: Garantia / Recall ──────────────────────────────── */}
+              <div style={{
+                background: "#0A0A0A", border: "1px solid #252525",
+                borderRadius: 10, padding: "12px 14px",
+                display: "flex", flexDirection: "column", gap: 8,
+              }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                    Garantia / Recall
+                  </p>
+                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                    Dias de garantia (ex.: vitrificação 180). Ao fechar a comanda, o sistema
+                    agenda um lembrete de retorno antes de vencer. Vazio = sem recall.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="number"
+                    min={0}
+                    max={3650}
+                    value={formWarranty}
+                    onChange={(e) => setFormWarranty(e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: 80, height: 36, padding: "0 10px",
+                      background: "#111", border: "1px solid #2A2A2A",
+                      borderRadius: 8, color: "#fff", fontSize: 13,
+                      outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                  <span style={{ color: "#71717A", fontSize: 13 }}>dias</span>
+                  {formWarranty && Number(formWarranty) > 0 && (
+                    <span style={{ marginLeft: 8, fontSize: 12, color: "#0066FF" }}>
+                      recall ~{Math.max(0, Number(formWarranty) - 7)} dias após o serviço
                     </span>
                   )}
                 </div>
