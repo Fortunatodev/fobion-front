@@ -19,6 +19,7 @@ import {
 import type { AccountLock } from "@/types"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
+import PricingCards from "@/components/shared/PricingCards"
 
 /* ─── Props ────────────────────────────────────────────────────────────────── */
 
@@ -230,6 +231,13 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
             ))}
           </div>
         </div>
+        )}
+
+        {/* Os 3 tiers reais (Essencial/Premium/Pro) — cliente escolhe e paga aqui */}
+        {!isInactive && (
+          <div style={{ marginBottom: 20 }}>
+            <PricingCards />
+          </div>
         )}
 
         {/* ── CTA buttons ────────────────────────────────────────────── */}

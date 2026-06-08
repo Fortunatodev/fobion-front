@@ -6,6 +6,7 @@ import { useUser } from "@/contexts/UserContext"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
 import TeamCard from "@/components/settings/TeamCard"
+import PricingCards from "@/components/shared/PricingCards"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
@@ -31,6 +32,7 @@ interface BusinessConfig {
   address: string | null
   description: string | null
   cnpj?: string | null
+  tier?: string | null
   plan: "FREE" | "BASIC" | "PRO"
   isTrial?: boolean
   planExpiresAt?: string | null
@@ -1141,6 +1143,13 @@ function ConfiguracoesContent() {
               )
             })()}
 
+            {/* 3 tiers reais (lê /billing/tiers → checkout Cakto) */}
+            <div style={{ marginBottom: 28 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 14px" }}>Escolha seu plano</h3>
+              <PricingCards currentTier={config?.tier} />
+            </div>
+
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 12px" }}>Comparativo de recursos</p>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
               {/* BASIC */}
               <div style={{
