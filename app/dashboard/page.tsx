@@ -59,7 +59,7 @@ function getStatusConfig(status: string) {
     DONE:        { label: "Concluído",    color: "#10B981", bg: "rgba(16,185,129,0.1)"  },
     CANCELLED:   { label: "Cancelado",    color: "#EF4444", bg: "rgba(239,68,68,0.1)"   },
   }
-  return map[status] ?? { label: status, color: "#A1A1AA", bg: "rgba(161,161,170,0.1)" }
+  return map[status] ?? { label: status, color: "var(--c-text-2)", bg: "rgba(161,161,170,0.1)" }
 }
 
 // ── MetricCard ────────────────────────────────────────────────────────────────
@@ -81,8 +81,8 @@ function MetricCard({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        backgroundColor: "#111111",
-        border: `1px solid ${hov ? accentColor + "50" : "#1F1F1F"}`,
+        backgroundColor: "var(--c-surface)",
+        border: `1px solid ${hov ? accentColor + "50" : "var(--c-border)"}`,
         borderRadius: 16,
         padding: 20,
         position: "relative",
@@ -95,17 +95,17 @@ function MetricCard({
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: "#71717A", margin: 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-3)", margin: 0 }}>
             {title}
           </p>
           <div style={{ marginTop: 8, minHeight: 36, display: "flex", alignItems: "center" }}>
             {loading ? (
               <div className="animate-skeleton-pulse" style={{
                 height: 32, width: "60%",
-                backgroundColor: "#1F1F1F", borderRadius: 8,
+                backgroundColor: "var(--c-border)", borderRadius: 8,
               }} />
             ) : (
-              <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>
+              <span style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.5px" }}>
                 {display}
               </span>
             )}
@@ -123,8 +123,8 @@ function MetricCard({
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 12 }}>
-        <ArrowUpRight size={11} color="#3F3F46" />
-        <span style={{ fontSize: 11, color: "#3F3F46" }}>{subtitle}</span>
+        <ArrowUpRight size={11} color="var(--c-text-4)" />
+        <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>{subtitle}</span>
       </div>
       <div style={{
         position: "absolute", bottom: -20, right: -20,
@@ -161,9 +161,9 @@ function MiniMetric({ icon, iconColor, label, rawValue, isCurrency, sub, delay }
         }}>
           {icon}
         </div>
-        <span style={{ fontSize: 10, fontWeight: 500, color: "#6B7280" }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 500, color: "var(--c-text-3)" }}>{label}</span>
       </div>
-      <p style={{ fontSize: 17, fontWeight: 700, color: "#F9FAFB", margin: 0, letterSpacing: "-0.3px" }}>
+      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0, letterSpacing: "-0.3px" }}>
         {display}
       </p>
       {sub && <div style={{ marginTop: 4 }}>{sub}</div>}
@@ -192,17 +192,17 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
         <MiniMetric
           icon={<Calendar size={11} />} iconColor="#3B82F6"
           label="Concluídos" rawValue={summary.appointments} delay={100}
-          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>agendamentos</span>}
+          sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>agendamentos</span>}
         />
         <MiniMetric
           icon={<UserPlus size={11} />} iconColor="#F59E0B"
           label="Novos clientes" rawValue={summary.newCustomers} delay={200}
-          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>no período</span>}
+          sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>no período</span>}
         />
         <MiniMetric
           icon={<Star size={11} />} iconColor="#7C3AED"
           label="Assinantes" rawValue={summary.activeSubscribers} delay={300}
-          sub={<span style={{ fontSize: 10, color: "#4B5563" }}>ativos</span>}
+          sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>ativos</span>}
         />
       </div>
 
@@ -220,9 +220,9 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
           }}>
             <Crown size={11} color="#F59E0B" />
           </div>
-          <span style={{ fontSize: 11, color: "#9CA3AF", flex: 1 }}>
-            Mais popular: <strong style={{ color: "#F9FAFB", fontWeight: 600 }}>{summary.topService.name}</strong>
-            <span style={{ color: "#4B5563" }}> ({summary.topService.count}x)</span>
+          <span style={{ fontSize: 11, color: "var(--c-text-2)", flex: 1 }}>
+            Mais popular: <strong style={{ color: "var(--c-text)", fontWeight: 600 }}>{summary.topService.name}</strong>
+            <span style={{ color: "var(--c-text-4)" }}> ({summary.topService.count}x)</span>
           </span>
         </div>
       )}
@@ -336,10 +336,10 @@ export default function DashboardPage() {
       {/* .page-header = flex wrap justify-between com gap */}
       <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
             Olá, {firstName} 👋
           </h1>
-          <p style={{ fontSize: 13, color: "#52525B", marginTop: 4, textTransform: "capitalize" }}>
+          <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 4, textTransform: "capitalize" }}>
             {formatTodayDate()}
           </p>
         </div>
@@ -407,8 +407,8 @@ export default function DashboardPage() {
 
         {/* Próximos agendamentos */}
         <div style={{
-          backgroundColor: "#111111",
-          border: "1px solid #1F1F1F",
+          backgroundColor: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
           borderRadius: 16, padding: 20,
         }}>
           <div style={{
@@ -416,10 +416,10 @@ export default function DashboardPage() {
             alignItems: "flex-start", marginBottom: 16,
           }}>
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
                 Próximos agendamentos
               </h2>
-              <p style={{ fontSize: 11, color: "#52525B", marginTop: 3 }}>
+              <p style={{ fontSize: 11, color: "var(--c-text-4)", marginTop: 3 }}>
                 Pendentes e em andamento hoje
               </p>
             </div>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-skeleton-pulse" style={{
-                  height: 60, backgroundColor: "#1A1A1A", borderRadius: 10,
+                  height: 60, backgroundColor: "var(--c-border)", borderRadius: 10,
                   animationDelay: `${i * 0.12}s`,
                 }} />
               ))}
@@ -444,8 +444,8 @@ export default function DashboardPage() {
 
           {!loading && nextSchedules.length === 0 && (
             <div style={{ textAlign: "center", padding: "32px 0" }}>
-              <Calendar size={28} color="#2A2A2A" style={{ margin: "0 auto 10px" }} />
-              <p style={{ fontSize: 13, color: "#52525B" }}>
+              <Calendar size={28} color="var(--c-border-2)" style={{ margin: "0 auto 10px" }} />
+              <p style={{ fontSize: 13, color: "var(--c-text-4)" }}>
                 Nenhum agendamento pendente para hoje
               </p>
             </div>
@@ -466,23 +466,23 @@ export default function DashboardPage() {
                     style={{
                       display: "flex", alignItems: "center", gap: 12,
                       padding: "10px 8px", borderRadius: 10,
-                      backgroundColor: isHov ? "#161616" : "transparent",
-                      borderBottom: i < nextSchedules.length - 1 ? "1px solid #1A1A1A" : "none",
+                      backgroundColor: isHov ? "var(--c-surface-2)" : "transparent",
+                      borderBottom: i < nextSchedules.length - 1 ? "1px solid var(--c-border)" : "none",
                       cursor: "pointer", transition: "background-color 0.12s",
                     }}
                   >
                     <div style={{ width: 3, height: 36, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
                     <div style={{ flexShrink: 0, minWidth: 48 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
                         {formatTime(s.scheduledAt)}
                       </p>
-                      <p style={{ fontSize: 10, color: "#52525B", margin: "1px 0 0" }}>hoje</p>
+                      <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "1px 0 0" }}>hoje</p>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {s.customer.name}
                       </p>
-                      <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {serviceName} · {s.vehicle.plate}
                       </p>
                     </div>
@@ -495,7 +495,7 @@ export default function DashboardPage() {
                       }}>
                         {st.label}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)" }}>
                         {formatCurrency(s.totalPrice)}
                       </span>
                     </div>
@@ -508,8 +508,8 @@ export default function DashboardPage() {
 
         {/* Resumo de Relatórios (PRO) / CTA Upgrade (BASIC) */}
         <div style={{
-          backgroundColor: "#111111",
-          border: "1px solid #1F1F1F",
+          backgroundColor: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
           borderRadius: 16, padding: 20,
           minHeight: 220,
         }}>
@@ -517,10 +517,10 @@ export default function DashboardPage() {
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
-                  <h2 style={{ fontSize: 14, fontWeight: 600, color: "#F9FAFB", margin: 0 }}>
+                  <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
                     Resumo do mês
                   </h2>
-                  <p style={{ fontSize: 11, color: "#4B5563", marginTop: 3 }}>
+                  <p style={{ fontSize: 11, color: "var(--c-text-4)", marginTop: 3 }}>
                     Últimos 30 dias
                   </p>
                 </div>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="animate-skeleton-pulse" style={{
-                      height: 40, backgroundColor: "#1A1A1A", borderRadius: 8,
+                      height: 40, backgroundColor: "var(--c-border)", borderRadius: 8,
                       animationDelay: `${i * 0.1}s`,
                     }} />
                   ))}
@@ -549,8 +549,8 @@ export default function DashboardPage() {
 
               {!summaryLoading && !summary && (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
-                  <BarChart3 size={28} color="#2A2A2A" style={{ margin: "0 auto 8px" }} />
-                  <p style={{ fontSize: 12, color: "#52525B" }}>Sem dados para o período.</p>
+                  <BarChart3 size={28} color="var(--c-border-2)" style={{ margin: "0 auto 8px" }} />
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)" }}>Sem dados para o período.</p>
                 </div>
               )}
             </>
@@ -571,10 +571,10 @@ export default function DashboardPage() {
               }}>
                 <BarChart3 size={20} color="#7C3AED" />
               </div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
                 📊 Relatórios disponíveis no PRO
               </h3>
-              <p style={{ fontSize: 12, color: "#52525B", margin: 0, maxWidth: 240 }}>
+              <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0, maxWidth: 240 }}>
                 Veja faturamento, agendamentos e métricas do seu negócio em tempo real.
               </p>
               <button
@@ -599,8 +599,8 @@ export default function DashboardPage() {
 
       {/* ── Agenda de hoje ────────────────────────────────────────────── */}
       <div style={{
-        backgroundColor: "#111111",
-        border: "1px solid #1F1F1F",
+        backgroundColor: "var(--c-surface)",
+        border: "1px solid var(--c-border)",
         borderRadius: 16, padding: 20,
       }}>
         <div style={{
@@ -608,10 +608,10 @@ export default function DashboardPage() {
           alignItems: "center", marginBottom: 16,
         }}>
           <div>
-            <h2 style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
               Agenda de hoje
             </h2>
-            <p style={{ fontSize: 11, color: "#52525B", marginTop: 3 }}>
+            <p style={{ fontSize: 11, color: "var(--c-text-4)", marginTop: 3 }}>
               Todos os agendamentos do dia
             </p>
           </div>
@@ -631,7 +631,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="animate-skeleton-pulse" style={{
-                height: 52, backgroundColor: "#1A1A1A", borderRadius: 8,
+                height: 52, backgroundColor: "var(--c-border)", borderRadius: 8,
                 animationDelay: `${i * 0.1}s`,
               }} />
             ))}
@@ -640,8 +640,8 @@ export default function DashboardPage() {
 
         {!loading && todaySchedules.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <Calendar size={36} color="#1F1F1F" style={{ margin: "0 auto 12px" }} />
-            <p style={{ fontSize: 13, color: "#52525B", marginBottom: 16 }}>
+            <Calendar size={36} color="var(--c-border)" style={{ margin: "0 auto 12px" }} />
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", marginBottom: 16 }}>
               Sem agendamentos hoje
             </p>
             <button
@@ -668,9 +668,9 @@ export default function DashboardPage() {
                     {["Horário", "Cliente", "Placa", "Serviço", "Valor", "Status"].map((h) => (
                       <th key={h} style={{
                         textAlign: "left", padding: "6px 12px 10px",
-                        fontSize: 10, fontWeight: 600, color: "#3F3F46",
+                        fontSize: 10, fontWeight: 600, color: "var(--c-text-4)",
                         textTransform: "uppercase", letterSpacing: "0.6px",
-                        borderBottom: "1px solid #1A1A1A", whiteSpace: "nowrap",
+                        borderBottom: "1px solid var(--c-border)", whiteSpace: "nowrap",
                       }}>
                         {h}
                       </th>
@@ -689,25 +689,25 @@ export default function DashboardPage() {
                           cursor: "pointer", transition: "background-color 0.1s",
                           backgroundColor: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)",
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "#161616" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--c-surface-2)" }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}
                       >
                         <td style={{ padding: "11px 12px", whiteSpace: "nowrap" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#A1A1AA" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-2)" }}>
                             <Clock size={11} />
                             {formatTime(s.scheduledAt)}
                           </div>
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 500, color: "#fff" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 500, color: "var(--c-text)" }}>
                           {s.customer.name}
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 12, color: "#71717A", fontFamily: "monospace" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-3)", fontFamily: "monospace" }}>
                           {s.vehicle.plate}
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 12, color: "#A1A1AA" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-2)" }}>
                           {serviceName}
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 600, color: "#fff", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 600, color: "var(--c-text)", whiteSpace: "nowrap" }}>
                           {formatCurrency(s.totalPrice)}
                         </td>
                         <td style={{ padding: "11px 12px" }}>
@@ -738,14 +738,14 @@ export default function DashboardPage() {
                     key={s.id}
                     onClick={() => router.push("/dashboard/agendamentos")}
                     style={{
-                      backgroundColor: "#161616",
-                      border: "1px solid #1F1F1F",
+                      backgroundColor: "var(--c-surface-2)",
+                      border: "1px solid var(--c-border)",
                       borderRadius: 12, padding: 16, cursor: "pointer",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "#fff" }}>
-                        <Clock size={12} color="#52525B" />
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>
+                        <Clock size={12} color="var(--c-text-4)" />
                         {formatTime(s.scheduledAt)}
                       </div>
                       <span style={{
@@ -757,14 +757,14 @@ export default function DashboardPage() {
                         {st.label}
                       </span>
                     </div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: "0 0 4px" }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: "0 0 4px" }}>
                       {s.customer.name}
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <p style={{ fontSize: 12, color: "#71717A", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
                         {serviceName} · <span style={{ fontFamily: "monospace" }}>{s.vehicle.plate}</span>
                       </p>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>
                         {formatCurrency(s.totalPrice)}
                       </span>
                     </div>
