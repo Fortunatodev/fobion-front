@@ -13,6 +13,7 @@ import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
 import RevenueActionsCard from "@/components/dashboard/RevenueActionsCard"
+import WelcomeModal from "@/components/dashboard/WelcomeModal"
 import { formatScheduleTime } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -311,6 +312,8 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-dash-fade-in">
+
+      <WelcomeModal firstName={firstName} />
 
       {/* ── Error banner ──────────────────────────────────────────────── */}
       {error && (
