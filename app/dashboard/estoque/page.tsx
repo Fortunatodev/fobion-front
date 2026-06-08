@@ -2,24 +2,36 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { Package, Plus, Minus, AlertTriangle, Trash2 } from "lucide-react"
+import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X } from "lucide-react"
 
-/** V2-B4 — Estoque de produtos. CRUD + ajuste +/- + alerta de mínimo. */
+/** V2-B4 — Estoque de produtos. CRUD + ajuste de entrada/saída + alerta de mínimo + KPIs. */
 interface Product {
   id: string; name: string; sku: string | null
   costPrice: number; salePrice: number; stockQty: number; minStock: number
 }
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+const reais = (c: number) => (c / 100).toString()
+
+type FormState = { name: string; sku: string; cost: string; sale: string; qty: string; min: string }
+const EMPTY_FORM: FormState = { name: "", sku: "", cost: "", sale: "", qty: "", min: "" }
 
 export default function EstoquePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [modal, setModal] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
 
-  const [f, setF] = useState({ name: "", sku: "", cost: "", sale: "", qty: "", min: "" })
-  const [saving, setSaving] = useState(false); const [fErr, setFErr] = useState("")
+  // modal de cadastro/edição
+  const [modal, setModal] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [f, setF] = useState<FormState>(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [fErr, setFErr] = useState("")
+
+  // modal de ajuste de estoque (entrada/saída por quantidade)
+  const [adjFor, setAdjFor] = useState<Product | null>(null)
+  const [adjDir, setAdjDir] = useState<"in" | "out">("in")
+  const [adjQty, setAdjQty] = useState("")
 
   const fetchData = () => {
     setLoading(true)
@@ -28,46 +40,95 @@ export default function EstoquePage() {
   }
   useEffect(fetchData, [])
 
-  async function adjust(id: string, delta: number) {
-    setBusy(id)
-    try { await apiPut(`/products/${id}/stock`, { delta }); fetchData() } catch { /* */ } finally { setBusy(null) }
+  function openCreate() { setEditingId(null); setF(EMPTY_FORM); setFErr(""); setModal(true) }
+  function openEdit(p: Product) {
+    setEditingId(p.id)
+    setF({ name: p.name, sku: p.sku ?? "", cost: reais(p.costPrice), sale: reais(p.salePrice), qty: "", min: String(p.minStock) })
+    setFErr(""); setModal(true)
   }
-  async function remove(id: string) {
-    if (!confirm("Remover produto?")) return
-    try { await apiDelete(`/products/${id}`); fetchData() } catch { /* */ }
-  }
-  async function create() {
+
+  async function save() {
     if (!f.name.trim()) { setFErr("Nome é obrigatório."); return }
     setSaving(true); setFErr("")
+    const payload = {
+      name: f.name.trim(), sku: f.sku.trim() || null,
+      costPrice: f.cost ? Math.round(Number(f.cost) * 100) : 0,
+      salePrice: f.sale ? Math.round(Number(f.sale) * 100) : 0,
+      minStock: f.min ? Math.round(Number(f.min)) : 0,
+    }
     try {
-      await apiPost("/products", {
-        name: f.name.trim(), sku: f.sku.trim() || null,
-        costPrice: f.cost ? Math.round(Number(f.cost) * 100) : 0,
-        salePrice: f.sale ? Math.round(Number(f.sale) * 100) : 0,
-        stockQty: f.qty ? Math.round(Number(f.qty)) : 0,
-        minStock: f.min ? Math.round(Number(f.min)) : 0,
-      })
-      setModal(false); setF({ name: "", sku: "", cost: "", sale: "", qty: "", min: "" }); fetchData()
+      if (editingId) {
+        await apiPut(`/products/${editingId}`, payload)
+      } else {
+        await apiPost("/products", { ...payload, stockQty: f.qty ? Math.round(Number(f.qty)) : 0 })
+      }
+      setModal(false); setF(EMPTY_FORM); setEditingId(null); fetchData()
     } catch { setFErr("Erro ao salvar.") } finally { setSaving(false) }
   }
 
-  const inp: React.CSSProperties = { height: 38, padding: "0 12px", background: "#0A0A0A", border: "1px solid #252525", borderRadius: 9, color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
-  const lowCount = products.filter((p) => p.stockQty <= p.minStock).length
+  async function quickAdjust(id: string, delta: number) {
+    setBusy(id)
+    try { await apiPut(`/products/${id}/stock`, { delta }); fetchData() } catch { /* */ } finally { setBusy(null) }
+  }
+
+  async function doAdjust() {
+    if (!adjFor) return
+    const n = Math.round(Number(adjQty))
+    if (!n || n <= 0) return
+    const delta = adjDir === "in" ? n : -n
+    setBusy(adjFor.id)
+    try { await apiPut(`/products/${adjFor.id}/stock`, { delta }); setAdjFor(null); setAdjQty(""); fetchData() }
+    catch { /* */ } finally { setBusy(null) }
+  }
+
+  async function remove(p: Product) {
+    if (!confirm(`Remover "${p.name}" do estoque?`)) return
+    try { await apiDelete(`/products/${p.id}`); fetchData() } catch { /* */ }
+  }
+
+  // estilos base
+  const inp: React.CSSProperties = { height: 40, padding: "0 12px", background: "#0A0A0A", border: "1px solid #252525", borderRadius: 10, color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
+  const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid #2A2A2A", color: "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+  const iconBtn = (color: string, border: string): React.CSSProperties => ({ width: 32, height: 32, borderRadius: 8, background: "#111", border: `1px solid ${border}`, color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 })
+
+  // KPIs
+  const totalUnits = products.reduce((s, p) => s + p.stockQty, 0)
+  const stockValue = products.reduce((s, p) => s + p.costPrice * p.stockQty, 0)
+  const lowCount = products.filter((p) => p.stockQty > 0 && p.stockQty <= p.minStock).length
+  const zeroCount = products.filter((p) => p.stockQty === 0).length
+
+  const KPIS = [
+    { label: "Itens em estoque", value: String(totalUnits), color: "#fff", sub: `${products.length} produto${products.length !== 1 ? "s" : ""}` },
+    { label: "Valor em estoque", value: fmt(stockValue), color: "#fff", sub: "a custo" },
+    { label: "Baixo estoque", value: String(lowCount), color: lowCount > 0 ? "#F59E0B" : "#71717A", sub: "no mínimo ou abaixo" },
+    { label: "Zerados", value: String(zeroCount), color: zeroCount > 0 ? "#EF4444" : "#71717A", sub: "sem unidades" },
+  ]
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 48px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Package size={20} color="#0066FF" />
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: 0 }}>Estoque</h1>
+          <Package size={22} color="#0066FF" />
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Estoque</h1>
         </div>
-        <button onClick={() => setModal(true)} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <Plus size={15} /> Novo produto
         </button>
       </div>
-      <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 20px" }}>
-        Ceras, shampoos, insumos. {lowCount > 0 && <span style={{ color: "#F59E0B", fontWeight: 600 }}>{lowCount} no estoque mínimo ⚠️</span>}
-      </p>
+      <p style={{ fontSize: 13, color: "#71717A", margin: "0 0 20px" }}>Ceras, shampoos, insumos — controle entrada e saída.</p>
+
+      {/* KPIs */}
+      {!loading && products.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 22 }}>
+          {KPIS.map((k) => (
+            <div key={k.label} style={{ background: "#0D0D0D", border: "1px solid #1F1F1F", borderRadius: 12, padding: "14px 16px" }}>
+              <p style={{ fontSize: 11, color: "#71717A", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{k.label}</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: k.color, margin: "6px 0 2px", letterSpacing: "-0.5px" }}>{k.value}</p>
+              <p style={{ fontSize: 11, color: "#52525B", margin: 0 }}>{k.sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {loading && <p style={{ color: "#71717A", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
@@ -81,23 +142,29 @@ export default function EstoquePage() {
 
       {!loading && products.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {products.map((p) => {
+          {/* ordena: baixo/zerado primeiro */}
+          {[...products].sort((a, b) => (a.stockQty <= a.minStock ? 0 : 1) - (b.stockQty <= b.minStock ? 0 : 1)).map((p) => {
             const low = p.stockQty <= p.minStock
+            const zero = p.stockQty === 0
             return (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#0A0A0A", border: `1px solid ${low ? "rgba(245,158,11,0.3)" : "#1F1F1F"}`, borderRadius: 12, padding: "12px 16px" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#0D0D0D", border: `1px solid ${zero ? "rgba(239,68,68,0.3)" : low ? "rgba(245,158,11,0.3)" : "#1F1F1F"}`, borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{p.name}</span>
                     {p.sku && <span style={{ fontSize: 11, color: "#71717A" }}>· {p.sku}</span>}
-                    {low && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> mínimo</span>}
+                    {zero
+                      ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> zerado</span>
+                      : low && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> mínimo</span>}
                   </div>
                   <p style={{ fontSize: 12, color: "#71717A", margin: "2px 0 0" }}>venda {fmt(p.salePrice)} · custo {fmt(p.costPrice)} · mín. {p.minStock}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => adjust(p.id, -1)} disabled={busy === p.id || p.stockQty <= 0} style={{ width: 30, height: 30, borderRadius: 8, background: "#111", border: "1px solid #2A2A2A", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus size={14} /></button>
-                  <span style={{ minWidth: 36, textAlign: "center", fontSize: 16, fontWeight: 800, color: low ? "#F59E0B" : "#fff" }}>{p.stockQty}</span>
-                  <button onClick={() => adjust(p.id, 1)} disabled={busy === p.id} style={{ width: 30, height: 30, borderRadius: 8, background: "#111", border: "1px solid #2A2A2A", color: "#10B981", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={14} /></button>
-                  <button onClick={() => remove(p.id)} style={{ width: 30, height: 30, borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 4 }}><Trash2 size={13} /></button>
+                  <button title="Saída de 1" onClick={() => quickAdjust(p.id, -1)} disabled={busy === p.id || p.stockQty <= 0} style={{ ...iconBtn("#EF4444", "#2A2A2A"), opacity: p.stockQty <= 0 ? 0.4 : 1, width: 30, height: 30 }}><Minus size={14} /></button>
+                  <span style={{ minWidth: 36, textAlign: "center", fontSize: 16, fontWeight: 800, color: zero ? "#EF4444" : low ? "#F59E0B" : "#fff" }}>{p.stockQty}</span>
+                  <button title="Entrada de 1" onClick={() => quickAdjust(p.id, 1)} disabled={busy === p.id} style={{ ...iconBtn("#10B981", "#2A2A2A"), width: 30, height: 30 }}><Plus size={14} /></button>
+                  <button title="Ajustar quantidade (lote)" onClick={() => { setAdjFor(p); setAdjDir("in"); setAdjQty("") }} style={iconBtn("#0066FF", "rgba(0,102,255,0.25)")}><ArrowDownUp size={14} /></button>
+                  <button title="Editar produto" onClick={() => openEdit(p)} style={iconBtn("#A1A1AA", "#2A2A2A")}><Pencil size={13} /></button>
+                  <button title="Remover" onClick={() => remove(p)} style={iconBtn("#EF4444", "rgba(239,68,68,0.2)")}><Trash2 size={13} /></button>
                 </div>
               </div>
             )
@@ -105,10 +172,11 @@ export default function EstoquePage() {
         </div>
       )}
 
+      {/* Modal cadastro/edição */}
       {modal && (
         <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 22 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#fff", margin: "0 0 16px" }}>Novo produto</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#fff", margin: "0 0 16px" }}>{editingId ? "Editar produto" : "Novo produto"}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Nome (ex: Cera Carnaúba)" style={inp} />
               <input value={f.sku} onChange={(e) => setF({ ...f, sku: e.target.value })} placeholder="SKU / código (opcional)" style={inp} />
@@ -117,14 +185,37 @@ export default function EstoquePage() {
                 <input type="number" value={f.sale} onChange={(e) => setF({ ...f, sale: e.target.value })} placeholder="Venda R$" style={{ ...inp, flex: 1 }} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <input type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} placeholder="Qtd inicial" style={{ ...inp, flex: 1 }} />
+                {!editingId && <input type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} placeholder="Qtd inicial" style={{ ...inp, flex: 1 }} />}
                 <input type="number" value={f.min} onChange={(e) => setF({ ...f, min: e.target.value })} placeholder="Estoque mínimo" style={{ ...inp, flex: 1 }} />
               </div>
+              {editingId && <p style={{ fontSize: 11, color: "#52525B", margin: 0 }}>A quantidade em estoque é alterada pelos botões de entrada/saída na lista.</p>}
             </div>
             {fErr && <p style={{ color: "#F87171", fontSize: 12, margin: "10px 0 0" }}>{fErr}</p>}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-              <button onClick={() => setModal(false)} style={{ ...inp, padding: "0 16px", cursor: "pointer", color: "#A1A1AA" }}>Cancelar</button>
-              <button onClick={create} disabled={saving} style={{ height: 38, padding: "0 18px", borderRadius: 9, background: saving ? "#1A1A1A" : "#0066FF", color: saving ? "#52525B" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
+              <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
+              <button onClick={save} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "#1A1A1A" : "#0066FF", color: saving ? "#52525B" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : editingId ? "Salvar" : "Criar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ajuste de estoque (entrada/saída por quantidade) */}
+      {adjFor && (
+        <div onClick={() => setAdjFor(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 380, background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "#fff", margin: 0 }}>Ajustar estoque</h2>
+              <button onClick={() => setAdjFor(null)} style={{ background: "none", border: "none", color: "#71717A", cursor: "pointer", padding: 2 }}><X size={18} /></button>
+            </div>
+            <p style={{ fontSize: 13, color: "#A1A1AA", margin: "0 0 16px" }}>{adjFor.name} · atual <strong style={{ color: "#fff" }}>{adjFor.stockQty}</strong></p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <button onClick={() => setAdjDir("in")} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${adjDir === "in" ? "#10B981" : "#2A2A2A"}`, background: adjDir === "in" ? "rgba(16,185,129,0.1)" : "transparent", color: adjDir === "in" ? "#10B981" : "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Entrada (+)</button>
+              <button onClick={() => setAdjDir("out")} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${adjDir === "out" ? "#EF4444" : "#2A2A2A"}`, background: adjDir === "out" ? "rgba(239,68,68,0.1)" : "transparent", color: adjDir === "out" ? "#EF4444" : "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Saída (−)</button>
+            </div>
+            <input autoFocus type="number" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doAdjust() }} placeholder="Quantidade" style={{ ...inp, width: "100%" }} />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+              <button onClick={() => setAdjFor(null)} style={ghostBtn}>Cancelar</button>
+              <button onClick={doAdjust} disabled={busy === adjFor.id || !adjQty} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: !adjQty ? "#1A1A1A" : "#0066FF", color: !adjQty ? "#52525B" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: !adjQty ? "not-allowed" : "pointer", fontFamily: "inherit" }}>Confirmar</button>
             </div>
           </div>
         </div>
