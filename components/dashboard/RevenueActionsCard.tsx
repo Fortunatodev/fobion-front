@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { apiGet } from "@/lib/api"
-import { ShieldCheck, Users, ArrowRight } from "lucide-react"
+import { ShieldCheck, Users, ArrowRight, CircleDollarSign } from "lucide-react"
 
 /**
  * V2-B3 — "Ações de receita" no dashboard: surfacia o dinheiro a perseguir HOJE
@@ -59,8 +59,8 @@ export default function RevenueActionsCard() {
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>
-        💰 Ações de receita
+      <p style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>
+        <CircleDollarSign size={13} /> Ações de receita
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {recalls > 0 && (

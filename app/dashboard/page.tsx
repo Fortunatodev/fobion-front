@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useAnimatedNumber, formatAnimatedCurrency } from "@/lib/useAnimatedNumber"
 import { useRouter } from "next/navigation"
 import {
   AlertCircle, BarChart3, Calendar,
   CircleDollarSign, Crown, Sparkles,
-  Users, ArrowUpRight, Clock,
+  Users, Clock,
   TrendingUp, Star, UserPlus,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
@@ -66,11 +66,11 @@ function getStatusConfig(status: string) {
 
 function MetricCard({
   title, rawValue, isCurrency, subtitle, icon,
-  iconColor, iconBg, accentColor, loading,
+  iconColor, iconBg, accentColor, loading, locked, onClick,
 }: {
   title: string; rawValue: number; isCurrency?: boolean; subtitle: string
   icon: React.ReactNode; iconColor: string; iconBg: string
-  accentColor: string; loading: boolean
+  accentColor: string; loading: boolean; locked?: boolean; onClick?: () => void
 }) {
   const animated = useAnimatedNumber(loading ? 0 : rawValue, { duration: 1000 })
   const display = isCurrency ? formatAnimatedCurrency(Math.round(animated)) : String(Math.round(animated))
@@ -80,6 +80,7 @@ function MetricCard({
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      onClick={onClick}
       style={{
         backgroundColor: "var(--c-surface)",
         border: `1px solid ${hov ? accentColor + "50" : "var(--c-border)"}`,
@@ -89,8 +90,9 @@ function MetricCard({
         overflow: "hidden",
         transition: "all 0.2s ease",
         transform: hov ? "translateY(-2px)" : "translateY(0)",
-        boxShadow: hov ? "0 8px 24px rgba(0,0,0,0.4)" : "none",
+        boxShadow: hov ? "0 8px 24px var(--c-shadow)" : "none",
         minWidth: 0,
+        cursor: onClick ? "pointer" : "default",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -104,6 +106,10 @@ function MetricCard({
                 height: 32, width: "60%",
                 backgroundColor: "var(--c-border)", borderRadius: 8,
               }} />
+            ) : locked ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "5px 10px" }}>
+                <Crown size={13} /> Desbloquear no PRO
+              </span>
             ) : (
               <span style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.5px" }}>
                 {display}
@@ -122,8 +128,7 @@ function MetricCard({
           <span style={{ color: iconColor, display: "flex" }}>{icon}</span>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 12 }}>
-        <ArrowUpRight size={11} color="var(--c-text-4)" />
+      <div style={{ marginTop: 12 }}>
         <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>{subtitle}</span>
       </div>
       <div style={{
@@ -248,38 +253,37 @@ export default function DashboardPage() {
   const [ctaHov,            setCtaHov]            = useState(false)
   const [hovRow,            setHovRow]            = useState<string | null>(null)
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      setError(null)
-      try {
-        const today = new Date().toISOString().split("T")[0]
+  // B08 — load() reaproveitável (retry sem full reload da SPA)
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const today = new Date().toISOString().split("T")[0]
 
-        // Base calls available on any plan
-        const [sRes, cRes] = await Promise.all([
-          apiGet<SchedulesResponse>(`/schedules?date=${today}`),
-          apiGet<CustomersResponse>("/customers"),
-        ])
-        setSchedulesToday(sRes.schedules ?? [])
-        setTotalCustomers((cRes.customers ?? []).length)
+      // Base calls available on any plan
+      const [sRes, cRes] = await Promise.all([
+        apiGet<SchedulesResponse>(`/schedules?date=${today}`),
+        apiGet<CustomersResponse>("/customers"),
+      ])
+      setSchedulesToday(sRes.schedules ?? [])
+      setTotalCustomers((cRes.customers ?? []).length)
 
-        // Subscriptions is PRO-only — skip on BASIC to avoid 403
-        if (isPro) {
-          try {
-            const subRes = await apiGet<SubsResponse>("/customer-plans/subscriptions?status=ACTIVE")
-            setActiveSubscribers((subRes.subscriptions ?? []).length)
-          } catch {
-            setActiveSubscribers(0)
-          }
+      // Subscriptions is PRO-only — skip on BASIC to avoid 403
+      if (isPro) {
+        try {
+          const subRes = await apiGet<SubsResponse>("/customer-plans/subscriptions?status=ACTIVE")
+          setActiveSubscribers((subRes.subscriptions ?? []).length)
+        } catch {
+          setActiveSubscribers(0)
         }
-      } catch {
-        setError("Erro ao carregar dados. Verifique sua conexão com o servidor.")
-      } finally {
-        setLoading(false)
       }
+    } catch {
+      setError("Erro ao carregar dados. Verifique sua conexão com o servidor.")
+    } finally {
+      setLoading(false)
     }
-    load()
   }, [isPro])
+  useEffect(() => { load() }, [load])
 
   // ── Fetch dashboard summary (PRO only) ─────────────────────────────────────
   useEffect(() => {
@@ -320,7 +324,7 @@ export default function DashboardPage() {
           <AlertCircle size={15} color="#EF4444" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 13, color: "#EF4444", flex: 1 }}>{error}</span>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => load()}
             style={{
               fontSize: 12, color: "#EF4444",
               background: "none", border: "none",
@@ -370,7 +374,7 @@ export default function DashboardPage() {
       <div className="metrics-grid">
         <MetricCard
           title="Receita paga hoje" rawValue={paidRevenue} isCurrency
-          subtitle="servicos confirmados como pagos"
+          subtitle="serviços confirmados como pagos"
           icon={<CircleDollarSign size={16} />}
           iconColor="#10B981" iconBg="rgba(16,185,129,0.1)"
           accentColor="#10B981" loading={loading}
@@ -391,10 +395,12 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Assinantes ativos" rawValue={isPro ? activeSubscribers : 0}
-          subtitle={isPro ? "planos ativos agora" : "disponivel no plano PRO"}
+          subtitle={isPro ? "planos ativos agora" : "clube de assinatura — toque pra ativar"}
           icon={<Crown size={16} />}
           iconColor="#7C3AED" iconBg="rgba(124,58,237,0.1)"
           accentColor="#7C3AED" loading={loading}
+          locked={!isPro}
+          onClick={!isPro ? () => router.push("/dashboard/planos") : undefined}
         />
       </div>
 
@@ -572,7 +578,7 @@ export default function DashboardPage() {
                 <BarChart3 size={20} color="#7C3AED" />
               </div>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
-                📊 Relatórios disponíveis no PRO
+                Relatórios disponíveis no PRO
               </h3>
               <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0, maxWidth: 240 }}>
                 Veja faturamento, agendamentos e métricas do seu negócio em tempo real.

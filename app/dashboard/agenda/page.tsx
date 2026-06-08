@@ -208,7 +208,17 @@ function DetailModal({
   const [updating,    setUpdating]    = useState(false)
   const [closingWith, setClosingWith] = useState("")
   const [phase,       setPhase]       = useState<"view" | "close">("view")
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const services = schedule.scheduleServices.map(ss => ss.service.name).join(", ")
+
+  // B05 — ESC fecha + trava o scroll do fundo enquanto o modal está aberto
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+    document.addEventListener("keydown", onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow }
+  }, [onClose])
   const totalDur = schedule.scheduleServices.reduce((a, ss) => a + ss.service.durationMinutes, 0)
 
   async function doStatus(status: string) {
@@ -238,7 +248,7 @@ function DetailModal({
         position: "absolute", inset: 0,
         backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)",
       }} />
-      <div style={{
+      <div role="dialog" aria-modal="true" style={{
         position: "relative", zIndex: 1,
         backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
         borderRadius: 20, padding: 24, width: "100%", maxWidth: 420,
@@ -282,7 +292,7 @@ function DetailModal({
                 <ActionBtn label="Finalizar" color="#10B981" onClick={() => setPhase("close")} loading={false} />
               )}
               {schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
-                <ActionBtn label="Cancelar" color="#EF4444" onClick={() => doStatus("CANCELLED")} loading={updating} outline />
+                <ActionBtn label={confirmCancel ? "Confirmar cancelamento?" : "Cancelar"} color="#EF4444" onClick={() => (confirmCancel ? doStatus("CANCELLED") : setConfirmCancel(true))} loading={updating} outline />
               )}
             </div>
           </>
