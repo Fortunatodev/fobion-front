@@ -44,8 +44,8 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
       setF({ name: "", email: "", password: "", role: "EMPLOYEE" })
       load()
       setTimeout(() => { setOpen(false); setMsg(null) }, 1200)
-    } catch (e: any) {
-      setMsg({ kind: "err", text: e?.message || "Erro ao criar acesso." })
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Erro ao criar acesso." })
     } finally { setSaving(false) }
   }
 

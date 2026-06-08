@@ -94,7 +94,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       <nav style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
         {navSections.map(section => {
           // V2-B4: funcionário (EMPLOYEE) não vê itens só-de-dono; oculta grupo vazio.
-          const items = section.items.filter(it => !(it as any).ownerOnly || user?.role !== "EMPLOYEE")
+          const items = section.items.filter(it => !(it as { ownerOnly?: boolean }).ownerOnly || user?.role !== "EMPLOYEE")
           if (items.length === 0) return null
           return (
           <div key={section.label} style={{ marginBottom: 20 }}>

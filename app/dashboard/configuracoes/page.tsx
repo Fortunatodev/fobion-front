@@ -942,7 +942,7 @@ function ConfiguracoesContent() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 18, borderRadius: 10, backgroundColor: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.15)" }}>
               <Clock size={14} color="#0066FF" style={{ flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.5 }}>
-                Estes horários aparecem na sua <strong style={{ color: "#fff" }}>loja pública</strong> e definem o "Aberto agora". Clique em <strong style={{ color: "#fff" }}>Salvar horários</strong> sempre que alterar.
+                Estes horários aparecem na sua <strong style={{ color: "#fff" }}>loja pública</strong> e definem o {"“Aberto agora”"}. Clique em <strong style={{ color: "#fff" }}>Salvar horários</strong> sempre que alterar.
               </span>
             </div>
 

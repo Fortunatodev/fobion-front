@@ -35,11 +35,14 @@ export default function OnboardingChecklist({
 
   useEffect(() => {
     const isDismissed = typeof window !== "undefined" && localStorage.getItem(DISMISS_KEY) === "1"
+    // leitura única de localStorage no mount (client-only) — não causa cascata
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDismissed(isDismissed)
     // conta serviços (sinal do 1º passo) — tolerante ao formato da resposta
     apiGet<unknown>("/services")
       .then((res) => {
-        const list = Array.isArray(res) ? res : ((res as any)?.services ?? (res as any)?.data ?? [])
+        const obj = res as { services?: unknown[]; data?: unknown[] }
+        const list = Array.isArray(res) ? res : (obj?.services ?? obj?.data ?? [])
         setServicesCount(Array.isArray(list) ? list.length : 0)
       })
       .catch(() => setServicesCount(0))

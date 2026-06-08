@@ -63,7 +63,7 @@ export default function RecallsPage() {
           <Calendar size={40} color="#2A2A2A" style={{ margin: "0 auto" }} />
           <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 14 }}>Nenhum retorno pendente</p>
           <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
-            Defina a "garantia (dias)" nos seus serviços (ex.: vitrificação 180). Ao fechar a comanda,
+            Defina a {"“garantia (dias)”"} nos seus serviços (ex.: vitrificação 180). Ao fechar a comanda,
             os retornos aparecem aqui automaticamente.
           </p>
         </div>

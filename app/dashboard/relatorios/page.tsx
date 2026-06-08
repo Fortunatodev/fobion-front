@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import { useAnimatedNumber, formatAnimatedCurrency } from "@/lib/useAnimatedNumber"
 import {
   BarChart2, TrendingUp, TrendingDown, Users, Calendar,
@@ -597,12 +598,12 @@ function PainelDeSaude() {
             <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
             {/* V2-B3: atalhos pros painéis de Retenção (RFM) e Recalls/Garantias */}
             <div style={{ display: "flex", gap: 16, marginLeft: 30, marginTop: 8, flexWrap: "wrap" }}>
-              <a href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
+              <Link href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
                 👥 Retenção de clientes →
-              </a>
-              <a href="/dashboard/relatorios/recalls" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#10B981", textDecoration: "none" }}>
+              </Link>
+              <Link href="/dashboard/relatorios/recalls" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#10B981", textDecoration: "none" }}>
                 🛡️ Retornos & garantias →
-              </a>
+              </Link>
             </div>
           </div>
           <div style={{ display: "flex", gap: 3, backgroundColor: "#0D0D0D", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 3 }}>
