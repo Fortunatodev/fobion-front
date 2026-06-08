@@ -49,6 +49,15 @@ function sortHours(hours: PublicBusiness["hours"]) {
   return [...hours].sort((a, b) => order.indexOf(a.dayOfWeek) - order.indexOf(b.dayOfWeek))
 }
 
+// Backfill defensivo: se a loja não salvou horários (ou faltam dias), preenche os
+// 7 dias com "Fechado" pra grade nunca renderizar vazia e o "Aberto agora" não
+// quebrar. Evita o bug de loja nova aparecer sem horário nenhum pro cliente.
+function fillHours(hours: PublicBusiness["hours"]): PublicBusiness["hours"] {
+  return Array.from({ length: 7 }, (_, i) =>
+    hours?.find((h) => h.dayOfWeek === i) ?? { id: "", businessId: "", dayOfWeek: i, isOpen: false as boolean, openTime: "08:00", closeTime: "18:00" }
+  )
+}
+
 /**
  * Calcula o preço efetivo de um serviço para um assinante.
  *
@@ -228,8 +237,9 @@ export default function SlugPage() {
     </div>
   )
 
-  const open           = isOpenNow(business.hours)
-  const sortedHours    = sortHours(business.hours)
+  const safeHours      = fillHours(business.hours)
+  const open           = isOpenNow(safeHours)
+  const sortedHours    = sortHours(safeHours)
   const isPro          = business.plan === "PRO"
   const hasPlans       = isPro && (business.plans?.length ?? 0) > 0
   const ownerAvatarUrl = business.ownerAvatarUrl

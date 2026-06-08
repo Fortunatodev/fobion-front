@@ -141,6 +141,8 @@ function EmployeesContent() {
   }
 
   async function handleDeactivate(id: string) {
+    const emp = employees.find((e) => e.id === id)
+    if (!window.confirm(`Desativar ${emp?.name ?? "este funcionário"}? Ele deixa de aparecer na agenda e perde o acesso. Você pode reativar depois.`)) return
     setActionLoading(id)
     try {
       await apiDelete(`/employees/${id}`)
@@ -277,8 +279,13 @@ function EmployeesContent() {
                       <p style={{ fontSize: 12, color: "#52525B", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.email}</p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 99, padding: "3px 8px" }}>
-                        Ativo
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, borderRadius: 99, padding: "3px 8px",
+                        color:           emp.active ? "#10B981" : "#71717A",
+                        backgroundColor: emp.active ? "rgba(16,185,129,0.1)" : "rgba(113,113,122,0.1)",
+                        border:          emp.active ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(113,113,122,0.2)",
+                      }}>
+                        {emp.active ? "Ativo" : "Inativo"}
                       </span>
                       {/* ── Calendar status badge ── */}
                       <span style={{
@@ -289,14 +296,14 @@ function EmployeesContent() {
                         borderRadius: 99, padding: "3px 8px",
                         display: "flex", alignItems: "center", gap: 4,
                       }}>
-                        <Calendar size={9} />
+                        <Calendar size={11} style={{ flexShrink: 0 }} />
                         {emp.calendarConnected ? "Agenda vinculada" : "Sem agenda"}
                       </span>
                     </div>
                   </div>
 
-                  {/* ── Action buttons ── */}
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {/* ── Action buttons (grid 2x2 estável, não quebra feio em card estreito) ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                     <button
                       onClick={() => openEdit(emp)}
                       style={{ flex: 1, minWidth: 70, height: 34, borderRadius: 8, border: "1px solid #2A2A2A", backgroundColor: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit" }}

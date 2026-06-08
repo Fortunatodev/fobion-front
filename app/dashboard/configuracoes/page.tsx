@@ -453,6 +453,11 @@ function ConfiguracoesContent() {
         return found ?? { dayOfWeek: i, isOpen: i !== 0, openTime: "08:00", closeTime: "18:00" }
       })
       setHours(filled)
+      // Loja nunca salvou horário → persiste os defaults UMA vez, pra a loja pública
+      // não nascer "Fechado"/vazia (bug do estado inicial). Só dispara quando vazio.
+      if (!biz.hours || biz.hours.length === 0) {
+        apiPut("/auth/business/hours", { hours: filled }).catch(() => {})
+      }
       setError(null)
     } catch {
       setError("Erro ao carregar configurações.")
@@ -932,6 +937,13 @@ function ConfiguracoesContent() {
                   {openDays} dia{openDays !== 1 ? "s" : ""} aberto{openDays !== 1 ? "s" : ""} por semana
                 </p>
               </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 18, borderRadius: 10, backgroundColor: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.15)" }}>
+              <Clock size={14} color="#0066FF" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.5 }}>
+                Estes horários aparecem na sua <strong style={{ color: "#fff" }}>loja pública</strong> e definem o "Aberto agora". Clique em <strong style={{ color: "#fff" }}>Salvar horários</strong> sempre que alterar.
+              </span>
             </div>
 
             {hours.map(hour => (
