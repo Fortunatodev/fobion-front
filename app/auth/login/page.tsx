@@ -28,6 +28,7 @@ function LoginContent() {
   const searchParams = useSearchParams()
   const [loading,    setLoading]       = useState(false)
   const [error,      setError]         = useState<string | null>(null)
+  const [successMsg, setSuccessMsg]    = useState<string | null>(null)
   const [email,      setEmail]         = useState("")
   const [password,   setPassword]      = useState("")
   const [showPass,   setShowPass]      = useState(false)
@@ -37,6 +38,10 @@ function LoginContent() {
   useEffect(() => {
     const err = searchParams.get("error")
     if (err) setError(err)
+
+    if (searchParams.get("reset") === "success") {
+      setSuccessMsg("Senha redefinida com sucesso. Faça login com a nova senha.")
+    }
 
     const token = getToken()
     if (!token) return
@@ -168,6 +173,19 @@ function LoginContent() {
             Entre com sua conta para acessar o painel
           </p>
         </div>
+
+        {/* Sucesso (ex.: senha redefinida) */}
+        {successMsg && (
+          <div style={{
+            background: "rgba(16,185,129,0.08)",
+            border: "1px solid rgba(16,185,129,0.2)",
+            borderRadius: 12, padding: "12px 16px",
+            fontSize: 13, color: "#10B981",
+            textAlign: "center", marginBottom: 20,
+          }}>
+            {successMsg}
+          </div>
+        )}
 
         {/* Erro */}
         {errorText && (

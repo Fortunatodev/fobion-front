@@ -41,7 +41,7 @@ export default function Modal({
             "fixed top-1/2 left-1/2 z-50",
             "-translate-x-1/2 -translate-y-1/2",
             "w-full p-6",
-            "backdrop-blur-[12px] bg-[rgba(17,17,17,0.95)] border border-white/10 rounded-2xl",
+            "backdrop-blur-[12px] bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-2xl",
             "max-h-[90vh] overflow-y-auto",
             "shadow-[0_24px_80px_rgba(0,0,0,0.8)]",
             "animate-in fade-in zoom-in-95 duration-200",
@@ -51,7 +51,7 @@ export default function Modal({
           {/* Header */}
           <div className="flex justify-between items-start mb-5">
             <div>
-              <Dialog.Title className="text-lg font-semibold text-white">
+              <Dialog.Title className="text-lg font-semibold text-[var(--c-text)]">
                 {title}
               </Dialog.Title>
               {description && (
@@ -61,7 +61,7 @@ export default function Modal({
               )}
             </div>
             <Dialog.Close
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--c-text-2)] hover:text-white hover:bg-[var(--c-border)] transition-colors duration-200 ml-4 shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--c-text-2)] hover:text-[var(--c-text)] hover:bg-[var(--c-border)] transition-colors duration-200 ml-4 shrink-0"
               onClick={onClose}
             >
               <X size={16} />

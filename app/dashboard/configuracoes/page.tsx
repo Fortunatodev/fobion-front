@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
+import type { BusinessPlan } from "@/types"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
 import TeamCard from "@/components/settings/TeamCard"
@@ -33,7 +34,7 @@ interface BusinessConfig {
   description: string | null
   cnpj?: string | null
   tier?: string | null
-  plan: "FREE" | "BASIC" | "PRO"
+  plan: BusinessPlan
   isTrial?: boolean
   planExpiresAt?: string | null
   slug: string
@@ -385,6 +386,22 @@ function UpgradeBtn({ onClick }: { onClick: () => void }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+function AccessDenied() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)" }}>
+      <div style={{ maxWidth: 420, width: "100%", textAlign: "center", padding: 24 }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <Shield size={28} color="#EF4444" />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>Acesso restrito</h2>
+        <p style={{ fontSize: 13, color: "var(--c-text-3)", lineHeight: 1.6, margin: 0 }}>
+          As configurações da loja são exclusivas do dono.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function ConfiguracoesPage() {
   return (
     <Suspense fallback={
@@ -401,7 +418,7 @@ export default function ConfiguracoesPage() {
 function ConfiguracoesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, logout } = useUser()
+  const { user, logout, loading: userLoading } = useUser()
 
   const [config,      setConfig]      = useState<BusinessConfig | null>(null)
   const [loading,     setLoading]     = useState(true)
@@ -433,6 +450,9 @@ function ConfiguracoesContent() {
   const [calendarLoading,   setCalendarLoading]   = useState(false)
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  // Garante que a persistência dos horários default dispare no máximo uma vez por
+  // sessão (evita PUTs duplicados sob StrictMode / re-montagem de efeitos).
+  const hoursDefaultPersisted = useRef(false)
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -440,6 +460,11 @@ function ConfiguracoesContent() {
     try {
       const res = await apiGet<{ user: unknown; business: BusinessConfig }>("/auth/me")
       const biz = res.business
+      if (!biz) {
+        setError("Negócio não encontrado.")
+        setLoading(false)
+        return
+      }
       setConfig(biz)
       setFormName(biz.name ?? "")
       setFormPhone(biz.phone ?? "")
@@ -456,9 +481,13 @@ function ConfiguracoesContent() {
       })
       setHours(filled)
       // Loja nunca salvou horário → persiste os defaults UMA vez, pra a loja pública
-      // não nascer "Fechado"/vazia (bug do estado inicial). Só dispara quando vazio.
-      if (!biz.hours || biz.hours.length === 0) {
-        apiPut("/auth/business/hours", { hours: filled }).catch(() => {})
+      // não nascer "Fechado"/vazia (bug do estado inicial). Só dispara quando vazio,
+      // e no máximo uma vez por sessão.
+      if ((!biz.hours || biz.hours.length === 0) && !hoursDefaultPersisted.current) {
+        hoursDefaultPersisted.current = true
+        apiPut("/auth/business/hours", { hours: filled }).catch((e) => {
+          console.error("Falha ao persistir horários default", e)
+        })
       }
       setError(null)
     } catch {
@@ -623,6 +652,11 @@ function ConfiguracoesContent() {
   const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"}/${config?.slug ?? ""}`
   const openDays  = hours.filter((h) => h.isOpen).length
   const themeRgb  = hexToRgb(themeColor)
+
+  // ── Guard de role: área exclusiva do dono (espelha ownerOnly do Sidebar) ──
+  if (!userLoading && user?.role === "EMPLOYEE") {
+    return <AccessDenied />
+  }
 
   // ── Skeleton ───────────────────────────────────────────────────────────────
   if (loading) {
@@ -1165,9 +1199,7 @@ function ConfiguracoesContent() {
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: "8px 0 16px" }}>
-                  R$ 49<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-text-4)" }}>/mês</span>
-                </p>
+                <div style={{ height: 12 }} />
                 {PLAN_FEATURES.map(f => (
                   <FeatureCell key={f.label} label={f.label} available={f.basic} labelColor="var(--c-text-2)" />
                 ))}
@@ -1190,9 +1222,7 @@ function ConfiguracoesContent() {
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: "8px 0 16px" }}>
-                  R$ 97<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-text-4)" }}>/mês</span>
-                </p>
+                <div style={{ height: 12 }} />
                 {PLAN_FEATURES.map(f => (
                   <FeatureCell key={f.label} label={f.label} available={f.pro} labelColor="var(--c-text)" />
                 ))}

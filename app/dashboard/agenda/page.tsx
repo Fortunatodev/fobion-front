@@ -438,9 +438,14 @@ export default function AgendaPage() {
   const fetchMonth = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const params: Record<string, string> = {}
-      if (selectedEmp !== "all")   params.employeeId = selectedEmp
-      if (selectedEmp === "owner") params.employeeId = "owner"
+      // Intervalo da grade visível (mês ± margem p/ os dias adjacentes pintados),
+      // evita pedir a base inteira do tenant ao backend.
+      const y = currentMonth.getFullYear(), m = currentMonth.getMonth()
+      const fromD = new Date(y, m, 1 - 7)
+      const toD   = new Date(y, m + 1, 7)
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
+      const params: Record<string, string> = { from: fmt(fromD), to: fmt(toD) }
+      if (selectedEmp !== "all") params.employeeId = selectedEmp
       const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setSchedules(res.schedules ?? [])
     } catch {
@@ -448,17 +453,16 @@ export default function AgendaPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedEmp])
+  }, [selectedEmp, currentMonth])
 
-  useEffect(() => { fetchMonth() }, [fetchMonth, currentMonth])
+  useEffect(() => { fetchMonth() }, [fetchMonth])
 
   // ── Fetch day ─────────────────────────────────────────────────────────────
   const fetchDay = useCallback(async (dateStr: string) => {
     setLoadingDay(true)
     try {
       const params: Record<string, string> = { date: dateStr }
-      if (selectedEmp !== "all")   params.employeeId = selectedEmp
-      if (selectedEmp === "owner") params.employeeId = "owner"
+      if (selectedEmp !== "all") params.employeeId = selectedEmp
       const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setDaySchedules(res.schedules ?? [])
     } catch {

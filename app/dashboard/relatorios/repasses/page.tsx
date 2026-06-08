@@ -392,7 +392,7 @@ export default function RepassesReportPage() {
                   <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: 0 }}>
                     Nenhum repasse no período.
                   </p>
-                  <p style={{ fontSize: 12, color: "#374151", margin: "4px 0 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                     Repasses são gerados quando um agendamento com funcionário é concluído.
                   </p>
                 </div>

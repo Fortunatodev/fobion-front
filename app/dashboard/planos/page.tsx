@@ -341,7 +341,9 @@ function ServiceRuleCard({
 export default function PlanosPage() {
   const { planStatus } = useUser()
 
-  if (planStatus && planStatus.plan !== "PRO") {
+  // Trata null como não-PRO até carregar (espelha relatorios/page.tsx) — evita
+  // flash de conteúdo PRO pra quem não tem direito.
+  if (!planStatus || planStatus.plan !== "PRO") {
     return (
       <ProFeatureGate
         featureName="Planos de assinatura"

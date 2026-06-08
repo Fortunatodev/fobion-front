@@ -81,7 +81,7 @@ export default function NfseButton({ scheduleId }: { scheduleId: string }) {
           whiteSpace: "nowrap",
         }}
       >
-        {busy ? <Loader2 size={13} className="spin" /> : <FileText size={13} />}
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
         {state === "emitting" ? "Emitindo…" : "Emitir NF-e"}
       </button>
       {(state === "off" || state === "error") && msg && (

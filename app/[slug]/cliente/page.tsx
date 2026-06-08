@@ -592,7 +592,7 @@ function ClientAreaContent() {
                   </div>
                   <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)" }}>Nenhum agendamento ainda</p>
                   <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>Volte para a vitrine e agende seu primeiro serviço.</p>
-                  <button onClick={() => router.push(`/${slug}`)} style={{ marginTop: 20, height: 40, padding: "0 20px", borderRadius: 10, background: themeColor, color: "var(--c-text)", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>
+                  <button onClick={() => router.push(`/${slug}`)} style={{ marginTop: 20, height: 40, padding: "0 20px", borderRadius: 10, background: themeColor, color: "var(--c-on-primary)", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>
                     Ver serviços →
                   </button>
                 </div>

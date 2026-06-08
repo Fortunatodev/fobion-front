@@ -98,7 +98,7 @@ export default function VistoriaPage() {
     if (locked) return
     drawing.current = true
     const ctx = sigRef.current!.getContext("2d")!; const { x, y } = sigPos(e)
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = "var(--c-text)"; ctx.lineWidth = 2; ctx.lineCap = "round"
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--c-text").trim() || "#fff"; ctx.lineWidth = 2; ctx.lineCap = "round"
   }
   function sigMove(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!drawing.current || locked) return
@@ -160,7 +160,7 @@ export default function VistoriaPage() {
             ))}
             {!locked && photoUrls.length < MAX_PHOTOS && (
               <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ aspectRatio: "4/3", borderRadius: 10, border: "1px dashed var(--c-border-2)", background: "var(--c-bg)", color: "var(--c-text-3)", cursor: uploading ? "wait" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, fontFamily: "inherit" }}>
-                {uploading ? <Loader2 size={18} className="spin" /> : <Camera size={18} />}
+                {uploading ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
                 {uploading ? "Enviando…" : "Adicionar foto"}
               </button>
             )}
@@ -240,7 +240,7 @@ export default function VistoriaPage() {
         {!locked && (
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button onClick={save} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 22px", borderRadius: 11, background: saved ? "#10B981" : "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", border: "none", fontSize: 14, fontWeight: 600, cursor: saving ? "wait" : "pointer", fontFamily: "inherit" }}>
-              {saving ? <Loader2 size={16} className="spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
+              {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
               {saving ? "Salvando…" : saved ? "Vistoria salva" : "Salvar vistoria"}
             </button>
           </div>

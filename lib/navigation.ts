@@ -15,6 +15,8 @@ export interface NavItem {
   label: string
   href: string
   icon: LucideIcon
+  /** Visível só para o dono (OWNER); escondido para EMPLOYEE. Espelha o Sidebar. */
+  ownerOnly?: boolean
 }
 
 export interface NavGroup {
@@ -35,15 +37,15 @@ export const navGroups: NavGroup[] = [
       { label: "Agendamentos", href: "/dashboard/agendamentos", icon: ClipboardList },
       { label: "Clientes",     href: "/dashboard/clientes",     icon: Users },
       { label: "Serviços",     href: "/dashboard/servicos",     icon: Wrench },
-      { label: "Planos",       href: "/dashboard/planos",       icon: CreditCard },
-      { label: "Assinantes",   href: "/dashboard/assinantes",   icon: Crown },
-      { label: "Repasses",     href: "/dashboard/relatorios/repasses", icon: Wallet },
+      { label: "Planos",       href: "/dashboard/planos",       icon: CreditCard, ownerOnly: true },
+      { label: "Assinantes",   href: "/dashboard/assinantes",   icon: Crown, ownerOnly: true },
+      { label: "Repasses",     href: "/dashboard/relatorios/repasses", icon: Wallet, ownerOnly: true },
     ],
   },
   {
     label: "CONTA",
     items: [
-      { label: "Configurações", href: "/dashboard/configuracoes", icon: Settings },
+      { label: "Configurações", href: "/dashboard/configuracoes", icon: Settings, ownerOnly: true },
     ],
   },
 ]

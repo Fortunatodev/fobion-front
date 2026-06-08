@@ -86,10 +86,32 @@ export default function PatioPage() {
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Mova os carros conforme avançam.</p>
 
-      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
+      {loading && (
+        <>
+          <style>{`@keyframes patioSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 200, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, animation: `patioSkel 1.5s ease ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && schedules.length === 0 && (
+        <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: "56px 20px", textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--c-bg)", border: "1px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <Car size={24} color="var(--c-border-2)" />
+          </div>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>Nenhum carro na fila hoje</p>
+          <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: "6px 0 18px" }}>Crie um agendamento para começar a movimentar o pátio.</p>
+          <Link href="/dashboard/agendamentos" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 20px", borderRadius: 10, background: "linear-gradient(135deg, #0066FF, #7C3AED)", color: "white", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+            Ir para Agendamentos <ChevronRight size={14} />
+          </Link>
+        </div>
+      )}
+
+      {!loading && !error && schedules.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
           {COLUMNS.map((col) => {
             const cards = schedules.filter(col.match).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))

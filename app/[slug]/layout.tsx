@@ -12,14 +12,15 @@ import ForbionLogo from "@/components/shared/ForbionLogo"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
-const NAV_LINKS = (slug: string, businessPlan?: string) => {
+const NAV_LINKS = (slug: string, businessPlan?: string, plansCount = 0) => {
   const links: Array<{ href: string; label: string }> = [
     { href: `/${slug}`,          label: "Início"   },
     { href: `/${slug}#servicos`, label: "Serviços" },
     { href: `/${slug}#horarios`, label: "Horários" },
   ]
-  // Only show 'Planos' on the public nav when the business is PRO
-  if (businessPlan === "PRO") {
+  // Só mostra 'Planos' no nav público quando a loja é PRO E tem planos cadastrados
+  // (a seção #planos só é renderizada em page.tsx quando isPro && plans.length > 0)
+  if (businessPlan === "PRO" && plansCount > 0) {
     links.splice(2, 0, { href: `/${slug}#planos`, label: "Planos" })
   }
   return links
@@ -37,6 +38,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
   const [payload,         setPayload]         = useState<ReturnType<typeof getCustomerPayload>>(null)
   const [businessName,    setBusinessName]    = useState("")
   const [businessPlan,    setBusinessPlan]    = useState<string | null>(null)
+  const [plansCount,      setPlansCount]      = useState(0)
   // ✅ NOVO: estado para a foto do dono
   const [ownerAvatarUrl,  setOwnerAvatarUrl]  = useState<string | null>(null)
 
@@ -82,6 +84,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         setBusinessName(d?.business?.name || slug)
         setOwnerAvatarUrl(d?.business?.ownerAvatarUrl ?? d?.ownerAvatarUrl ?? null)
         setBusinessPlan(d?.business?.plan ?? null)
+        setPlansCount(Array.isArray(d?.business?.plans) ? d.business.plans.length : 0)
       })
       .catch(() => { if (!cancelled) setBusinessName(slug) })
     return () => { cancelled = true }
@@ -92,7 +95,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
     router.push(`/${slug}`)
   }, [router, slug])
 
-  const links = NAV_LINKS(slug, businessPlan ?? undefined)
+  const links = NAV_LINKS(slug, businessPlan ?? undefined, plansCount)
 
   const initials = payload?.name
     ? payload.name.split(" ").filter(Boolean).slice(0, 2).map((n: string) => n[0].toUpperCase()).join("")
@@ -285,7 +288,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                     onClick={() => { setMobileMenuOpen(false); router.push(`/${slug}/login`) }}
                     style={{ height: 48, borderRadius: 12, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}
                   >
-                    Entrar com Google
+                    Entrar
                   </button>
                 )}
               </div>

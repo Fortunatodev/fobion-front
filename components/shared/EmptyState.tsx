@@ -24,7 +24,7 @@ export default function EmptyState({
       <div className="w-16 h-16 flex items-center justify-center bg-[var(--c-border)] rounded-2xl text-[var(--c-text-2)] mb-4">
         {icon}
       </div>
-      <h3 className="text-base font-semibold text-white mt-2">{title}</h3>
+      <h3 className="text-base font-semibold text-[var(--c-text)] mt-2">{title}</h3>
       {description && (
         <p className="text-sm text-[var(--c-text-2)] mt-1 max-w-sm">{description}</p>
       )}

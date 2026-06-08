@@ -2,9 +2,10 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
+import { useUser } from "@/contexts/UserContext"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -62,9 +63,29 @@ export default function EmployeesPage() {
   )
 }
 
+function AccessDenied() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)" }}>
+      <div style={{ maxWidth: 420, width: "100%", textAlign: "center", padding: 24 }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <Lock size={28} color="#EF4444" />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>Acesso restrito</h2>
+        <p style={{ fontSize: 13, color: "var(--c-text-3)", lineHeight: 1.6, margin: "0 0 24px" }}>
+          Esta área é exclusiva do dono da loja.
+        </p>
+        <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
+          Voltar ao início
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function EmployeesContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
+  const { user, loading: userLoading } = useUser()
 
   const [employees,     setEmployees]     = useState<Employee[]>([])
   const [loading,       setLoading]       = useState(true)
@@ -173,6 +194,11 @@ function EmployeesContent() {
     } finally {
       setActionLoading(null)
     }
+  }
+
+  // ── Guard de role: área exclusiva do dono (espelha ownerOnly do Sidebar) ──
+  if (!userLoading && user?.role === "EMPLOYEE") {
+    return <AccessDenied />
   }
 
   return (

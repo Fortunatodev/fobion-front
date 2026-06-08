@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag } from "lucide-react"
+import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw } from "lucide-react"
 
 /**
  * V2-B3 — Orçamentos. Cliente do CRM + itens do catálogo → proposta → envia no
@@ -70,7 +70,7 @@ export default function OrcamentosPage() {
   const [showCatalog, setShowCatalog] = useState(false)
 
   const fetchQuotes = () => {
-    setLoading(true)
+    setLoading(true); setError("")
     apiGet<{ quotes: Quote[] }>("/quotes")
       .then((r) => setQuotes(r.quotes ?? []))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar."))
@@ -192,10 +192,27 @@ export default function OrcamentosPage() {
         )
       })()}
 
-      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
-      {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
+      {loading && (
+        <>
+          <style>{`@keyframes orcSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 86, background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, animation: `orcSkel 1.5s ease ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
+      {!loading && error && (
+        <div style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+          <button onClick={fetchQuotes} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <RefreshCw size={13} /> Tentar novamente
+          </button>
+        </div>
+      )}
 
-      {!loading && quotes.length === 0 && (
+      {!loading && !error && quotes.length === 0 && (
         <div style={{ textAlign: "center", padding: "56px 0" }}>
           <FileText size={40} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
           <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>Nenhum orçamento ainda</p>
@@ -203,7 +220,7 @@ export default function OrcamentosPage() {
         </div>
       )}
 
-      {!loading && quotes.length > 0 && (
+      {!loading && !error && quotes.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {quotes.map((q) => {
             const st = STATUS[q.status] ?? { label: q.status, color: "var(--c-text-3)" }
@@ -246,7 +263,7 @@ export default function OrcamentosPage() {
       {/* Modal criar */}
       {modal && (
         <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, maxHeight: "90vh", overflowY: "auto" }}>
+          <div onClick={(e) => { e.stopPropagation(); setShowCust(false); setShowCatalog(false) }} style={{ width: "100%", maxWidth: 480, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>Novo orçamento</h2>
 
             {/* Cliente do CRM */}
@@ -256,7 +273,7 @@ export default function OrcamentosPage() {
                 <button onClick={clearCustomer} style={{ background: "none", border: "none", color: "var(--c-text-3)", cursor: "pointer" }}><X size={16} /></button>
               </div>
             ) : (
-              <div style={{ position: "relative", marginBottom: 10 }}>
+              <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, ...inp }}>
                   <Search size={14} color="var(--c-text-4)" />
                   <input value={custQuery} onChange={(e) => { setCustQuery(e.target.value); setShowCust(true) }} onFocus={() => setShowCust(true)} placeholder="Buscar cliente cadastrado…" style={{ flex: 1, background: "transparent", border: "none", color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
@@ -284,7 +301,7 @@ export default function OrcamentosPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 0" }}>
               <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: 0 }}>Itens</p>
               {services.length > 0 && (
-                <div style={{ position: "relative" }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
                   <button onClick={() => setShowCatalog((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "#0066FF", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}><Tag size={12} /> Adicionar do catálogo</button>
                   {showCatalog && (
                     <div style={{ position: "absolute", top: 26, right: 0, width: 240, maxHeight: 220, overflowY: "auto", background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)", borderRadius: 10, zIndex: 10 }}>

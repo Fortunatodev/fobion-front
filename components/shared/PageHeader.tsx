@@ -23,13 +23,13 @@ export default function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="mt-1 w-8 h-8 flex items-center justify-center rounded-lg text-[var(--c-text-2)] hover:text-white hover:bg-[var(--c-border)] transition-colors duration-200 shrink-0"
+            className="mt-1 w-8 h-8 flex items-center justify-center rounded-lg text-[var(--c-text-2)] hover:text-[var(--c-text)] hover:bg-[var(--c-border)] transition-colors duration-200 shrink-0"
           >
             <ChevronLeft size={18} />
           </Link>
         )}
         <div>
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
+          <h1 className="text-2xl font-bold text-[var(--c-text)]">{title}</h1>
           {subtitle && (
             <p className="text-sm text-[var(--c-text-2)] mt-0.5">{subtitle}</p>
           )}

@@ -32,7 +32,7 @@ export default function PricingCards({ currentTier }: { currentTier?: string | n
   }, [])
 
   if (err) return <p style={{ fontSize: 13, color: "var(--c-text-3)" }}>Não foi possível carregar os planos. Tente de novo.</p>
-  if (!tiers) return <div style={{ display: "flex", justifyContent: "center", padding: 24 }}><Loader2 size={20} className="spin" color="var(--c-text-3)" /></div>
+  if (!tiers) return <div style={{ display: "flex", justifyContent: "center", padding: 24 }}><Loader2 size={20} className="animate-spin" color="var(--c-text-3)" /></div>
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 14 }}>

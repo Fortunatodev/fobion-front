@@ -41,6 +41,10 @@ function isOpenNow(hours: PublicBusiness["hours"]) {
   const hhmm  = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
   const today = hours.find(h => h.dayOfWeek === dow)
   if (!today || !today.isOpen) return false
+  // Expediente que cruza a meia-noite (ex.: 18:00–02:00)
+  if (today.closeTime < today.openTime) {
+    return hhmm >= today.openTime || hhmm <= today.closeTime
+  }
   return hhmm >= today.openTime && hhmm <= today.closeTime
 }
 
@@ -387,7 +391,7 @@ export default function SlugPage() {
               </button>
               <button
                 onClick={() => authed ? document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" }) : router.push(`/${slug}/login`)}
-                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-text)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`, fontFamily: "inherit" }}
+                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`, fontFamily: "inherit" }}
               >
                 Agendar agora →
               </button>
@@ -743,7 +747,7 @@ function FloatingBar({
           )}
           <button
             onClick={onSchedule}
-            style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-text)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.4)`, fontFamily: "inherit" }}
+            style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.4)`, fontFamily: "inherit" }}
           >
             Agendar agora →
           </button>

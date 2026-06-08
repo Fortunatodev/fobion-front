@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff } from "lucide-react"
+import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw } from "lucide-react"
 
 /** V2-B4 — Estoque de produtos. CRUD + ajuste de entrada/saída + alerta de mínimo + KPIs. */
 interface Product {
@@ -35,12 +35,12 @@ export default function EstoquePage() {
   const [adjDir, setAdjDir] = useState<"in" | "out">("in")
   const [adjQty, setAdjQty] = useState("")
 
-  const fetchData = () => {
-    setLoading(true)
+  const fetchData = useCallback(() => {
+    setLoading(true); setError("")
     apiGet<{ products: Product[] }>("/products").then((r) => setProducts(r.products ?? []))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro.")).finally(() => setLoading(false))
-  }
-  useEffect(fetchData, [])
+  }, [])
+  useEffect(() => { fetchData() }, [fetchData])
   // B05 (ext) — ESC fecha + trava scroll do fundo quando algum modal está aberto
   useEffect(() => {
     if (!modal && !adjFor) return
@@ -145,9 +145,26 @@ export default function EstoquePage() {
         </div>
       )}
 
-      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
-      {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
-      {!loading && products.length === 0 && (
+      {loading && (
+        <>
+          <style>{`@keyframes estSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 66, background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, animation: `estSkel 1.5s ease ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
+      {!loading && error && (
+        <div style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+          <button onClick={fetchData} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <RefreshCw size={13} /> Tentar novamente
+          </button>
+        </div>
+      )}
+      {!loading && !error && products.length === 0 && (
         <div style={{ textAlign: "center", padding: "56px 0" }}>
           <Package size={40} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
           <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>Estoque vazio</p>
@@ -155,7 +172,7 @@ export default function EstoquePage() {
         </div>
       )}
 
-      {!loading && products.length > 0 && (
+      {!loading && !error && products.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {/* ordena: baixo/zerado primeiro */}
           {[...products].sort((a, b) => (a.stockQty <= a.minStock ? 0 : 1) - (b.stockQty <= b.minStock ? 0 : 1)).map((p) => {

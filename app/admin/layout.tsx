@@ -42,8 +42,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <button
-            onClick={() => {
-              document.cookie = "admin-token=; path=/; max-age=0"
+            onClick={async () => {
+              await fetch("/api/admin/logout", { method: "POST" }).catch(() => {})
               window.location.href = "/admin/login"
             }}
             style={{

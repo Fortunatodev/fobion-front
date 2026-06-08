@@ -125,7 +125,11 @@ export default function Header() {
 
           {/* Drawer nav */}
           <nav style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-            {navGroups.map((group, gi) => (
+            {navGroups.map((group, gi) => {
+              // V2-B4: EMPLOYEE não vê itens só-de-dono; oculta grupo vazio. (espelha Sidebar)
+              const items = group.items.filter(it => !it.ownerOnly || user?.role !== "EMPLOYEE")
+              if (items.length === 0) return null
+              return (
               <div key={gi}>
                 {group.label && (
                   <div style={{
@@ -137,7 +141,7 @@ export default function Header() {
                     {group.label}
                   </div>
                 )}
-                {group.items.map((item) => {
+                {items.map((item) => {
                   const active = isActive(item.href)
                   const Icon   = item.icon
                   return (
@@ -163,7 +167,7 @@ export default function Header() {
                   )
                 })}
               </div>
-            ))}
+            )})}
           </nav>
         </div>
       )}

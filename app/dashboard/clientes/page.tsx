@@ -22,7 +22,7 @@ interface Vehicle {
 interface Customer {
   id: string
   name: string
-  phone: string
+  phone: string | null
   email: string | null
   createdAt: string
   vehicles: Vehicle[]
@@ -141,7 +141,7 @@ export default function ClientesPage() {
   function openEditModal(customer: Customer) {
     setSelectedCustomer(customer)
     setFormName(customer.name)
-    setFormPhone(customer.phone)
+    setFormPhone(customer.phone ?? "")
     setFormEmail(customer.email ?? "")
     setShowModal("edit")
   }
@@ -215,7 +215,7 @@ export default function ClientesPage() {
     const q = searchQuery.toLowerCase()
     return (
       c.name.toLowerCase().includes(q) ||
-      c.phone.includes(q) ||
+      (c.phone ?? "").includes(q) ||
       (c.email?.toLowerCase().includes(q)) ||
       c.vehicles.some((v) => v.plate.toLowerCase().includes(q))
     )
@@ -500,7 +500,7 @@ export default function ClientesPage() {
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <Phone size={11} color="var(--c-text-4)" />
-                        <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{customer.phone}</span>
+                        <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{customer.phone || "—"}</span>
                       </span>
 
                       {/* V2-B3: falar com o cliente no WhatsApp em 1 toque */}

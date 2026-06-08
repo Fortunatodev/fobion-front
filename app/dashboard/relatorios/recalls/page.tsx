@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet } from "@/lib/api"
-import { ArrowLeft, ShieldCheck, MessageCircle, Calendar } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import { ArrowLeft, ShieldCheck, MessageCircle, Calendar, AlertCircle } from "lucide-react"
 
 /**
  * V2-B3 — Recalls / Garantias (motor de recompra). Lista as garantias PENDENTES
@@ -32,6 +34,7 @@ function waLink(phone: string | null, name: string | null, service: string, dueD
 
 export default function RecallsPage() {
   const router = useRouter()
+  const { planStatus } = useUser()
   const [recalls, setRecalls] = useState<Recall[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -42,6 +45,16 @@ export default function RecallsPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar recalls."))
       .finally(() => setLoading(false))
   }, [])
+
+  // Gate de tier: espelha relatorios/page.tsx (trata null como não-PRO)
+  if (!planStatus || planStatus.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Retornos & Garantias"
+        description="Motor de recompra: serviços com garantia perto de vencer e retorno em 1 toque no WhatsApp."
+      />
+    )
+  }
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 48px" }}>
@@ -55,8 +68,22 @@ export default function RecallsPage() {
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Serviços com garantia perto de vencer — chame o cliente pra reagendar e fature de novo.</p>
 
-      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
-      {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
+      {loading && (
+        <>
+          <style>{`@keyframes recSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 64, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, animation: `recSkel 1.5s ease ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
+      {!loading && error && (
+        <div style={{ backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+        </div>
+      )}
 
       {!loading && !error && recalls.length === 0 && (
         <div style={{ textAlign: "center", padding: "56px 0" }}>
@@ -69,7 +96,7 @@ export default function RecallsPage() {
         </div>
       )}
 
-      {!loading && recalls.length > 0 && (
+      {!loading && !error && recalls.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {recalls.map((r) => {
             const d = daysUntil(r.dueDate)

@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { isAuthenticated } from "@/lib/auth"
 import Sidebar from "@/components/layout/Sidebar"   // import direto, não barrel
-import Header from "@/components/layout/Header"
 import BillingLockScreen from "@/components/shared/BillingLockScreen"
 import CarlaWidget from "@/components/dashboard/CarlaWidget"
 
@@ -78,20 +77,14 @@ export default function DashboardLayout({
         style={{
           flex: 1,
           marginLeft: isMobile ? 0 : 220,
+          // Única barra mobile é a topbar do Sidebar (height 56); sem Header duplicado.
           paddingTop: isMobile ? 56 : 0,
           minWidth: 0,
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* Header: .header-mobile = flex mobile / none desktop */}
-        <Header />
-
-        {/* content-offset: pt-64px mobile / pt-0 desktop */}
-        <main
-          className="content-offset"
-          style={{ flex: 1, overflowY: "auto" }}
-        >
+        <main style={{ flex: 1, overflowY: "auto" }}>
           <div style={{ padding: isMobile ? "16px" : "24px" }}>{children}</div>
         </main>
       </div>

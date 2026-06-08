@@ -125,9 +125,15 @@ export default function NovoUsuarioPage() {
       `🔗 Acesso: ${FRONTEND_URL}/auth/login`,
     ].join("\n")
 
+    if (!navigator.clipboard) {
+      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + text)
+      return
+    }
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
+    }).catch(() => {
+      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + text)
     })
   }
 

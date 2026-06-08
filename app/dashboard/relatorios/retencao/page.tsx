@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet } from "@/lib/api"
-import { ArrowLeft, AlertTriangle, Users, Crown, Repeat, UserPlus, Clock, MessageCircle } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import { ArrowLeft, AlertTriangle, Users, Crown, Repeat, UserPlus, Clock, MessageCircle, AlertCircle } from "lucide-react"
 
 /**
  * V2-B3 — Painel de Retenção (RFM). Referência: WashAI.
@@ -53,6 +55,7 @@ const BUCKET_LABEL: Record<string, { label: string; color: string }> = {
 
 export default function RetencaoPage() {
   const router = useRouter()
+  const { planStatus } = useUser()
   const [data, setData] = useState<RetencaoData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -63,6 +66,16 @@ export default function RetencaoPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar retenção."))
       .finally(() => setLoading(false))
   }, [])
+
+  // Gate de tier: espelha relatorios/page.tsx (trata null como não-PRO)
+  if (!planStatus || planStatus.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Retenção de clientes"
+        description="Segmentação RFM, receita em risco e lista de clientes a recuperar com 1 toque no WhatsApp."
+      />
+    )
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px" }}>
@@ -76,10 +89,24 @@ export default function RetencaoPage() {
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Quem está voltando, quem sumiu, e quanto de receita está em risco.</p>
 
-      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
-      {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
+      {loading && (
+        <>
+          <style>{`@keyframes retSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ height: 96, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, animation: `retSkel 1.5s ease ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
+      {!loading && error && (
+        <div style={{ backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+        </div>
+      )}
 
-      {!loading && data && (
+      {!loading && !error && data && (
         <>
           {/* Receita em risco — destaque */}
           <div style={{ display: "flex", alignItems: "center", gap: 14, backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 16, padding: "18px 22px", marginBottom: 24 }}>

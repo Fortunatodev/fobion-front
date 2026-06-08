@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import {
   Search, Crown, Plus, X,
   CheckCircle2, XCircle,
-  AlertCircle, Clock,
+  AlertCircle, Clock, Lock,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -167,8 +168,32 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+function AccessDenied() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)" }}>
+      <div style={{ maxWidth: 420, width: "100%", textAlign: "center", padding: 24 }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <Lock size={28} color="#EF4444" />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>Acesso restrito</h2>
+        <p style={{ fontSize: 13, color: "var(--c-text-3)", lineHeight: 1.6, margin: "0 0 24px" }}>
+          Esta área é exclusiva do dono da loja.
+        </p>
+        <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
+          Voltar ao início
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export default function AssinantesPage() {
-  const { planStatus } = useUser()
+  const { user, planStatus, loading } = useUser()
+
+  // Guard de role: espelha ownerOnly do Sidebar (defesa em profundidade)
+  if (!loading && user?.role === "EMPLOYEE") {
+    return <AccessDenied />
+  }
 
   if (planStatus && planStatus.plan !== "PRO") {
     return (
@@ -289,7 +314,7 @@ function AssinantesContent() {
       const q = searchQuery.toLowerCase()
       return (
         s.customer.name.toLowerCase().includes(q) ||
-        s.customer.phone.includes(q) ||
+        (s.customer.phone ?? "").includes(q) ||
         s.customerPlan.name.toLowerCase().includes(q)
       )
     }

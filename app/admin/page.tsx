@@ -438,6 +438,7 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                   style={{ ...inputStyle, cursor: "pointer" }}
                   value={plan} onChange={e => setPlan(e.target.value as PlanType)}
                 >
+                  <option value="FREE">Free</option>
                   <option value="BASIC">Basic</option>
                   <option value="PRO">Pro</option>
                 </select>
@@ -520,10 +521,14 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
     ].join("\n")
   }
 
-  function handleCopy() {
-    navigator.clipboard.writeText(buildMessage())
-    setCopied(true)
-    setTimeout(() => setCopied(false), 3000)
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(buildMessage())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 3000)
+    } catch {
+      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + buildMessage())
+    }
   }
 
   return (
@@ -604,7 +609,7 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
 function EditModal({ biz, onClose, onSaved }: {
   biz: BusinessItem; onClose: () => void; onSaved: (updated: BusinessItem) => void
 }) {
-  const [plan, setPlan] = useState<PlanType>(biz.plan === "FREE" ? "BASIC" : biz.plan)
+  const [plan, setPlan] = useState<PlanType>(biz.plan)
   const [expiry, setExpiry] = useState(biz.planExpiresAt?.split("T")[0] ?? "")
   const [active, setActive] = useState(biz.isActive)
   const [isTrial, setIsTrial] = useState(biz.isTrial)
@@ -705,6 +710,7 @@ function EditModal({ biz, onClose, onSaved }: {
               <div style={{ flex: 1, minWidth: 120 }}>
                 <label style={labelStyle}>Tipo de plano</label>
                 <select style={{ ...inputStyle, cursor: "pointer" }} value={plan} onChange={e => setPlan(e.target.value as PlanType)}>
+                  <option value="FREE">Free</option>
                   <option value="BASIC">Basic</option>
                   <option value="PRO">Pro</option>
                 </select>
