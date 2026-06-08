@@ -16,6 +16,14 @@ const ROLE_LABEL: Record<string, { label: string; color: string }> = {
   EMPLOYEE: { label: "Funcionário", color: "#0066FF" },
 }
 
+// B23 — senha forte autogerada (8 chars, sem caracteres ambíguos) pro login do funcionário
+function genPassword(): string {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+  let s = ""
+  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)]
+  return s
+}
+
 export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
   const [users, setUsers] = useState<TeamUser[] | null>(null)
   const [hidden, setHidden] = useState(false)
@@ -82,7 +90,10 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
         <div style={{ marginTop: 14 }}>
           <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Nome" style={inp} />
           <input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="E-mail de acesso" style={inp} />
-          <input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} placeholder="Senha (mín. 8)" style={inp} />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <input type="text" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} placeholder="Senha (mín. 8) — anote, mostra 1x" style={{ ...inp, flex: 1, width: "auto", marginBottom: 0 }} />
+            <button type="button" onClick={() => setF({ ...f, password: genPassword() })} title="Gerar senha forte" style={{ height: 40, padding: "0 14px", borderRadius: 10, border: "1px solid var(--c-border-2)", background: "transparent", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>🎲 Gerar</button>
+          </div>
           <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={{ ...inp, cursor: "pointer" }}>
             <option value="EMPLOYEE">Funcionário</option>
             <option value="ADMIN">Admin (acesso total)</option>
