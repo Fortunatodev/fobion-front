@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { apiGet } from "@/lib/api"
-import { CheckCircle2, ArrowRight, Rocket, X } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import { CheckCircle2, ArrowRight, Rocket, X, Clock } from "lucide-react"
+
+const CELEB_KEY = "forbion_onboarding_celebrated_v1"
 
 /**
  * V2-B1 — Checklist de ativação no dashboard (referência: onboarding gamificado
@@ -30,8 +34,33 @@ export default function OnboardingChecklist({
   hasScheduleToday: boolean
 }) {
   const router = useRouter()
+  const { planStatus } = useUser()
   const [servicesCount, setServicesCount] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState(true) // começa escondido até resolver
+
+  // B17 — countdown do trial (gatilho de urgência pra conversão; CERA mantém sempre visível)
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
+  useEffect(() => {
+    let d: number | null = null
+    if (planStatus?.isTrial && planStatus.planExpiresAt) {
+      const ms = new Date(planStatus.planExpiresAt).getTime() - Date.now()
+      d = ms > 0 ? Math.ceil(ms / 86_400_000) : 0
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTrialDaysLeft(d)
+  }, [planStatus?.isTrial, planStatus?.planExpiresAt])
+
+  // B15 — celebra cada etapa recém-concluída (reforço positivo = mais ativação)
+  useEffect(() => {
+    if (servicesCount === null) return
+    const done = [servicesCount > 0, totalCustomers > 0, hasScheduleToday, servicesCount > 0].filter(Boolean).length
+    const prev = Number(localStorage.getItem(CELEB_KEY) ?? "0")
+    if (done > prev) {
+      if (done < 4) toast.success(`🎉 Etapa concluída! ${Math.round((done / 4) * 100)}% da configuração pronta`)
+      else toast.success("🚀 Loja configurada! Bora receber agendamentos.")
+      localStorage.setItem(CELEB_KEY, String(done))
+    }
+  }, [servicesCount, totalCustomers, hasScheduleToday])
 
   useEffect(() => {
     const isDismissed = typeof window !== "undefined" && localStorage.getItem(DISMISS_KEY) === "1"
@@ -101,15 +130,32 @@ export default function OnboardingChecklist({
             </p>
           </div>
         </div>
-        <button
-          onClick={dismiss}
-          title="Dispensar"
-          style={{ background: "none", border: "none", color: "var(--c-text-4)", cursor: "pointer", padding: 4, display: "flex" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--c-text-2)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--c-text-4)")}
-        >
-          <X size={16} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {trialDaysLeft !== null && (
+            <span
+              onClick={() => router.push("/dashboard/configuracoes?tab=plano")}
+              title="Ver planos"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer",
+                fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8,
+                color: trialDaysLeft <= 2 ? "#EF4444" : "#F59E0B",
+                background: trialDaysLeft <= 2 ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                border: `1px solid ${trialDaysLeft <= 2 ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`,
+              }}
+            >
+              <Clock size={12} /> {trialDaysLeft === 0 ? "Teste expira hoje" : `Teste: ${trialDaysLeft}d restante${trialDaysLeft !== 1 ? "s" : ""}`}
+            </span>
+          )}
+          <button
+            onClick={dismiss}
+            title="Dispensar"
+            style={{ background: "none", border: "none", color: "var(--c-text-4)", cursor: "pointer", padding: 4, display: "flex" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--c-text-2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--c-text-4)")}
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       {/* barra de progresso */}

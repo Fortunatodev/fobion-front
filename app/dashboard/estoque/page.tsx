@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X } from "lucide-react"
+import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff } from "lucide-react"
 
 /** V2-B4 — Estoque de produtos. CRUD + ajuste de entrada/saída + alerta de mínimo + KPIs. */
 interface Product {
@@ -20,6 +20,8 @@ export default function EstoquePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [busy, setBusy] = useState<string | null>(null)
+  const [hideValues, setHideValues] = useState(false) // B22 — privacidade no balcão
+  const money = (c: number) => (hideValues ? "•••" : fmt(c))
 
   // modal de cadastro/edição
   const [modal, setModal] = useState(false)
@@ -99,7 +101,7 @@ export default function EstoquePage() {
 
   const KPIS = [
     { label: "Itens em estoque", value: String(totalUnits), color: "var(--c-text)", sub: `${products.length} produto${products.length !== 1 ? "s" : ""}` },
-    { label: "Valor em estoque", value: fmt(stockValue), color: "var(--c-text)", sub: "a custo" },
+    { label: "Valor em estoque", value: money(stockValue), color: "var(--c-text)", sub: "a custo" },
     { label: "Baixo estoque", value: String(lowCount), color: lowCount > 0 ? "#F59E0B" : "var(--c-text-3)", sub: "no mínimo ou abaixo" },
     { label: "Zerados", value: String(zeroCount), color: zeroCount > 0 ? "#EF4444" : "var(--c-text-3)", sub: "sem unidades" },
   ]
@@ -111,9 +113,14 @@ export default function EstoquePage() {
           <Package size={22} color="#0066FF" />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Estoque</h1>
         </div>
-        <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-          <Plus size={15} /> Novo produto
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => setHideValues((v) => !v)} title={hideValues ? "Mostrar valores" : "Ocultar valores (balcão)"} style={{ width: 40, height: 40, borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {hideValues ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+          <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <Plus size={15} /> Novo produto
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>Ceras, shampoos, insumos — controle entrada e saída.</p>
 
@@ -156,7 +163,7 @@ export default function EstoquePage() {
                       ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> zerado</span>
                       : low && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> mínimo</span>}
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>venda {fmt(p.salePrice)} · custo {fmt(p.costPrice)} · mín. {p.minStock}</p>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>venda {money(p.salePrice)} · custo {money(p.costPrice)} · mín. {p.minStock}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   <button title="Saída de 1" onClick={() => quickAdjust(p.id, -1)} disabled={busy === p.id || p.stockQty <= 0} style={{ ...iconBtn("#EF4444", "var(--c-border-2)"), opacity: p.stockQty <= 0 ? 0.4 : 1, width: 30, height: 30 }}><Minus size={14} /></button>
