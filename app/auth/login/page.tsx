@@ -367,6 +367,18 @@ function LoginContent() {
               "Entrar"
             )}
           </button>
+
+          {/* IMP-101 — esqueci minha senha */}
+          <div style={{ textAlign: "center", marginTop: 14 }}>
+            <Link
+              href="/auth/forgot-password"
+              style={{ color: "#71717A", fontSize: 13, textDecoration: "none" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#0066FF" }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#71717A" }}
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
         </form>
           </>
         )}
