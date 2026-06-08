@@ -33,20 +33,20 @@ const navSections = [
     items: [
       { href: "/dashboard/agendamentos", label: "Agendamentos", icon: CalendarDays },
       { href: "/dashboard/clientes",     label: "Clientes",     icon: UserCircle   },
-      { href: "/dashboard/employees",    label: "Funcionários", icon: Users        },
+      { href: "/dashboard/employees",    label: "Funcionários", icon: Users,       ownerOnly: true },
       { href: "/dashboard/servicos",     label: "Serviços",     icon: Wrench       },
       { href: "/dashboard/orcamentos",   label: "Orçamentos",   icon: FileText     },
       { href: "/dashboard/estoque",      label: "Estoque",      icon: Package      },
-      { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard   },
-      { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck    },
-      { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2    },
-      { href: "/dashboard/relatorios/repasses", label: "Repasses", icon: Wallet     },
+      { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard,  ownerOnly: true },
+      { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck,   ownerOnly: true },
+      { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2,   ownerOnly: true },
+      { href: "/dashboard/relatorios/repasses", label: "Repasses", icon: Wallet,   ownerOnly: true },
     ],
   },
   {
     label: "CONFIGURAÇÕES",
     items: [
-      { href: "/dashboard/configuracoes", label: "Configurações", icon: Settings },
+      { href: "/dashboard/configuracoes", label: "Configurações", icon: Settings, ownerOnly: true },
     ],
   },
 ]
@@ -92,7 +92,11 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
       {/* Nav */}
       <nav style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
-        {navSections.map(section => (
+        {navSections.map(section => {
+          // V2-B4: funcionário (EMPLOYEE) não vê itens só-de-dono; oculta grupo vazio.
+          const items = section.items.filter(it => !(it as any).ownerOnly || user?.role !== "EMPLOYEE")
+          if (items.length === 0) return null
+          return (
           <div key={section.label} style={{ marginBottom: 20 }}>
             <p style={{
               fontSize: 10, fontWeight: 700, color: "#3F3F46",
@@ -100,7 +104,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             }}>
               {section.label}
             </p>
-            {section.items.map(item => {
+            {items.map(item => {
               const active     = isActive(item.href)
               const Icon       = item.icon
               const isProOnly  = PRO_ONLY_PATHS.has(item.href) && !isPro
@@ -138,7 +142,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               )
             })}
           </div>
-        ))}
+        )})}
       </nav>
 
       {/* Plan badge */}

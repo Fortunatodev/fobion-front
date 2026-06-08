@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
+import TeamCard from "@/components/settings/TeamCard"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
@@ -1061,6 +1062,9 @@ function ConfiguracoesContent() {
 
             {/* IMP-101 — troca/definição de senha */}
             <PasswordCard isMobile={isMobile} />
+
+            {/* V2-B4: gestão de acessos da equipe (RBAC) */}
+            <TeamCard isMobile={isMobile} />
 
             {/* Danger zone */}
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "#EF4444", margin: "0 0 12px" }}>
