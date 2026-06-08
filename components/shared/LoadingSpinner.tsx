@@ -53,7 +53,7 @@ export default function LoadingSpinner({
 
 export function FullPageSpinner() {
   return (
-    <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center gap-4 z-50">
+    <div className="fixed inset-0 bg-[var(--c-bg)] flex flex-col items-center justify-center gap-4 z-50">
       <span className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent select-none">
         Forbion
       </span>

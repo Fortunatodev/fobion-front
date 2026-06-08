@@ -174,7 +174,7 @@ export default function NovoUsuarioPage() {
               >
                 {copied ? "✅ Copiado!" : "📋 Copiar credenciais"}
               </button>
-              <button onClick={handleReset} style={{ ...styles.btn, background: "#27272A" }}>
+              <button onClick={handleReset} style={{ ...styles.btn, background: "var(--c-text-4)" }}>
                 ➕ Criar outro negócio
               </button>
             </div>
@@ -284,7 +284,7 @@ export default function NovoUsuarioPage() {
             style={{
               ...styles.btn,
               background:    loading ? "#1A1A2E" : "#0066FF",
-              color:         loading ? "#3F3F46" : "#fff",
+              color:         loading ? "var(--c-text-4)" : "var(--c-text)",
               cursor:        loading ? "not-allowed" : "pointer",
               marginTop:     8,
             }}
@@ -294,10 +294,10 @@ export default function NovoUsuarioPage() {
         </form>
 
         {/* Nota */}
-        <p style={{ fontSize: 11, color: "#52525B", marginTop: 20, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 11, color: "var(--c-text-4)", marginTop: 20, lineHeight: 1.6 }}>
           Após a criação, envie o e-mail e a senha para o cliente.
           O cliente pode alterar a senha após o primeiro login em{" "}
-          <strong style={{ color: "#71717A" }}>{FRONTEND_URL}/auth/login</strong>.
+          <strong style={{ color: "var(--c-text-3)" }}>{FRONTEND_URL}/auth/login</strong>.
         </p>
       </div>
     </div>
@@ -327,7 +327,7 @@ function Field({
         required={required}
         style={styles.input}
         onFocus={e => { e.currentTarget.style.borderColor = "#0066FF" }}
-        onBlur={e  => { e.currentTarget.style.borderColor = "#27272A" }}
+        onBlur={e  => { e.currentTarget.style.borderColor = "var(--c-text-4)" }}
       />
     </div>
   )
@@ -344,9 +344,9 @@ function CredentialRow({
   return (
     <div style={styles.credRow}>
       <span style={{ fontSize: 18 }}>{icon}</span>
-      <span style={{ color: "#71717A", fontSize: 13, minWidth: 60 }}>{label}</span>
+      <span style={{ color: "var(--c-text-3)", fontSize: 13, minWidth: 60 }}>{label}</span>
       <span style={{
-        color:      "#FAFAFA",
+        color:      "var(--c-text)",
         fontSize:   13,
         fontFamily: mono ? "'Courier New', monospace" : "inherit",
         fontWeight: mono ? 700 : 400,
@@ -363,7 +363,7 @@ function CredentialRow({
 const styles: Record<string, React.CSSProperties> = {
   pageWrap: {
     minHeight:   "100vh",
-    background:  "#09090B",
+    background:  "var(--c-bg)",
     display:     "flex",
     alignItems:  "flex-start",
     justifyContent: "center",
@@ -373,24 +373,24 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     width:        "100%",
     maxWidth:     520,
-    background:   "#111",
-    border:       "1px solid #1F1F1F",
+    background:   "var(--c-surface)",
+    border:       "1px solid var(--c-border)",
     borderRadius: 20,
     padding:      "36px 32px",
-    color:        "#FAFAFA",
+    color:        "var(--c-text)",
   },
   title: {
     fontSize:   20,
     fontWeight: 700,
-    color:      "#FAFAFA",
+    color:      "var(--c-text)",
     margin:     0,
   },
   backBtn: {
     fontSize:     13,
-    color:        "#71717A",
+    color:        "var(--c-text-3)",
     textDecoration: "none",
     padding:      "4px 10px",
-    border:       "1px solid #27272A",
+    border:       "1px solid var(--c-text-4)",
     borderRadius: 8,
     background:   "transparent",
     cursor:       "pointer",
@@ -399,19 +399,19 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     display:      "block",
     fontSize:     12,
-    color:        "#A1A1AA",
+    color:        "var(--c-text-2)",
     marginBottom: 6,
     fontWeight:   500,
   },
   input: {
     width:        "100%",
     height:       44,
-    background:   "#0A0A0A",
-    border:       "1px solid #27272A",
+    background:   "var(--c-bg)",
+    border:       "1px solid var(--c-text-4)",
     borderRadius: 10,
     padding:      "0 14px",
     fontSize:     14,
-    color:        "#FAFAFA",
+    color:        "var(--c-text)",
     outline:      "none",
     fontFamily:   "inherit",
     boxSizing:    "border-box",
@@ -425,7 +425,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "none",
     border:     "none",
     cursor:     "pointer",
-    color:      "#71717A",
+    color:      "var(--c-text-3)",
     fontSize:   12,
     padding:    "4px 6px",
   },
@@ -453,7 +453,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor:       "pointer",
     fontFamily:   "inherit",
     transition:   "all 0.2s",
-    color:        "#fff",
+    color:        "var(--c-text)",
     display:      "inline-flex",
     alignItems:   "center",
     gap:          8,
@@ -476,8 +476,8 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign:    "center",
   },
   credentialGrid: {
-    background:   "#0A0A0A",
-    border:       "1px solid #1F1F1F",
+    background:   "var(--c-bg)",
+    border:       "1px solid var(--c-border)",
     borderRadius: 12,
     padding:      "16px",
     display:      "flex",

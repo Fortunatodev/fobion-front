@@ -122,7 +122,7 @@ export default function ServiceImageUpload({
       <style>{`@keyframes svc-spin { to { transform: rotate(360deg); } }`}</style>
 
       <label style={{
-        fontSize: 12, fontWeight: 500, color: "#A1A1AA",
+        fontSize: 12, fontWeight: 500, color: "var(--c-text-2)",
         marginBottom: 8, display: "block",
       }}>
         Imagem do serviço
@@ -135,8 +135,8 @@ export default function ServiceImageUpload({
         style={{
           position: "relative", width: "100%", height: 160,
           borderRadius: 12, overflow: "hidden",
-          border: `1px solid ${error ? "rgba(239,68,68,0.4)" : hovered && !uploading ? "#3F3F46" : "#252525"}`,
-          background: "#0A0A0A",
+          border: `1px solid ${error ? "rgba(239,68,68,0.4)" : hovered && !uploading ? "var(--c-text-4)" : "var(--c-border-2)"}`,
+          background: "var(--c-bg)",
           cursor: uploading ? "not-allowed" : "pointer",
           transition: "border-color 0.2s ease",
         }}
@@ -160,8 +160,8 @@ export default function ServiceImageUpload({
             }}>
               {hovered && (
                 <>
-                  <Upload size={20} color="#fff" />
-                  <span style={{ fontSize: 12, color: "#fff", fontWeight: 500 }}>
+                  <Upload size={20} color="var(--c-text)" />
+                  <span style={{ fontSize: 12, color: "var(--c-text)", fontWeight: 500 }}>
                     Alterar imagem
                   </span>
                 </>
@@ -176,7 +176,7 @@ export default function ServiceImageUpload({
                 width: 26, height: 26, borderRadius: "50%",
                 background: "rgba(0,0,0,0.7)", border: "none",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#fff", zIndex: 10,
+                cursor: "pointer", color: "var(--c-text)", zIndex: 10,
               }}
             >
               <X size={12} />
@@ -193,17 +193,17 @@ export default function ServiceImageUpload({
           }}>
             <div style={{
               width: 40, height: 40, borderRadius: 10,
-              background: hovered ? "#1F1F1F" : "#161616",
-              border: "1px solid #1F1F1F",
+              background: hovered ? "var(--c-border)" : "var(--c-surface-2)",
+              border: "1px solid var(--c-border)",
               display: "flex", alignItems: "center", justifyContent: "center",
               transition: "background 0.2s ease",
             }}>
-              <ImageIcon size={18} color="#3F3F46" />
+              <ImageIcon size={18} color="var(--c-text-4)" />
             </div>
-            <span style={{ fontSize: 13, color: "#52525B", fontWeight: 500 }}>
+            <span style={{ fontSize: 13, color: "var(--c-text-4)", fontWeight: 500 }}>
               Clique para adicionar imagem
             </span>
-            <span style={{ fontSize: 11, color: "#3F3F46" }}>
+            <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>
               PNG, JPG, WEBP até 4MB
             </span>
           </div>
@@ -222,7 +222,7 @@ export default function ServiceImageUpload({
               color="#0066FF"
               style={{ animation: "svc-spin 0.7s linear infinite" }}
             />
-            <span style={{ fontSize: 13, color: "#A1A1AA" }}>
+            <span style={{ fontSize: 13, color: "var(--c-text-2)" }}>
               Enviando imagem...
             </span>
           </div>

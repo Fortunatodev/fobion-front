@@ -45,7 +45,7 @@ function Field({
   const [focused, setFocused] = useState(false)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA" }}>
+      <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)" }}>
         {label}{required && <span style={{ color: "#EF4444" }}> *</span>}
       </label>
       <input
@@ -56,10 +56,10 @@ function Field({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
-          height: 42, backgroundColor: "#0A0A0A",
-          border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "#252525"}`,
+          height: 42, backgroundColor: "var(--c-bg)",
+          border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "0 14px", fontSize: 14,
-          color: "#fff", outline: "none", width: "100%",
+          color: "var(--c-text)", outline: "none", width: "100%",
           fontFamily: "inherit", transition: "border-color 0.15s ease",
         }}
       />
@@ -255,7 +255,7 @@ export default function ServicosPage() {
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         @keyframes toastIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         * { box-sizing:border-box; }
-        ::placeholder { color:#3F3F46; }
+        ::placeholder { color:var(--c-text-4); }
       `}</style>
 
       <div style={{ padding: isMobile ? "16px 14px" : "28px 32px", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
@@ -277,10 +277,10 @@ export default function ServicosPage() {
         {/* ── Header ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isMobile ? 20 : 28, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0 }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.4px" }}>
+            <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.4px" }}>
               Serviços
             </h1>
-            <p style={{ fontSize: 13, color: "#71717A", marginTop: 4 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4 }}>
               {services.length} serviço{services.length !== 1 ? "s" : ""} cadastrado{services.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -289,7 +289,7 @@ export default function ServicosPage() {
             style={{
               display: "flex", gap: 8, alignItems: "center",
               background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-              border: "none", color: "#fff", height: 40, padding: "0 18px",
+              border: "none", color: "var(--c-text)", height: 40, padding: "0 18px",
               borderRadius: 12, fontSize: 13, fontWeight: 600,
               cursor: "pointer", fontFamily: "inherit",
               boxShadow: "0 4px 16px rgba(0,102,255,0.25)",
@@ -316,7 +316,7 @@ export default function ServicosPage() {
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
             <style>{`@keyframes sp { to { transform:rotate(360deg); } }`}</style>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+            <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
           </div>
         )}
 
@@ -324,17 +324,17 @@ export default function ServicosPage() {
         {!loading && services.length === 0 && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
             <div style={{
-              width: 64, height: 64, backgroundColor: "#111111",
-              border: "1px solid #1F1F1F", borderRadius: 20,
+              width: 64, height: 64, backgroundColor: "var(--c-surface)",
+              border: "1px solid var(--c-border)", borderRadius: 20,
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto",
             }}>
-              <ImageIcon size={28} color="#2A2A2A" />
+              <ImageIcon size={28} color="var(--c-border-2)" />
             </div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 16 }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
               Nenhum serviço cadastrado
             </p>
-            <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
               Crie o primeiro serviço para começar a receber agendamentos.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
@@ -343,7 +343,7 @@ export default function ServicosPage() {
                 style={{
                   height: 40, padding: "0 20px", borderRadius: 12,
                   background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                  color: "#fff", fontSize: 13, fontWeight: 600,
+                  color: "var(--c-text)", fontSize: 13, fontWeight: 600,
                   border: "none", cursor: "pointer", fontFamily: "inherit",
                 }}
               >
@@ -355,13 +355,13 @@ export default function ServicosPage() {
                 disabled={seeding}
                 style={{
                   height: 40, padding: "0 20px", borderRadius: 12,
-                  background: "transparent", color: seeding ? "#52525B" : "#A1A1AA",
+                  background: "transparent", color: seeding ? "var(--c-text-4)" : "var(--c-text-2)",
                   fontSize: 13, fontWeight: 600,
-                  border: "1px solid #1F1F1F", cursor: seeding ? "not-allowed" : "pointer",
+                  border: "1px solid var(--c-border)", cursor: seeding ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
                 }}
                 onMouseEnter={(e) => { if (!seeding) e.currentTarget.style.borderColor = "#0066FF" }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1F1F1F" }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--c-border)" }}
               >
                 {seeding ? "Adicionando…" : "✨ Adicionar 30 serviços prontos"}
               </button>
@@ -401,7 +401,7 @@ export default function ServicosPage() {
           }}
         >
           <div style={{
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
             borderRadius: isMobile ? 16 : 20, padding: isMobile ? 20 : 28,
             width: "100%", maxWidth: 480,
             maxHeight: "90vh", overflowY: "auto",
@@ -409,12 +409,12 @@ export default function ServicosPage() {
           }}>
             {/* Header do modal */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 {showModal === "create" ? "Novo serviço" : "Editar serviço"}
               </h2>
               <button
                 onClick={closeModal}
-                style={{ background: "transparent", border: "none", color: "#71717A", cursor: "pointer", padding: 4 }}
+                style={{ background: "transparent", border: "none", color: "var(--c-text-3)", cursor: "pointer", padding: 4 }}
               >
                 <X size={18} />
               </button>
@@ -456,16 +456,16 @@ export default function ServicosPage() {
 
               {/* Repasse default ao funcionário ─────────────────────────── */}
               <div style={{
-                background: "#0A0A0A", border: "1px solid #252525",
+                background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
                 borderRadius: 10, padding: "12px 14px",
                 display: "flex", flexDirection: "column", gap: 8,
               }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
                       Repasse ao funcionário
                     </p>
-                    <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                    <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
                       % padrão que o funcionário recebe ao executar este serviço.
                       Pode ser sobrescrito por exceção individual em cada funcionário.
                     </p>
@@ -481,19 +481,19 @@ export default function ServicosPage() {
                     placeholder="0"
                     style={{
                       width: 80, height: 36, padding: "0 10px",
-                      background: "#111", border: "1px solid #2A2A2A",
-                      borderRadius: 8, color: "#fff", fontSize: 13,
+                      background: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 8, color: "var(--c-text)", fontSize: 13,
                       outline: "none", fontFamily: "inherit",
                     }}
                   />
-                  <span style={{ color: "#71717A", fontSize: 13 }}>%</span>
+                  <span style={{ color: "var(--c-text-3)", fontSize: 13 }}>%</span>
                   {formPrice && formCommissionPct && Number(formCommissionPct) > 0 && !isNaN(Number(formPrice)) && (
                     <span style={{ marginLeft: 8, fontSize: 12, color: "#10B981" }}>
                       = {formatCurrency(Math.floor(Number(formPrice) * 100 * Number(formCommissionPct) / 100))} por execução
                     </span>
                   )}
                   {!formCommissionPct && (
-                    <span style={{ marginLeft: 8, fontSize: 12, color: "#52525B", fontStyle: "italic" }}>
+                    <span style={{ marginLeft: 8, fontSize: 12, color: "var(--c-text-4)", fontStyle: "italic" }}>
                       sem repasse
                     </span>
                   )}
@@ -502,15 +502,15 @@ export default function ServicosPage() {
 
               {/* V2-B3: Garantia / Recall ──────────────────────────────── */}
               <div style={{
-                background: "#0A0A0A", border: "1px solid #252525",
+                background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
                 borderRadius: 10, padding: "12px 14px",
                 display: "flex", flexDirection: "column", gap: 8,
               }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
                     Garantia / Recall
                   </p>
-                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
                     Dias de garantia (ex.: vitrificação 180). Ao fechar a comanda, o sistema
                     agenda um lembrete de retorno antes de vencer. Vazio = sem recall.
                   </p>
@@ -525,12 +525,12 @@ export default function ServicosPage() {
                     placeholder="0"
                     style={{
                       width: 80, height: 36, padding: "0 10px",
-                      background: "#111", border: "1px solid #2A2A2A",
-                      borderRadius: 8, color: "#fff", fontSize: 13,
+                      background: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 8, color: "var(--c-text)", fontSize: 13,
                       outline: "none", fontFamily: "inherit",
                     }}
                   />
-                  <span style={{ color: "#71717A", fontSize: 13 }}>dias</span>
+                  <span style={{ color: "var(--c-text-3)", fontSize: 13 }}>dias</span>
                   {formWarranty && Number(formWarranty) > 0 && (
                     <span style={{ marginLeft: 8, fontSize: 12, color: "#0066FF" }}>
                       recall ~{Math.max(0, Number(formWarranty) - 7)} dias após o serviço
@@ -541,23 +541,23 @@ export default function ServicosPage() {
 
               {/* V2-B4: Preço por porte de veículo ─────────────────────────── */}
               <div style={{
-                background: "#0A0A0A", border: "1px solid #252525",
+                background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
                 borderRadius: 10, padding: "12px 14px",
                 display: "flex", flexDirection: "column", gap: 10,
               }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
-                    Preço por porte <span style={{ color: "#71717A", fontWeight: 400 }}>(opcional)</span>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
+                    Preço por porte <span style={{ color: "var(--c-text-3)", fontWeight: 400 }}>(opcional)</span>
                   </p>
-                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
                     SUV/caminhonete costuma custar mais. Deixe vazio pra usar o preço base.
                   </p>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                   {([["CAR", "Carro"], ["MOTORCYCLE", "Moto"], ["TRUCK", "Caminhonete"], ["SUV", "SUV"]] as const).map(([key, label]) => (
                     <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 12, color: "#A1A1AA", width: 88, flexShrink: 0 }}>{label}</span>
-                      <span style={{ fontSize: 12, color: "#52525B" }}>R$</span>
+                      <span style={{ fontSize: 12, color: "var(--c-text-2)", width: 88, flexShrink: 0 }}>{label}</span>
+                      <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>R$</span>
                       <input
                         type="number" min={0} step="0.01"
                         value={formPorte[key]}
@@ -565,8 +565,8 @@ export default function ServicosPage() {
                         placeholder={formPrice || "base"}
                         style={{
                           flex: 1, minWidth: 0, height: 34, padding: "0 10px",
-                          background: "#111", border: "1px solid #2A2A2A",
-                          borderRadius: 8, color: "#fff", fontSize: 13,
+                          background: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                          borderRadius: 8, color: "var(--c-text)", fontSize: 13,
                           outline: "none", fontFamily: "inherit",
                         }}
                       />
@@ -578,12 +578,12 @@ export default function ServicosPage() {
               {/* Toggle ativo */}
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                backgroundColor: "#0A0A0A", border: "1px solid #252525",
+                backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border-2)",
                 borderRadius: 10, padding: "12px 14px",
               }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>Serviço ativo</p>
-                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>Serviço ativo</p>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
                     {formActive ? "Aparece na loja pública" : "Oculto da loja pública"}
                   </p>
                 </div>
@@ -591,7 +591,7 @@ export default function ServicosPage() {
                   onClick={() => setFormActive(v => !v)}
                   style={{
                     width: 44, height: 24, borderRadius: 100,
-                    backgroundColor: formActive ? "#0066FF" : "#252525",
+                    backgroundColor: formActive ? "#0066FF" : "var(--c-border-2)",
                     cursor: "pointer", position: "relative",
                     transition: "background 0.2s ease", flexShrink: 0,
                   }}
@@ -600,7 +600,7 @@ export default function ServicosPage() {
                     position: "absolute", top: 3,
                     left: formActive ? 22 : 3,
                     width: 18, height: 18, borderRadius: "50%",
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--c-text)",
                     transition: "left 0.2s ease",
                   }} />
                 </div>
@@ -624,8 +624,8 @@ export default function ServicosPage() {
               <button
                 onClick={closeModal}
                 style={{
-                  background: "transparent", border: "1px solid #252525",
-                  color: "#A1A1AA", height: 40, padding: "0 16px",
+                  background: "transparent", border: "1px solid var(--c-border-2)",
+                  color: "var(--c-text-2)", height: 40, padding: "0 16px",
                   borderRadius: 10, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
                 }}
               >
@@ -637,7 +637,7 @@ export default function ServicosPage() {
                 style={{
                   background: "linear-gradient(135deg,#0066FF,#7C3AED)",
                   height: 40, padding: "0 20px", borderRadius: 10,
-                  color: "#fff", fontSize: 13, fontWeight: 600,
+                  color: "var(--c-text)", fontSize: 13, fontWeight: 600,
                   border: "none", cursor: saving ? "not-allowed" : "pointer",
                   fontFamily: "inherit", opacity: saving ? 0.7 : 1,
                   display: "flex", gap: 8, alignItems: "center",
@@ -647,7 +647,7 @@ export default function ServicosPage() {
                 {saving ? (
                   <>
                     <style>{`@keyframes sp2 { to { transform:rotate(360deg); } }`}</style>
-                    <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "sp2 0.6s linear infinite" }} />
+                    <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "var(--c-text)", animation: "sp2 0.6s linear infinite" }} />
                     Salvando...
                   </>
                 ) : showModal === "create" ? "Criar serviço" : "Salvar alterações"}
@@ -677,8 +677,8 @@ function ServiceCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        backgroundColor: "#111111",
-        border: `1px solid ${hovered ? "#252525" : "#1F1F1F"}`,
+        backgroundColor: "var(--c-surface)",
+        border: `1px solid ${hovered ? "var(--c-border-2)" : "var(--c-border)"}`,
         borderRadius: 16, overflow: "hidden",
         transition: "border-color 0.15s ease",
         animation: "fadeIn 0.3s ease",
@@ -687,7 +687,7 @@ function ServiceCard({
     >
       {/* Imagem do serviço */}
       {service.imageUrl ? (
-        <div style={{ height: 120, overflow: "hidden", borderBottom: "1px solid #161616" }}>
+        <div style={{ height: 120, overflow: "hidden", borderBottom: "1px solid var(--c-surface-2)" }}>
           <img
             src={service.imageUrl}
             alt={service.name}
@@ -696,11 +696,11 @@ function ServiceCard({
         </div>
       ) : (
         <div style={{
-          height: 80, borderBottom: "1px solid #161616",
+          height: 80, borderBottom: "1px solid var(--c-surface-2)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: "#0D0D0D",
+          backgroundColor: "var(--c-elevated)",
         }}>
-          <ImageIcon size={24} color="#2A2A2A" />
+          <ImageIcon size={24} color="var(--c-border-2)" />
         </div>
       )}
 
@@ -709,14 +709,14 @@ function ServiceCard({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
-              fontSize: 14, fontWeight: 700, color: "#fff", margin: 0,
+              fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
               {service.name}
             </p>
             {service.description && (
               <p style={{
-                fontSize: 12, color: "#71717A", marginTop: 4,
+                fontSize: 12, color: "var(--c-text-3)", marginTop: 4,
                 overflow: "hidden", textOverflow: "ellipsis",
                 display: "-webkit-box", WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -732,7 +732,7 @@ function ServiceCard({
             flexShrink: 0,
             backgroundColor: service.isActive ? "rgba(16,185,129,0.08)" : "rgba(113,113,122,0.08)",
             border: `1px solid ${service.isActive ? "rgba(16,185,129,0.2)" : "rgba(113,113,122,0.2)"}`,
-            color: service.isActive ? "#10B981" : "#71717A",
+            color: service.isActive ? "#10B981" : "var(--c-text-3)",
           }}>
             {service.isActive ? "Ativo" : "Inativo"}
           </span>
@@ -740,11 +740,11 @@ function ServiceCard({
 
         {/* Preço + duração */}
         <div style={{ display: "flex", gap: 12, marginTop: 14, alignItems: "center" }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)" }}>
             {formatCurrency(service.price)}
           </span>
-          <span style={{ fontSize: 12, color: "#52525B" }}>·</span>
-          <span style={{ fontSize: 12, color: "#71717A" }}>
+          <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>·</span>
+          <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
             {formatDuration(service.durationMinutes)}
           </span>
         </div>
@@ -757,7 +757,7 @@ function ServiceCard({
               flex: 1, height: 34, borderRadius: 10,
               backgroundColor: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.08)",
-              color: "#A1A1AA", fontSize: 12, fontWeight: 500,
+              color: "var(--c-text-2)", fontSize: 12, fontWeight: 500,
               cursor: "pointer", display: "flex",
               alignItems: "center", justifyContent: "center", gap: 6,
               transition: "all 0.15s ease", fontFamily: "inherit",
@@ -765,12 +765,12 @@ function ServiceCard({
             onMouseEnter={e => {
               const b = e.currentTarget as HTMLButtonElement
               b.style.backgroundColor = "rgba(255,255,255,0.08)"
-              b.style.color = "#fff"
+              b.style.color = "var(--c-text)"
             }}
             onMouseLeave={e => {
               const b = e.currentTarget as HTMLButtonElement
               b.style.backgroundColor = "rgba(255,255,255,0.04)"
-              b.style.color = "#A1A1AA"
+              b.style.color = "var(--c-text-2)"
             }}
           >
             <Pencil size={12} />

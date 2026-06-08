@@ -223,17 +223,17 @@ export default function SlugPage() {
   const hasAnyDiscount = activeSub !== null && totalWithDiscount < totalCents
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
       <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
-      <p style={{ fontSize: 14, color: "#52525B" }}>Carregando vitrine...</p>
+      <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+      <p style={{ fontSize: 14, color: "var(--c-text-4)" }}>Carregando vitrine...</p>
     </div>
   )
 
   if (error || !business) return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
-      <p style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>Loja não encontrada</p>
-      <p style={{ fontSize: 14, color: "#71717A" }}>{error || "Verifique o endereço e tente novamente."}</p>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <p style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)" }}>Loja não encontrada</p>
+      <p style={{ fontSize: 14, color: "var(--c-text-3)" }}>{error || "Verifique o endereço e tente novamente."}</p>
     </div>
   )
 
@@ -275,12 +275,12 @@ export default function SlugPage() {
         * { box-sizing: border-box; }
       `}</style>
 
-      <div style={{ backgroundColor: "#0A0A0A", color: "#fff", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
+      <div style={{ backgroundColor: "var(--c-bg)", color: "var(--c-text)", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
         {/* ── HERO ── */}
         <section style={{ position: "relative", minHeight: "92vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
 
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "#0A0A0A", pointerEvents: "none" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundColor: "var(--c-bg)", pointerEvents: "none" }}>
             <div style={{ position: "absolute", top: "-20%", left: "50%", width: isMobile ? 400 : 800, height: isMobile ? 400 : 800, borderRadius: "50%", background: `radial-gradient(circle, rgba(${themeRgb},0.08) 0%, transparent 70%)`, animation: "floatOrb1 12s ease-in-out infinite" }} />
             <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: isMobile ? 260 : 500, height: isMobile ? 260 : 500, borderRadius: "50%", background: `radial-gradient(circle, rgba(${themeRgb},0.05) 0%, transparent 70%)`, animation: "floatOrb2 15s ease-in-out infinite" }} />
             <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
@@ -350,17 +350,17 @@ export default function SlugPage() {
                 {ownerAvatarUrl ? (
                   <img src={ownerAvatarUrl} alt={business.name} style={{ width: isMobile ? 72 : 88, height: isMobile ? 72 : 88, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", display: "block" }} />
                 ) : (
-                  <div style={{ width: isMobile ? 72 : 88, height: isMobile ? 72 : 88, borderRadius: "50%", background: `linear-gradient(135deg, ${theme}, ${theme}99)`, border: "3px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 26 : 32, fontWeight: 800, color: "#fff" }}>
+                  <div style={{ width: isMobile ? 72 : 88, height: isMobile ? 72 : 88, borderRadius: "50%", background: `linear-gradient(135deg, ${theme}, ${theme}99)`, border: "3px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 26 : 32, fontWeight: 800, color: "white" }}>
                     {business.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 {open && (
-                  <div style={{ position: "absolute", bottom: 2, right: 2, width: 18, height: 18, borderRadius: "50%", backgroundColor: "#10B981", border: "2px solid #0A0A0A" }} />
+                  <div style={{ position: "absolute", bottom: 2, right: 2, width: 18, height: 18, borderRadius: "50%", backgroundColor: "#10B981", border: "2px solid var(--c-bg)" }} />
                 )}
               </div>
             </div>
 
-            <h1 style={{ fontSize: "clamp(28px, 8vw, 72px)", fontWeight: 900, color: "#fff", letterSpacing: "-2px", lineHeight: 1.05, margin: "16px 0 20px", width: "100%" }}>
+            <h1 style={{ fontSize: "clamp(28px, 8vw, 72px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-2px", lineHeight: 1.05, margin: "16px 0 20px", width: "100%" }}>
               {business.name}
             </h1>
 
@@ -372,22 +372,22 @@ export default function SlugPage() {
 
             {/* Info badges */}
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 8 : 16, justifyContent: "center", alignItems: "center", marginBottom: 28, flexWrap: "wrap" }}>
-              {business.phone   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#71717A" }}><Phone size={12} /> {business.phone}</span>}
-              {business.email   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#71717A" }}><Mail size={12} /> {business.email}</span>}
-              {business.address && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#71717A" }}><MapPin size={12} /> {business.address}</span>}
+              {business.phone   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><Phone size={12} /> {business.phone}</span>}
+              {business.email   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><Mail size={12} /> {business.email}</span>}
+              {business.address && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><MapPin size={12} /> {business.address}</span>}
             </div>
 
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 10, justifyContent: "center", alignItems: "center", width: isMobile ? "100%" : "auto" }}>
               <button
                 onClick={() => document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" })}
-                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 24px", borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 24px", borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--c-text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
               >
                 Ver serviços
               </button>
               <button
                 onClick={() => authed ? document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" }) : router.push(`/${slug}/login`)}
-                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "#fff", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`, fontFamily: "inherit" }}
+                style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-text)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`, fontFamily: "inherit" }}
               >
                 Agendar agora →
               </button>
@@ -396,7 +396,7 @@ export default function SlugPage() {
             {!isMobile && (
               <div style={{ marginTop: 64, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 1, height: 40, background: `linear-gradient(${theme}, transparent)`, animation: "scrollPulse 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: 10, color: "#3F3F46", letterSpacing: 1 }}>ROLE</span>
+                <span style={{ fontSize: 10, color: "var(--c-text-4)", letterSpacing: 1 }}>ROLE</span>
               </div>
             )}
           </div>
@@ -408,12 +408,12 @@ export default function SlugPage() {
             <span style={{ fontSize: 11, fontWeight: 800, color: theme, letterSpacing: 3, backgroundColor: `rgba(${themeRgb},0.08)`, border: `1px solid rgba(${themeRgb},0.15)`, padding: "5px 12px", borderRadius: 100 }}>
               SERVIÇOS
             </span>
-            <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 900, color: "#fff", letterSpacing: "-1px", margin: "12px 0 0" }}>O que oferecemos</h2>
-            <p style={{ fontSize: isMobile ? 13 : 15, color: "#71717A", marginTop: 10 }}>Selecione os serviços e agende com um clique</p>
+            <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-1px", margin: "12px 0 0" }}>O que oferecemos</h2>
+            <p style={{ fontSize: isMobile ? 13 : 15, color: "var(--c-text-3)", marginTop: 10 }}>Selecione os serviços e agende com um clique</p>
           </div>
 
           {business.services.length === 0 ? (
-            <p style={{ textAlign: "center", fontSize: 16, color: "#52525B", padding: "64px 0" }}>Nenhum serviço disponível no momento.</p>
+            <p style={{ textAlign: "center", fontSize: 16, color: "var(--c-text-4)", padding: "64px 0" }}>Nenhum serviço disponível no momento.</p>
           ) : (
             <>
               {/* Banner de assinante ativo */}
@@ -427,9 +427,9 @@ export default function SlugPage() {
               )}
               {/* Marketing sutil para quem não é assinante */}
               {!activeSub && hasPlans && (
-                <div style={{ marginBottom: 20, background: "rgba(255,255,255,0.02)", border: "1px solid #161616", borderRadius: 14, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
-                  <Percent size={13} color="#52525B" />
-                  <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                <div style={{ marginBottom: 20, background: "rgba(255,255,255,0.02)", border: "1px solid var(--c-surface-2)", borderRadius: 14, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+                  <Percent size={13} color="var(--c-text-4)" />
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                     Assinantes dos planos desta loja têm descontos em todos os serviços.{" "}
                     <a href="#planos" style={{ color: "#7C3AED", fontWeight: 600, textDecoration: "none" }}>Ver planos →</a>
                   </p>
@@ -455,14 +455,14 @@ export default function SlugPage() {
 
         {/* ── PLANOS ── */}
         {hasPlans && (
-          <section id="planos" style={{ backgroundColor: "#0D0D0D", borderTop: "1px solid #161616" }}>
+          <section id="planos" style={{ backgroundColor: "var(--c-elevated)", borderTop: "1px solid var(--c-surface-2)" }}>
             <div style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
               <div style={{ textAlign: "center", marginBottom: isMobile ? 32 : 48 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#7C3AED", letterSpacing: 3, backgroundColor: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)", padding: "5px 12px", borderRadius: 100 }}>
                   FIDELIDADE
                 </span>
-                <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 900, color: "#fff", letterSpacing: "-1px", margin: "12px 0 0" }}>Vire assinante, economize sempre</h2>
-                <p style={{ fontSize: isMobile ? 13 : 15, color: "#71717A", marginTop: 10 }}>Planos mensais com desconto em todos os serviços</p>
+                <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-1px", margin: "12px 0 0" }}>Vire assinante, economize sempre</h2>
+                <p style={{ fontSize: isMobile ? 13 : 15, color: "var(--c-text-3)", marginTop: 10 }}>Planos mensais com desconto em todos os serviços</p>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
                 {business.plans!.map(plan => (
@@ -477,11 +477,11 @@ export default function SlugPage() {
         <section id="horarios" style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: isMobile ? 32 : 64, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 280px" }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#52525B", letterSpacing: 3, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: "5px 12px", borderRadius: 100 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--c-text-4)", letterSpacing: 3, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: "5px 12px", borderRadius: 100 }}>
                 HORÁRIOS
               </span>
-              <h2 style={{ fontSize: "clamp(22px,3vw,36px)", fontWeight: 900, color: "#fff", letterSpacing: "-0.5px", margin: "12px 0 0" }}>Quando estamos abertos</h2>
-              <p style={{ fontSize: isMobile ? 13 : 15, color: "#71717A", marginTop: 10, lineHeight: 1.6 }}>Agende com antecedência e garanta seu horário.</p>
+              <h2 style={{ fontSize: "clamp(22px,3vw,36px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-0.5px", margin: "12px 0 0" }}>Quando estamos abertos</h2>
+              <p style={{ fontSize: isMobile ? 13 : 15, color: "var(--c-text-3)", marginTop: 10, lineHeight: 1.6 }}>Agende com antecedência e garanta seu horário.</p>
               {open && (
                 <div style={{ marginTop: 20, display: "flex", gap: 10, alignItems: "center" }}>
                   <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#10B981", animation: "pulseGreen 2s infinite" }} />
@@ -490,7 +490,7 @@ export default function SlugPage() {
               )}
               <button
                 onClick={() => document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" })}
-                style={{ marginTop: 24, height: 46, padding: "0 20px", borderRadius: 12, background: `linear-gradient(135deg, ${theme}, ${theme}CC)`, color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 16px rgba(${themeRgb}, 0.3)` }}
+                style={{ marginTop: 24, height: 46, padding: "0 20px", borderRadius: 12, background: `linear-gradient(135deg, ${theme}, ${theme}CC)`, color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 16px rgba(${themeRgb}, 0.3)` }}
               >
                 Agendar horário →
               </button>
@@ -503,11 +503,11 @@ export default function SlugPage() {
                   // ✅ key={h.dayOfWeek} — dayOfWeek é único (0–6), não precisa de .id
                   <div
                     key={h.dayOfWeek}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "10px 14px" : "14px 18px", borderRadius: 14, backgroundColor: isHoje ? `rgba(${themeRgb},0.06)` : "transparent", border: isHoje ? `1px solid rgba(${themeRgb},0.2)` : "1px solid #161616" }}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "10px 14px" : "14px 18px", borderRadius: 14, backgroundColor: isHoje ? `rgba(${themeRgb},0.06)` : "transparent", border: isHoje ? `1px solid rgba(${themeRgb},0.2)` : "1px solid var(--c-surface-2)" }}
                   >
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: h.isOpen ? "#10B981" : "#2A2A2A" }} />
-                      <span style={{ fontSize: isMobile ? 13 : 14, color: isHoje ? "#fff" : "#A1A1AA", fontWeight: isHoje ? 600 : 400 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: h.isOpen ? "#10B981" : "var(--c-border-2)" }} />
+                      <span style={{ fontSize: isMobile ? 13 : 14, color: isHoje ? "var(--c-text)" : "var(--c-text-2)", fontWeight: isHoje ? 600 : 400 }}>
                         {DAY_LABELS[h.dayOfWeek]}
                       </span>
                     </div>
@@ -517,7 +517,7 @@ export default function SlugPage() {
                           hoje
                         </span>
                       )}
-                      <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 600, color: h.isOpen ? (isHoje ? theme : "#71717A") : "#2A2A2A" }}>
+                      <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 600, color: h.isOpen ? (isHoje ? theme : "var(--c-text-3)") : "var(--c-border-2)" }}>
                         {h.isOpen ? `${h.openTime} – ${h.closeTime}` : "Fechado"}
                       </span>
                     </div>
@@ -529,16 +529,16 @@ export default function SlugPage() {
         </section>
 
         {/* ── FOOTER ── */}
-        <footer style={{ borderTop: "1px solid #111" }}>
+        <footer style={{ borderTop: "1px solid var(--c-surface)" }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>{business.name}</p>
-              <p style={{ fontSize: 12, color: "#2A2A2A", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>Powered by <ForbionLogo size="sm" as="span" color="#3F3F46" /></p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{business.name}</p>
+              <p style={{ fontSize: 12, color: "var(--c-border-2)", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>Powered by <ForbionLogo size="sm" as="span" color="var(--c-text-4)" /></p>
             </div>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-              {business.phone   && <a href={`tel:${business.phone}`}    style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "#52525B", textDecoration: "none" }}><Phone size={13} color="#3F3F46" />{business.phone}</a>}
-              {business.email   && <a href={`mailto:${business.email}`} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "#52525B", textDecoration: "none" }}><Mail size={13} color="#3F3F46" />{business.email}</a>}
-              {business.address && <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "#52525B" }}><MapPin size={13} color="#3F3F46" />{business.address}</span>}
+              {business.phone   && <a href={`tel:${business.phone}`}    style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "var(--c-text-4)", textDecoration: "none" }}><Phone size={13} color="var(--c-text-4)" />{business.phone}</a>}
+              {business.email   && <a href={`mailto:${business.email}`} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "var(--c-text-4)", textDecoration: "none" }}><Mail size={13} color="var(--c-text-4)" />{business.email}</a>}
+              {business.address && <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, color: "var(--c-text-4)" }}><MapPin size={13} color="var(--c-text-4)" />{business.address}</span>}
             </div>
           </div>
         </footer>
@@ -593,27 +593,27 @@ function ServiceCard({
       onClick={onToggle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ overflow: "hidden", borderRadius: 20, cursor: "pointer", border: isSelected ? `2px solid ${theme}` : "2px solid transparent", backgroundColor: isSelected ? `rgba(${themeRgb},0.05)` : "#111111", transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)", transform: hovered ? "translateY(-4px)" : "translateY(0)", boxShadow: isSelected ? `0 8px 32px rgba(${themeRgb},0.2)` : hovered ? "0 20px 48px rgba(0,0,0,0.5)" : "none" }}
+      style={{ overflow: "hidden", borderRadius: 20, cursor: "pointer", border: isSelected ? `2px solid ${theme}` : "2px solid transparent", backgroundColor: isSelected ? `rgba(${themeRgb},0.05)` : "var(--c-surface)", transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)", transform: hovered ? "translateY(-4px)" : "translateY(0)", boxShadow: isSelected ? `0 8px 32px rgba(${themeRgb},0.2)` : hovered ? "0 20px 48px rgba(0,0,0,0.5)" : "none" }}
     >
       <div style={{ position: "relative", height: isMobile ? 160 : 200, overflow: "hidden" }}>
         {service.imageUrl ? (
           <>
             <img src={service.imageUrl} alt={service.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, #111111 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, var(--c-surface) 100%)" }} />
           </>
         ) : (
-          <div style={{ height: isMobile ? 160 : 200, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#111111,#161616)" }}>
-            <span style={{ fontSize: 56, fontWeight: 900, color: "#1F1F1F" }}>{service.name.charAt(0)}</span>
+          <div style={{ height: isMobile ? 160 : 200, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,var(--c-surface),var(--c-surface-2))" }}>
+            <span style={{ fontSize: 56, fontWeight: 900, color: "var(--c-border)" }}>{service.name.charAt(0)}</span>
           </div>
         )}
         <div style={{ position: "absolute", top: 12, right: 12, width: 28, height: 28, borderRadius: "50%", backgroundColor: isSelected ? theme : "rgba(0,0,0,0.5)", border: isSelected ? "none" : "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isSelected ? `0 0 16px rgba(${themeRgb},0.5)` : "none" }}>
-          {isSelected && <CheckCircle2 size={14} color="#fff" />}
+          {isSelected && <CheckCircle2 size={14} color="var(--c-text)" />}
         </div>
       </div>
       <div style={{ padding: isMobile ? "12px 14px 16px" : "16px 20px 20px" }}>
-        <p style={{ fontSize: isMobile ? 14 : 16, fontWeight: 700, color: "#fff", margin: 0 }}>{service.name}</p>
+        <p style={{ fontSize: isMobile ? 14 : 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{service.name}</p>
         {service.description && (
-          <p style={{ fontSize: 13, color: "#71717A", marginTop: 6, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {service.description}
           </p>
         )}
@@ -621,7 +621,7 @@ function ServiceCard({
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {hasDiscount ? (
               <>
-                <span style={{ fontSize: isMobile ? 11 : 12, color: "#52525B", textDecoration: "line-through" }}>
+                <span style={{ fontSize: isMobile ? 11 : 12, color: "var(--c-text-4)", textDecoration: "line-through" }}>
                   {formatCurrency(service.price)}
                 </span>
                 <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "#10B981" }}>
@@ -629,14 +629,14 @@ function ServiceCard({
                 </span>
               </>
             ) : (
-              <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "#fff" }}>
+              <span style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: "var(--c-text)" }}>
                 {formatCurrency(service.price)}
               </span>
             )}
           </div>
-          <div style={{ display: "flex", gap: 5, alignItems: "center", backgroundColor: "#161616", border: "1px solid #1F1F1F", padding: "5px 10px", borderRadius: 8 }}>
-            <Clock size={12} color="#52525B" />
-            <span style={{ fontSize: 12, color: "#71717A" }}>{formatDuration(service.durationMinutes)}</span>
+          <div style={{ display: "flex", gap: 5, alignItems: "center", backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", padding: "5px 10px", borderRadius: 8 }}>
+            <Clock size={12} color="var(--c-text-4)" />
+            <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{formatDuration(service.durationMinutes)}</span>
           </div>
         </div>
         {hasDiscount && discountLabel && (
@@ -667,15 +667,15 @@ function PlanCard({
     >
       <div style={{ position: "absolute", top: -60, right: -60, width: 160, height: 160, borderRadius: "50%", background: `radial-gradient(circle, rgba(${themeRgb},0.12), transparent)`, pointerEvents: "none" }} />
       <div style={{ width: 48, height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${theme}, ${theme}99)`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-        <Crown size={22} color="#fff" />
+        <Crown size={22} color="var(--c-text)" />
       </div>
-      <h3 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: 0 }}>{plan.name}</h3>
-      {plan.description && <p style={{ fontSize: 13, color: "#71717A", marginTop: 8, lineHeight: 1.6 }}>{plan.description}</p>}
+      <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{plan.name}</h3>
+      {plan.description && <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 8, lineHeight: 1.6 }}>{plan.description}</p>}
       <div style={{ marginTop: 20, display: "flex", alignItems: "baseline", gap: 4 }}>
-        <span style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-1px" }}>
+        <span style={{ fontSize: 36, fontWeight: 900, color: "var(--c-text)", letterSpacing: "-1px" }}>
           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(plan.price / 100)}
         </span>
-        <span style={{ fontSize: 14, color: "#52525B" }}>/{plan.interval === "MONTHLY" ? "mês" : "ano"}</span>
+        <span style={{ fontSize: 14, color: "var(--c-text-4)" }}>/{plan.interval === "MONTHLY" ? "mês" : "ano"}</span>
       </div>
       {plan.discountPercent > 0 && (
         <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 8, padding: "6px 10px" }}>
@@ -685,7 +685,7 @@ function PlanCard({
       )}
       <button
         onClick={() => authed ? router.push(`/${slug}/cliente?tab=planos`) : router.push(`/${slug}/login?redirect=planos`)}
-        style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${theme}, ${theme}CC)`, color: "#fff", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 20px rgba(${themeRgb},0.3)` }}
+        style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${theme}, ${theme}CC)`, color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 20px rgba(${themeRgb},0.3)` }}
       >
         Assinar plano →
       </button>
@@ -705,18 +705,18 @@ function FloatingBar({
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 10 : 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#fff", margin: 0 }}>
+            <p style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
               {count} serviço{count > 1 ? "s" : ""} selecionado{count > 1 ? "s" : ""}
             </p>
             {hasDiscount ? (
               <div style={{ margin: "3px 0 0" }}>
-                <span style={{ fontSize: 12, color: "#52525B", textDecoration: "line-through", marginRight: 6 }}>
+                <span style={{ fontSize: 12, color: "var(--c-text-4)", textDecoration: "line-through", marginRight: 6 }}>
                   {formatCurrency(totalCents)}
                 </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#10B981" }}>
                   {formatCurrency(totalWithDiscount)}
                 </span>
-                <span style={{ fontSize: 12, color: "#71717A", marginLeft: 6 }}>
+                <span style={{ fontSize: 12, color: "var(--c-text-3)", marginLeft: 6 }}>
                   · {formatDuration(totalMinutes)}
                 </span>
                 <span style={{ display: "block", fontSize: 11, color: "#A78BFA", marginTop: 2 }}>
@@ -724,26 +724,26 @@ function FloatingBar({
                 </span>
               </div>
             ) : (
-              <p style={{ fontSize: 13, color: "#71717A", margin: "3px 0 0" }}>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "3px 0 0" }}>
                 Total: {formatCurrency(totalCents)} · {formatDuration(totalMinutes)}
               </p>
             )}
           </div>
           {isMobile && (
-            <button onClick={onClear} style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+            <button onClick={onClear} style={{ background: "none", border: "none", color: "var(--c-text-4)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
               Limpar
             </button>
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexDirection: isMobile ? "column" : "row" }}>
           {!isMobile && (
-            <button onClick={onClear} style={{ height: 40, padding: "0 14px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid #252525", color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+            <button onClick={onClear} style={{ height: 40, padding: "0 14px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
               Limpar
             </button>
           )}
           <button
             onClick={onSchedule}
-            style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "#fff", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.4)`, fontFamily: "inherit" }}
+            style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-text)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.4)`, fontFamily: "inherit" }}
           >
             Agendar agora →
           </button>

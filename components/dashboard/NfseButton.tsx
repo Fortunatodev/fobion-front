@@ -85,7 +85,7 @@ export default function NfseButton({ scheduleId }: { scheduleId: string }) {
         {state === "emitting" ? "Emitindo…" : "Emitir NF-e"}
       </button>
       {(state === "off" || state === "error") && msg && (
-        <span style={{ fontSize: 10, color: state === "off" ? "#71717A" : "#F87171", maxWidth: 220, lineHeight: 1.4 }}>
+        <span style={{ fontSize: 10, color: state === "off" ? "var(--c-text-3)" : "#F87171", maxWidth: 220, lineHeight: 1.4 }}>
           {msg}
         </span>
       )}

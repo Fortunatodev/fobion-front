@@ -13,8 +13,8 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "spin 0.7s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "spin 0.7s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     }>
@@ -102,7 +102,7 @@ function LoginContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0A0A0A",
+      background: "var(--c-bg)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -161,10 +161,10 @@ function LoginContent() {
 
         {/* Título */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", margin: 0 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0 }}>
             Bem-vindo de volta
           </h1>
-          <p style={{ fontSize: 14, color: "#71717A", marginTop: 8, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 8, lineHeight: 1.5 }}>
             Entre com sua conta para acessar o painel
           </p>
         </div>
@@ -190,11 +190,11 @@ function LoginContent() {
               disabled={loading}
               style={{
                 width: "100%", height: 52,
-                background: loading ? "#E8E8E8" : "#ffffff",
+                background: loading ? "#E8E8E8" : "var(--c-text)",
                 border: "none", borderRadius: 14,
                 display: "flex", alignItems: "center",
                 justifyContent: "center", gap: 12,
-                fontSize: 15, fontWeight: 600, color: "#111",
+                fontSize: 15, fontWeight: 600, color: "var(--c-surface)",
                 cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 2px 16px rgba(0,0,0,0.15)",
                 transition: "all 0.2s ease",
@@ -234,23 +234,23 @@ function LoginContent() {
 
             {/* Divisor + toggle */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0 0" }}>
-              <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
+              <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
               <button
                 type="button"
                 onClick={() => { setShowEmailForm(v => !v); setError(null) }}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  fontSize: 12, color: "#3F3F46", whiteSpace: "nowrap",
+                  fontSize: 12, color: "var(--c-text-4)", whiteSpace: "nowrap",
                   padding: "0 4px", fontFamily: "inherit",
                   textDecoration: "underline", textUnderlineOffset: 3,
                   transition: "color 0.15s",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#71717A" }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#3F3F46" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--c-text-3)" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--c-text-4)" }}
               >
                 {showEmailForm ? "← Voltar" : "Entrar com e-mail e senha"}
               </button>
-              <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
+              <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
             </div>
           </>
         )}
@@ -260,14 +260,14 @@ function LoginContent() {
           <>
             {!ENABLE_GOOGLE_LOGIN && (
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
-                <span style={{ fontSize: 12, color: "#3F3F46", whiteSpace: "nowrap" }}>entre com e-mail</span>
-                <div style={{ flex: 1, height: 1, background: "#1A1A1A" }} />
+                <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
+                <span style={{ fontSize: 12, color: "var(--c-text-4)", whiteSpace: "nowrap" }}>entre com e-mail</span>
+                <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
               </div>
             )}
         <form onSubmit={handleEmailLogin} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#71717A", marginBottom: 6, fontWeight: 500 }}>
+            <label style={{ display: "block", fontSize: 12, color: "var(--c-text-3)", marginBottom: 6, fontWeight: 500 }}>
               E-mail
             </label>
             <input
@@ -279,20 +279,20 @@ function LoginContent() {
               disabled={loading}
               style={{
                 width: "100%", height: 46,
-                background: "#111", border: "1px solid #27272A",
+                background: "var(--c-surface)", border: "1px solid var(--c-text-4)",
                 borderRadius: 10, padding: "0 14px",
-                fontSize: 14, color: "#FAFAFA",
+                fontSize: 14, color: "var(--c-text)",
                 outline: "none", fontFamily: "inherit",
                 boxSizing: "border-box",
                 transition: "border-color 0.2s",
               }}
               onFocus={e => { e.currentTarget.style.borderColor = "#0066FF" }}
-              onBlur={e  => { e.currentTarget.style.borderColor = "#27272A" }}
+              onBlur={e  => { e.currentTarget.style.borderColor = "var(--c-text-4)" }}
             />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#71717A", marginBottom: 6, fontWeight: 500 }}>
+            <label style={{ display: "block", fontSize: 12, color: "var(--c-text-3)", marginBottom: 6, fontWeight: 500 }}>
               Senha
             </label>
             <div style={{ position: "relative" }}>
@@ -305,15 +305,15 @@ function LoginContent() {
                 disabled={loading}
                 style={{
                   width: "100%", height: 46,
-                  background: "#111", border: "1px solid #27272A",
+                  background: "var(--c-surface)", border: "1px solid var(--c-text-4)",
                   borderRadius: 10, padding: "0 42px 0 14px",
-                  fontSize: 14, color: "#FAFAFA",
+                  fontSize: 14, color: "var(--c-text)",
                   outline: "none", fontFamily: "inherit",
                   boxSizing: "border-box",
                   transition: "border-color 0.2s",
                 }}
                 onFocus={e => { e.currentTarget.style.borderColor = "#0066FF" }}
-                onBlur={e  => { e.currentTarget.style.borderColor = "#27272A" }}
+                onBlur={e  => { e.currentTarget.style.borderColor = "var(--c-text-4)" }}
               />
               <button
                 type="button"
@@ -323,7 +323,7 @@ function LoginContent() {
                   transform: "translateY(-50%)",
                   background: "none", border: "none",
                   cursor: "pointer", padding: 4,
-                  color: "#52525B", fontSize: 13,
+                  color: "var(--c-text-4)", fontSize: 13,
                   lineHeight: 1,
                 }}
               >
@@ -337,10 +337,10 @@ function LoginContent() {
             disabled={loading || !email || !password}
             style={{
               width: "100%", height: 48,
-              background: (loading || !email || !password) ? "#1A1A1A" : "#0066FF",
+              background: (loading || !email || !password) ? "var(--c-border)" : "#0066FF",
               border: "none", borderRadius: 12,
               fontSize: 15, fontWeight: 600,
-              color: (loading || !email || !password) ? "#3F3F46" : "#fff",
+              color: (loading || !email || !password) ? "var(--c-text-4)" : "var(--c-text)",
               cursor: (loading || !email || !password) ? "not-allowed" : "pointer",
               transition: "all 0.2s",
               fontFamily: "inherit",
@@ -360,7 +360,7 @@ function LoginContent() {
           >
             {loading ? (
               <>
-                <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 0.7s linear infinite" }} />
+                <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "var(--c-text)", animation: "spin 0.7s linear infinite" }} />
                 <span>Entrando...</span>
               </>
             ) : (
@@ -372,9 +372,9 @@ function LoginContent() {
           <div style={{ textAlign: "center", marginTop: 14 }}>
             <Link
               href="/auth/forgot-password"
-              style={{ color: "#71717A", fontSize: 13, textDecoration: "none" }}
+              style={{ color: "var(--c-text-3)", fontSize: 13, textDecoration: "none" }}
               onMouseEnter={e => { e.currentTarget.style.color = "#0066FF" }}
-              onMouseLeave={e => { e.currentTarget.style.color = "#71717A" }}
+              onMouseLeave={e => { e.currentTarget.style.color = "var(--c-text-3)" }}
             >
               Esqueci minha senha
             </Link>
@@ -384,11 +384,11 @@ function LoginContent() {
         )}
 
         {/* Rodapé */}
-        <p style={{ fontSize: 11, color: "#52525B", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "var(--c-text-4)", textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
           Ao entrar você concorda com os{" "}
-          <Link href="/terms" style={{ color: "#71717A", textDecoration: "underline" }}>Termos de Serviço</Link>
+          <Link href="/terms" style={{ color: "var(--c-text-3)", textDecoration: "underline" }}>Termos de Serviço</Link>
           {" "}e{" "}
-          <Link href="/privacy" style={{ color: "#71717A", textDecoration: "underline" }}>Política de Privacidade</Link>
+          <Link href="/privacy" style={{ color: "var(--c-text-3)", textDecoration: "underline" }}>Política de Privacidade</Link>
         </p>
       </div>
 
@@ -399,7 +399,7 @@ function LoginContent() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
-        input::placeholder { color: #3F3F46; }
+        input::placeholder { color: var(--c-text-4); }
       `}</style>
     </div>
   )

@@ -33,18 +33,18 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ minHeight: "100vh", background: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
           <ForbionLogo />
         </div>
 
         {sent ? (
-          <div style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 32, textAlign: "center" }}>
+          <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
-            <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Verifique seu e-mail</h1>
-            <p style={{ color: "#A1A1AA", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
-              Se existir uma conta com <strong style={{ color: "#fff" }}>{email}</strong>, enviamos um link para
+            <h1 style={{ color: "var(--c-text)", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Verifique seu e-mail</h1>
+            <p style={{ color: "var(--c-text-2)", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
+              Se existir uma conta com <strong style={{ color: "var(--c-text)" }}>{email}</strong>, enviamos um link para
               redefinir a senha. O link expira em 1 hora.
             </p>
             <Link href="/auth/login" style={{ color: "#0066FF", fontSize: 14, textDecoration: "none" }}>
@@ -52,13 +52,13 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 32 }}>
-            <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>Esqueceu a senha?</h1>
-            <p style={{ color: "#71717A", fontSize: 14, margin: "0 0 24px" }}>
+          <form onSubmit={handleSubmit} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 32 }}>
+            <h1 style={{ color: "var(--c-text)", fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>Esqueceu a senha?</h1>
+            <p style={{ color: "var(--c-text-3)", fontSize: 14, margin: "0 0 24px" }}>
               Informe seu e-mail e enviaremos um link para criar uma nova senha.
             </p>
 
-            <label style={{ display: "block", color: "#A1A1AA", fontSize: 13, marginBottom: 8 }}>E-mail</label>
+            <label style={{ display: "block", color: "var(--c-text-2)", fontSize: 13, marginBottom: 8 }}>E-mail</label>
             <input
               type="email"
               value={email}
@@ -66,8 +66,8 @@ export default function ForgotPasswordPage() {
               placeholder="voce@email.com"
               autoFocus
               style={{
-                width: "100%", height: 48, background: "#0A0A0A", border: "1px solid #1F1F1F",
-                borderRadius: 12, padding: "0 16px", color: "#fff", fontSize: 15, fontFamily: "inherit",
+                width: "100%", height: 48, background: "var(--c-bg)", border: "1px solid var(--c-border)",
+                borderRadius: 12, padding: "0 16px", color: "var(--c-text)", fontSize: 15, fontFamily: "inherit",
                 marginBottom: 20, boxSizing: "border-box",
               }}
             />
@@ -81,9 +81,9 @@ export default function ForgotPasswordPage() {
               disabled={loading || !email.trim()}
               style={{
                 width: "100%", height: 48,
-                background: (loading || !email.trim()) ? "#1A1A1A" : "#0066FF",
+                background: (loading || !email.trim()) ? "var(--c-border)" : "#0066FF",
                 border: "none", borderRadius: 12, fontSize: 15, fontWeight: 600,
-                color: (loading || !email.trim()) ? "#3F3F46" : "#fff",
+                color: (loading || !email.trim()) ? "var(--c-text-4)" : "var(--c-text)",
                 cursor: (loading || !email.trim()) ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
             </button>
 
             <div style={{ textAlign: "center", marginTop: 16 }}>
-              <Link href="/auth/login" style={{ color: "#71717A", fontSize: 13, textDecoration: "none" }}>
+              <Link href="/auth/login" style={{ color: "var(--c-text-3)", fontSize: 13, textDecoration: "none" }}>
                 ← Voltar para o login
               </Link>
             </div>

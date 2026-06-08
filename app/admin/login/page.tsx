@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#09090B",
+      minHeight: "100vh", background: "var(--c-bg)",
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: "system-ui, sans-serif",
     }}>
@@ -63,16 +63,16 @@ export default function AdminLoginPage() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
             <ForbionLogo size="xl" />
           </div>
-          <h1 style={{ color: "#FAFAFA", fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>
+          <h1 style={{ color: "var(--c-text)", fontSize: 22, fontWeight: 700, margin: "0 0 6px" }}>
             Forbion Admin
           </h1>
-          <p style={{ color: "#71717A", fontSize: 14, margin: 0 }}>
+          <p style={{ color: "var(--c-text-3)", fontSize: 14, margin: 0 }}>
             Insira o token de acesso para entrar.
           </p>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ color: "#A1A1AA", fontSize: 12, fontWeight: 500, marginBottom: 6, display: "block" }}>
+          <label style={{ color: "var(--c-text-2)", fontSize: 12, fontWeight: 500, marginBottom: 6, display: "block" }}>
             Token de acesso
           </label>
           <input
@@ -82,9 +82,9 @@ export default function AdminLoginPage() {
             placeholder="Cole o token aqui..."
             autoFocus
             style={{
-              width: "100%", padding: "12px 14px", background: "#09090B",
+              width: "100%", padding: "12px 14px", background: "var(--c-bg)",
               border: `1px solid ${error ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.1)"}`,
-              borderRadius: 8, color: "#FAFAFA", fontSize: 14, outline: "none",
+              borderRadius: 8, color: "var(--c-text)", fontSize: 14, outline: "none",
               boxSizing: "border-box", fontFamily: "monospace",
             }}
             onFocus={e => { if (!error) e.target.style.borderColor = "rgba(0,102,255,0.4)" }}

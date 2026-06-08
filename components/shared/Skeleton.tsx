@@ -9,7 +9,7 @@ interface SkeletonProps {
 export default function Skeleton({ className, width, height }: SkeletonProps) {
   return (
     <div
-      className={cn("bg-[#1A1A1A] rounded-lg animate-pulse", className)}
+      className={cn("bg-[var(--c-border)] rounded-lg animate-pulse", className)}
       style={{
         width: width !== undefined ? (typeof width === "number" ? `${width}px` : width) : undefined,
         height: height !== undefined ? (typeof height === "number" ? `${height}px` : height) : undefined,
@@ -42,7 +42,7 @@ export function SkeletonButton({ className }: { className?: string }) {
 
 export function SkeletonMetricCard() {
   return (
-    <div className="bg-[#111111] border border-[#1F1F1F] rounded-2xl p-5 flex flex-col gap-3">
+    <div className="bg-[var(--c-surface)] border border-[var(--c-border)] rounded-2xl p-5 flex flex-col gap-3">
       <div className="flex justify-between items-start">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-3.5 w-24 rounded" />

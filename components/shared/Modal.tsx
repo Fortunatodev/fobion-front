@@ -55,13 +55,13 @@ export default function Modal({
                 {title}
               </Dialog.Title>
               {description && (
-                <Dialog.Description className="text-sm text-[#A1A1AA] mt-0.5">
+                <Dialog.Description className="text-sm text-[var(--c-text-2)] mt-0.5">
                   {description}
                 </Dialog.Description>
               )}
             </div>
             <Dialog.Close
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#1A1A1A] transition-colors duration-200 ml-4 shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--c-text-2)] hover:text-white hover:bg-[var(--c-border)] transition-colors duration-200 ml-4 shrink-0"
               onClick={onClose}
             >
               <X size={16} />
@@ -73,7 +73,7 @@ export default function Modal({
 
           {/* Footer */}
           {footer && (
-            <div className="border-t border-[#1F1F1F] mt-5 pt-5 flex justify-end gap-3">
+            <div className="border-t border-[var(--c-border)] mt-5 pt-5 flex justify-end gap-3">
               {footer}
             </div>
           )}

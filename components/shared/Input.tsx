@@ -20,7 +20,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] w-4 h-4 flex items-center justify-center">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)] w-4 h-4 flex items-center justify-center">
               {leftIcon}
             </span>
           )}
@@ -28,12 +28,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             disabled={disabled}
             className={cn(
-              "h-10 w-full rounded-xl bg-[#111111] border text-white text-sm placeholder:text-[#A1A1AA]",
+              "h-10 w-full rounded-xl bg-[var(--c-surface)] border text-white text-sm placeholder:text-[var(--c-text-2)]",
               "focus:outline-none focus:ring-1 transition-all duration-200",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               error
                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
-                : "border-[#1F1F1F] focus:border-primary focus:ring-primary/30",
+                : "border-[var(--c-border)] focus:border-primary focus:ring-primary/30",
               leftIcon ? "pl-[38px]" : "px-3",
               rightIcon ? "pr-[38px]" : "pr-3",
               className
@@ -41,7 +41,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] w-4 h-4 flex items-center justify-center">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)] w-4 h-4 flex items-center justify-center">
               {rightIcon}
             </span>
           )}
@@ -50,7 +50,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <p className="text-xs text-red-400 mt-0.5">{error}</p>
         )}
         {hint && !error && (
-          <p className="text-xs text-[#A1A1AA] mt-0.5">{hint}</p>
+          <p className="text-xs text-[var(--c-text-2)] mt-0.5">{hint}</p>
         )}
       </div>
     )

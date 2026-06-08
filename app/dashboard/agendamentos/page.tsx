@@ -86,7 +86,7 @@ function getStatusConfig(status: string) {
     DONE:        { label: "Concluído",    color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.25)"  },
     CANCELLED:   { label: "Cancelado",    color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.25)"   },
   }
-  return map[status] ?? { label: status, color: "#A1A1AA", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" }
+  return map[status] ?? { label: status, color: "var(--c-text-2)", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" }
 }
 
 function getPaymentMethodLabel(method: string | null): string {
@@ -160,7 +160,7 @@ function FInput({ label, value, onChange, placeholder, required, type = "text", 
   const [focused, setFocused] = useState(false)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>
+      <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>
         {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
       </label>
       <input
@@ -172,10 +172,10 @@ function FInput({ label, value, onChange, placeholder, required, type = "text", 
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
         style={{
-          height: 40, backgroundColor: disabled ? "#0A0A0A" : "#0D0D0D",
-          border: `1px solid ${focused && !disabled ? "rgba(0,102,255,0.4)" : "#1F1F1F"}`,
+          height: 40, backgroundColor: disabled ? "var(--c-bg)" : "var(--c-elevated)",
+          border: `1px solid ${focused && !disabled ? "rgba(0,102,255,0.4)" : "var(--c-border)"}`,
           borderRadius: 9, padding: "0 12px",
-          fontSize: 13, color: disabled ? "#52525B" : "#fff", outline: "none",
+          fontSize: 13, color: disabled ? "var(--c-text-4)" : "var(--c-text)", outline: "none",
           transition: "border-color 0.15s", fontFamily: "inherit",
           boxSizing: "border-box", width: "100%",
           cursor: disabled ? "not-allowed" : "text",
@@ -228,13 +228,13 @@ function CustomerSearch({ onSelect }: {
 
   return (
     <div ref={wrapRef} style={{ position: "relative" }}>
-      <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em", display: "block", marginBottom: 5 }}>
+      <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em", display: "block", marginBottom: 5 }}>
         Buscar cliente existente
       </label>
       <div style={{ position: "relative" }}>
         <Search size={13} style={{
           position: "absolute", left: 11, top: "50%",
-          transform: "translateY(-50%)", color: "#3F3F46", pointerEvents: "none",
+          transform: "translateY(-50%)", color: "var(--c-text-4)", pointerEvents: "none",
         }} />
         <input
           value={query}
@@ -243,17 +243,17 @@ function CustomerSearch({ onSelect }: {
           onBlur={() => setFocused(false)}
           placeholder="Nome ou telefone..."
           style={{
-            width: "100%", height: 40, backgroundColor: "#0D0D0D",
-            border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "#1F1F1F"}`,
+            width: "100%", height: 40, backgroundColor: "var(--c-elevated)",
+            border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "var(--c-border)"}`,
             borderRadius: 9, paddingLeft: 32, paddingRight: loading ? 36 : 12,
-            fontSize: 13, color: "#fff", outline: "none",
+            fontSize: 13, color: "var(--c-text)", outline: "none",
             transition: "border-color 0.15s", fontFamily: "inherit",
             boxSizing: "border-box",
           }}
         />
         {loading && (
           <div style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)" }}>
-            <Spinner size={12} color="#52525B" />
+            <Spinner size={12} color="var(--c-text-4)" />
           </div>
         )}
       </div>
@@ -262,7 +262,7 @@ function CustomerSearch({ onSelect }: {
       {open && results.length > 0 && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-          backgroundColor: "#141414", border: "1px solid #252525",
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border-2)",
           borderRadius: 10, overflow: "hidden",
           zIndex: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
           animation: "fadeIn 0.15s ease",
@@ -274,26 +274,26 @@ function CustomerSearch({ onSelect }: {
               style={{
                 width: "100%", padding: "10px 12px",
                 backgroundColor: "transparent", border: "none",
-                borderBottom: i < results.length - 1 ? "1px solid #1A1A1A" : "none",
+                borderBottom: i < results.length - 1 ? "1px solid var(--c-border)" : "none",
                 cursor: "pointer", textAlign: "left", fontFamily: "inherit",
                 display: "flex", alignItems: "center", gap: 10,
                 transition: "background 0.1s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1A1A1A")}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--c-border)")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
               <div style={{
                 width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                backgroundColor: "#1F1F1F",
+                backgroundColor: "var(--c-border)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <User size={14} color="#52525B" />
+                <User size={14} color="var(--c-text-4)" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {c.name}
                 </p>
-                <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0" }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0" }}>
                   {c.phone}{c.vehicles.length > 0 ? ` · ${c.vehicles.length} veículo${c.vehicles.length !== 1 ? "s" : ""}` : ""}
                 </p>
               </div>
@@ -305,11 +305,11 @@ function CustomerSearch({ onSelect }: {
       {open && !loading && query.length >= 2 && results.length === 0 && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-          backgroundColor: "#141414", border: "1px solid #252525",
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border-2)",
           borderRadius: 10, padding: "12px", zIndex: 200,
           textAlign: "center",
         }}>
-          <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>Nenhum cliente encontrado</p>
+          <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>Nenhum cliente encontrado</p>
         </div>
       )}
     </div>
@@ -637,8 +637,8 @@ function NovoAgendamentoModal({
         left:   isMobile ? 0 : "50%",
         right:  isMobile ? 0 : "auto",
         transform: isMobile ? "none" : "translate(-50%, -50%)",
-        backgroundColor: "#111111",
-        border: "1px solid #1F1F1F",
+        backgroundColor: "var(--c-surface)",
+        border: "1px solid var(--c-border)",
         borderRadius: isMobile ? "20px 20px 0 0" : 20,
         width: isMobile ? "100%" : 620,
         maxHeight: isMobile ? "92dvh" : "88vh",
@@ -649,26 +649,26 @@ function NovoAgendamentoModal({
       }}>
 
         {isMobile && (
-          <div style={{ width: 36, height: 4, backgroundColor: "#2A2A2A", borderRadius: 2, margin: "12px auto 0", flexShrink: 0 }} />
+          <div style={{ width: 36, height: 4, backgroundColor: "var(--c-border-2)", borderRadius: 2, margin: "12px auto 0", flexShrink: 0 }} />
         )}
 
         {/* Header */}
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "18px 20px 14px", borderBottom: "1px solid #1A1A1A", flexShrink: 0,
+          padding: "18px 20px 14px", borderBottom: "1px solid var(--c-border)", flexShrink: 0,
         }}>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
               Novo agendamento
             </h2>
-            <p style={{ fontSize: 12, color: "#52525B", margin: "3px 0 0" }}>
+            <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0" }}>
               {step === 1 ? "Escolha os serviços" : step === 2 ? "Escolha data e horário" : step === 3 ? "Dados do cliente e veículo" : "Confirmado"}
             </p>
           </div>
           <button onClick={onClose} style={{
             width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center",
-            backgroundColor: "#1A1A1A", border: "1px solid #252525",
-            borderRadius: 8, cursor: "pointer", color: "#71717A", flexShrink: 0,
+            backgroundColor: "var(--c-border)", border: "1px solid var(--c-border-2)",
+            borderRadius: 8, cursor: "pointer", color: "var(--c-text-3)", flexShrink: 0,
           }}>
             <X size={15} />
           </button>
@@ -677,7 +677,7 @@ function NovoAgendamentoModal({
         {/* Steps */}
         {step !== 4 && <div style={{
           display: "flex", padding: "0 20px",
-          borderBottom: "1px solid #1A1A1A", flexShrink: 0,
+          borderBottom: "1px solid var(--c-border)", flexShrink: 0,
         }}>
           {[{ n: 1, label: "Serviços" }, { n: 2, label: "Data e Horário" }, { n: 3, label: "Cliente" }].map((s) => (
             <button
@@ -687,7 +687,7 @@ function NovoAgendamentoModal({
                 flex: 1, padding: "10px 0", background: "none",
                 border: "none", cursor: s.n < step ? "pointer" : "default",
                 borderBottom: `2px solid ${step === s.n ? "#0066FF" : "transparent"}`,
-                color: step === s.n ? "#fff" : step > s.n ? "#52525B" : "#3F3F46",
+                color: step === s.n ? "var(--c-text)" : step > s.n ? "var(--c-text-4)" : "var(--c-text-4)",
                 fontSize: 13, fontWeight: step === s.n ? 600 : 400,
                 transition: "all 0.15s", fontFamily: "inherit",
               }}
@@ -704,20 +704,20 @@ function NovoAgendamentoModal({
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 8, letterSpacing: "0.04em" }}>
                   SERVIÇOS
                 </p>
                 {loadingServices ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {[1, 2, 3].map((i) => (
                       <div key={i} style={{
-                        height: 44, borderRadius: 9, backgroundColor: "#161616",
+                        height: 44, borderRadius: 9, backgroundColor: "var(--c-surface-2)",
                         animation: `skeletonPulse 1.5s ease ${i * 0.1}s infinite`,
                       }} />
                     ))}
                   </div>
                 ) : services.length === 0 ? (
-                  <p style={{ fontSize: 13, color: "#52525B", textAlign: "center", padding: "16px 0" }}>
+                  <p style={{ fontSize: 13, color: "var(--c-text-4)", textAlign: "center", padding: "16px 0" }}>
                     Nenhum serviço cadastrado.
                   </p>
                 ) : (
@@ -728,24 +728,24 @@ function NovoAgendamentoModal({
                         <button key={svc.id} onClick={() => toggleService(svc.id)} style={{
                           display: "flex", justifyContent: "space-between", alignItems: "center",
                           padding: "10px 12px", borderRadius: 9, cursor: "pointer",
-                          backgroundColor: sel ? "rgba(0,102,255,0.07)" : "#0D0D0D",
-                          border: `1px solid ${sel ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
+                          backgroundColor: sel ? "rgba(0,102,255,0.07)" : "var(--c-elevated)",
+                          border: `1px solid ${sel ? "rgba(0,102,255,0.3)" : "var(--c-border)"}`,
                           transition: "all 0.15s", fontFamily: "inherit",
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div style={{
                               width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
                               backgroundColor: sel ? "#0066FF" : "transparent",
-                              border: sel ? "none" : "1px solid #2A2A2A",
+                              border: sel ? "none" : "1px solid var(--c-border-2)",
                               display: "flex", alignItems: "center", justifyContent: "center",
                             }}>
                               {sel && <CheckCircle2 size={11} color="white" />}
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                              <span style={{ fontSize: 13, color: "#fff", fontWeight: sel ? 600 : 400 }}>
+                              <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: sel ? 600 : 400 }}>
                                 {svc.name}
                               </span>
-                              <span style={{ fontSize: 11, color: "#52525B" }}>
+                              <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>
                                 {svc.durationMinutes}min
                               </span>
                             </div>
@@ -765,10 +765,10 @@ function NovoAgendamentoModal({
                     border: "1px solid rgba(0,102,255,0.15)",
                     borderRadius: 8, display: "flex", justifyContent: "space-between",
                   }}>
-                    <span style={{ fontSize: 12, color: "#71717A" }}>
+                    <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
                       {selectedServices.length} serviço{selectedServices.length !== 1 ? "s" : ""} selecionado{selectedServices.length !== 1 ? "s" : ""}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text)" }}>
                       {formatCurrency(totalPrice)}
                     </span>
                   </div>
@@ -791,13 +791,13 @@ function NovoAgendamentoModal({
               {/* ── Profissional ── */}
               {showEmpStep && (
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 10, letterSpacing: "0.04em" }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 10, letterSpacing: "0.04em" }}>
                     PROFISSIONAL
                   </p>
                   {loadingEmployees ? (
                     <div style={{ display: "flex", gap: 10 }}>
                       {[1,2,3].map(i => (
-                        <div key={i} style={{ width: 82, height: 90, borderRadius: 14, backgroundColor: "#161616", animation: `skeletonPulse 1.4s ease ${i*0.1}s infinite` }} />
+                        <div key={i} style={{ width: 82, height: 90, borderRadius: 14, backgroundColor: "var(--c-surface-2)", animation: `skeletonPulse 1.4s ease ${i*0.1}s infinite` }} />
                       ))}
                     </div>
                   ) : (
@@ -824,7 +824,7 @@ function NovoAgendamentoModal({
 
               {/* ── Calendário + Slots ── */}
               <div>
-                <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 10, letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 10, letterSpacing: "0.04em" }}>
                   DATA E HORÁRIO
                 </p>
 
@@ -836,7 +836,7 @@ function NovoAgendamentoModal({
 
                   {/* Calendar */}
                   <div style={{
-                    backgroundColor: "#0D0D0D", border: "1px solid #1F1F1F",
+                    backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
                     borderRadius: 14, padding: isMobile ? 12 : 14,
                     marginBottom: isMobile ? 12 : 0,
                   }}>
@@ -845,21 +845,21 @@ function NovoAgendamentoModal({
                       <button
                         onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n })}
                         style={{
-                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "#161616",
-                          border: "1px solid #252525", color: "#A1A1AA",
+                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "var(--c-surface-2)",
+                          border: "1px solid var(--c-border-2)", color: "var(--c-text-2)",
                           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                         }}
                       >
                         <ChevronLeft size={13} />
                       </button>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>
                         {MONTHS_PT[calMon]} {calYear}
                       </span>
                       <button
                         onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n })}
                         style={{
-                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "#161616",
-                          border: "1px solid #252525", color: "#A1A1AA",
+                          width: 28, height: 28, borderRadius: "50%", backgroundColor: "var(--c-surface-2)",
+                          border: "1px solid var(--c-border-2)", color: "var(--c-text-2)",
                           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                         }}
                       >
@@ -870,7 +870,7 @@ function NovoAgendamentoModal({
                     {/* Weekday labels */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", marginBottom: 4 }}>
                       {WEEKDAYS_PT.map(d => (
-                        <div key={d} style={{ textAlign: "center", fontSize: 10, color: "#52525B", fontWeight: 500, paddingBottom: 4 }}>
+                        <div key={d} style={{ textAlign: "center", fontSize: 10, color: "var(--c-text-4)", fontWeight: 500, paddingBottom: 4 }}>
                           {d.charAt(0)}
                         </div>
                       ))}
@@ -898,7 +898,7 @@ function NovoAgendamentoModal({
                               fontSize: 12, fontWeight: sel || tod ? 600 : 400,
                               border: tod && !sel ? "1px solid #0066FF" : "none",
                               background: sel ? "#0066FF" : "transparent",
-                              color: past ? "#3F3F46" : sel ? "#fff" : tod ? "#0066FF" : "#D1D5DB",
+                              color: past ? "var(--c-text-4)" : sel ? "var(--c-text)" : tod ? "#0066FF" : "var(--c-text-2)",
                               cursor: past ? "not-allowed" : "pointer",
                               fontFamily: "inherit",
                               transition: "all 0.12s",
@@ -914,14 +914,14 @@ function NovoAgendamentoModal({
 
                   {/* Slots */}
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", margin: "0 0 8px" }}>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", margin: "0 0 8px" }}>
                       {selectedDate
                         ? `Horários — ${new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}`
                         : "Selecione uma data"}
                     </p>
 
                     {!selectedDate && (
-                      <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                         Escolha um dia no calendário para ver os horários disponíveis.
                       </p>
                     )}
@@ -930,7 +930,7 @@ function NovoAgendamentoModal({
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(70px,1fr))", gap: 6 }}>
                         {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} style={{
-                            height: 32, borderRadius: 8, backgroundColor: "#161616",
+                            height: 32, borderRadius: 8, backgroundColor: "var(--c-surface-2)",
                             animation: `skeletonPulse 1.4s ease ${i*0.05}s infinite`,
                           }} />
                         ))}
@@ -938,7 +938,7 @@ function NovoAgendamentoModal({
                     )}
 
                     {selectedDate && !loadingSlots && availableSlots.length === 0 && (
-                      <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                         Nenhum horário disponível. Tente outra data.
                       </p>
                     )}
@@ -961,9 +961,9 @@ function NovoAgendamentoModal({
                               title={disabled ? "Horário indisponível" : undefined}
                               style={{
                                 height: 32, borderRadius: 8, fontSize: 12, fontWeight: sel ? 700 : 500,
-                                background:  sel     ? "#0066FF" : disabled ? "#0D0D0D" : "#161616",
-                                border:      sel     ? "1px solid #0066FF" : disabled ? "1px solid #1A1A1A" : "1px solid #252525",
-                                color:       sel     ? "#fff"   : disabled ? "#3F3F46" : "#D1D5DB",
+                                background:  sel     ? "#0066FF" : disabled ? "var(--c-elevated)" : "var(--c-surface-2)",
+                                border:      sel     ? "1px solid #0066FF" : disabled ? "1px solid var(--c-border)" : "1px solid var(--c-border-2)",
+                                color:       sel     ? "var(--c-text)"   : disabled ? "var(--c-text-4)" : "var(--c-text-2)",
                                 opacity:     disabled ? 0.4     : 1,
                                 cursor:      disabled ? "not-allowed" : "pointer",
                                 pointerEvents: disabled ? "none" : "auto",
@@ -980,7 +980,7 @@ function NovoAgendamentoModal({
 
                     {selectedDate && !loadingSlots && availableSlots.length > 0 &&
                       availableSlots.every(s => !s.available) && (
-                      <p style={{ fontSize: 11, color: "#52525B", margin: "8px 0 0", textAlign: "center" }}>
+                      <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "8px 0 0", textAlign: "center" }}>
                         Nenhum horário disponível para este profissional neste dia.
                       </p>
                     )}
@@ -996,7 +996,7 @@ function NovoAgendamentoModal({
                   border: "1px solid rgba(0,102,255,0.15)",
                   borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
-                  <span style={{ fontSize: 12, color: "#71717A" }}>
+                  <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
                     {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
                   </span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#0066FF" }}>
@@ -1013,7 +1013,7 @@ function NovoAgendamentoModal({
 
               {/* ── BUSCA CLIENTE ── */}
               <div style={{
-                backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
                 borderRadius: 12, padding: "14px",
               }}>
                 {isCustomerLocked ? (
@@ -1026,16 +1026,16 @@ function NovoAgendamentoModal({
                       <User size={16} color="#3B82F6" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {customerName}
                       </p>
-                      <p style={{ fontSize: 12, color: "#52525B", margin: "2px 0 0" }}>{customerPhone}</p>
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0" }}>{customerPhone}</p>
                     </div>
                     <button onClick={handleClearCustomer} style={{
                       flexShrink: 0, width: 28, height: 28,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      backgroundColor: "#1A1A1A", border: "1px solid #252525",
-                      borderRadius: 7, cursor: "pointer", color: "#71717A",
+                      backgroundColor: "var(--c-border)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 7, cursor: "pointer", color: "var(--c-text-3)",
                     }}>
                       <X size={13} />
                     </button>
@@ -1047,16 +1047,16 @@ function NovoAgendamentoModal({
 
               {/* Divisor */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ flex: 1, height: 1, backgroundColor: "#1A1A1A" }} />
-                <span style={{ fontSize: 11, color: "#3F3F46", whiteSpace: "nowrap" }}>
+                <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-border)" }} />
+                <span style={{ fontSize: 11, color: "var(--c-text-4)", whiteSpace: "nowrap" }}>
                   {isCustomerLocked ? "ou edite os dados abaixo" : "ou preencha manualmente"}
                 </span>
-                <div style={{ flex: 1, height: 1, backgroundColor: "#1A1A1A" }} />
+                <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-border)" }} />
               </div>
 
               {/* ── CLIENTE campos ── */}
               <div>
-                <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 8, letterSpacing: "0.04em" }}>
                   CLIENTE
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1071,7 +1071,7 @@ function NovoAgendamentoModal({
               {/* ── VEÍCULOS EXISTENTES ── */}
               {existingVehicles.length > 0 && (
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 8, letterSpacing: "0.04em" }}>
                     VEÍCULOS DO CLIENTE
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1084,30 +1084,30 @@ function NovoAgendamentoModal({
                         }} style={{
                           display: "flex", alignItems: "center", gap: 10,
                           padding: "10px 12px", borderRadius: 9, cursor: "pointer",
-                          backgroundColor: sel ? "rgba(0,102,255,0.07)" : "#0D0D0D",
-                          border: `1px solid ${sel ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
+                          backgroundColor: sel ? "rgba(0,102,255,0.07)" : "var(--c-elevated)",
+                          border: `1px solid ${sel ? "rgba(0,102,255,0.3)" : "var(--c-border)"}`,
                           transition: "all 0.15s", fontFamily: "inherit",
                           textAlign: "left",
                         }}>
                           <div style={{
                             width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
                             backgroundColor: sel ? "#0066FF" : "transparent",
-                            border: sel ? "none" : "1px solid #2A2A2A",
+                            border: sel ? "none" : "1px solid var(--c-border-2)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                           }}>
                             {sel && <CheckCircle2 size={11} color="white" />}
                           </div>
-                          <Car size={13} color={sel ? "#3B82F6" : "#52525B"} style={{ flexShrink: 0 }} />
+                          <Car size={13} color={sel ? "#3B82F6" : "var(--c-text-4)"} style={{ flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 13, color: "#fff", fontWeight: sel ? 600 : 400 }}>
+                            <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: sel ? 600 : 400 }}>
                               {[v.brand, v.model].filter(Boolean).join(" ")}
                             </span>
-                            <span style={{ fontSize: 11, color: "#52525B", marginLeft: 8 }}>
+                            <span style={{ fontSize: 11, color: "var(--c-text-4)", marginLeft: 8 }}>
                               {v.plate}
                             </span>
                           </div>
                           {v.color && (
-                            <span style={{ fontSize: 11, color: "#3F3F46", flexShrink: 0 }}>{v.color}</span>
+                            <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>{v.color}</span>
                           )}
                         </button>
                       )
@@ -1115,8 +1115,8 @@ function NovoAgendamentoModal({
                     <button onClick={() => { setSelectedVehicleId(null); clearVehicle() }} style={{
                       display: "flex", alignItems: "center", gap: 10,
                       padding: "10px 12px", borderRadius: 9, cursor: "pointer",
-                      backgroundColor: selectedVehicleId === null && vehiclePlate === "" ? "rgba(0,102,255,0.07)" : "#0D0D0D",
-                      border: `1px solid ${selectedVehicleId === null && vehiclePlate === "" ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
+                      backgroundColor: selectedVehicleId === null && vehiclePlate === "" ? "rgba(0,102,255,0.07)" : "var(--c-elevated)",
+                      border: `1px solid ${selectedVehicleId === null && vehiclePlate === "" ? "rgba(0,102,255,0.3)" : "var(--c-border)"}`,
                       transition: "all 0.15s", fontFamily: "inherit",
                     }}>
                       <Plus size={13} color="#3B82F6" style={{ flexShrink: 0 }} />
@@ -1129,7 +1129,7 @@ function NovoAgendamentoModal({
               {/* ── VEÍCULO campos ── */}
               {selectedVehicleId === null && (
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", marginBottom: 8, letterSpacing: "0.04em" }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", marginBottom: 8, letterSpacing: "0.04em" }}>
                     {existingVehicles.length > 0 ? "NOVO VEÍCULO" : "VEÍCULO"}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1141,7 +1141,7 @@ function NovoAgendamentoModal({
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <FInput label="Cor" value={vehicleColor} onChange={setVehicleColor} placeholder="Prata" required />
                       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>Tipo</label>
+                        <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>Tipo</label>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
                           {VEHICLE_TYPES.map((t) => {
                             const icons: Record<string, string> = { CAR: "🚗", MOTORCYCLE: "🏍️", TRUCK: "🚚", SUV: "🚙" }
@@ -1150,12 +1150,12 @@ function NovoAgendamentoModal({
                               <button key={t} type="button" onClick={() => setVehicleType(t)} style={{
                                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                                 gap: 2, padding: "8px 0", borderRadius: 9, cursor: "pointer",
-                                backgroundColor: sel ? "rgba(0,102,255,0.10)" : "#0D0D0D",
-                                border: `1.5px solid ${sel ? "rgba(0,102,255,0.5)" : "#1F1F1F"}`,
+                                backgroundColor: sel ? "rgba(0,102,255,0.10)" : "var(--c-elevated)",
+                                border: `1.5px solid ${sel ? "rgba(0,102,255,0.5)" : "var(--c-border)"}`,
                                 transition: "all 0.15s", fontFamily: "inherit",
                               }}>
                                 <span style={{ fontSize: 18, lineHeight: 1 }}>{icons[t]}</span>
-                                <span style={{ fontSize: 10, fontWeight: 600, color: sel ? "#3B82F6" : "#71717A", letterSpacing: "0.02em" }}>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: sel ? "#3B82F6" : "var(--c-text-3)", letterSpacing: "0.02em" }}>
                                   {VEHICLE_TYPE_LABELS[t]}
                                 </span>
                               </button>
@@ -1170,22 +1170,22 @@ function NovoAgendamentoModal({
 
               {/* Resumo */}
               <div style={{
-                backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
                 borderRadius: 10, padding: "12px 14px",
               }}>
-                <p style={{ fontSize: 11, color: "#52525B", margin: "0 0 8px", letterSpacing: "0.04em" }}>RESUMO</p>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "0 0 8px", letterSpacing: "0.04em" }}>RESUMO</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                    <span style={{ color: "#71717A" }}>
+                    <span style={{ color: "var(--c-text-3)" }}>
                       {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às {selectedSlot}
                     </span>
                     <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                     {services.filter((s) => selectedServices.includes(s.id)).map((s) => s.name).join(", ") || "—"}
                   </p>
                   {showEmpStep && (
-                    <p style={{ fontSize: 12, color: "#52525B", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                       Profissional: {selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? "—"}
                     </p>
                   )}
@@ -1215,28 +1215,28 @@ function NovoAgendamentoModal({
               </div>
 
               <div style={{ textAlign: "center" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: "0 0 4px" }}>
                   Agendamento criado
                 </h3>
-                <p style={{ fontSize: 13, color: "#52525B", margin: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: 0 }}>
                   {selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} {selectedSlot && `às ${selectedSlot}`}
                 </p>
               </div>
 
               {/* Resumo */}
               <div style={{
-                width: "100%", backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                width: "100%", backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
                 borderRadius: 10, padding: "12px 14px",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: "#A1A1AA", fontWeight: 500 }}>{customerName || "Cliente"}</span>
+                  <span style={{ color: "var(--c-text-2)", fontWeight: 500 }}>{customerName || "Cliente"}</span>
                   <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
                 </div>
-                <p style={{ fontSize: 12, color: "#52525B", margin: "4px 0 0" }}>
+                <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                   {services.filter(s => selectedServices.includes(s.id)).map(s => s.name).join(", ")}
                 </p>
                 {showEmpStep && selectedEmployee && (
-                  <p style={{ fontSize: 12, color: "#3F3F46", margin: "4px 0 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                     Profissional: {selectedEmployee === "owner" ? "Proprietário" : employees.find(e => e.id === selectedEmployee)?.name ?? "—"}
                   </p>
                 )}
@@ -1269,7 +1269,7 @@ function NovoAgendamentoModal({
                   style={{
                     width: "100%", height: 44, borderRadius: 10, fontSize: 13, fontWeight: 600,
                     background: "linear-gradient(135deg, #25D366, #128C7E)",
-                    border: "none", color: "#fff", cursor: "pointer",
+                    border: "none", color: "var(--c-text)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     fontFamily: "inherit", transition: "opacity 0.15s",
                   }}
@@ -1289,16 +1289,16 @@ function NovoAgendamentoModal({
         {/* Footer */}
         <div style={{
           padding: "14px 20px",
-          borderTop: "1px solid #1A1A1A",
+          borderTop: "1px solid var(--c-border)",
           display: "flex", gap: 8, flexShrink: 0,
           paddingBottom: isMobile ? "max(14px, env(safe-area-inset-bottom))" : 14,
         }}>
           {step === 1 ? (
             <>
               <button onClick={onClose} style={{
-                flex: 1, height: 42, backgroundColor: "#161616",
-                border: "1px solid #252525", borderRadius: 10,
-                color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                flex: 1, height: 42, backgroundColor: "var(--c-surface-2)",
+                border: "1px solid var(--c-border-2)", borderRadius: 10,
+                color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
               }}>
                 Cancelar
               </button>
@@ -1322,9 +1322,9 @@ function NovoAgendamentoModal({
           ) : step === 2 ? (
             <>
               <button onClick={() => setStep(1)} style={{
-                flex: 1, height: 42, backgroundColor: "#161616",
-                border: "1px solid #252525", borderRadius: 10,
-                color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                flex: 1, height: 42, backgroundColor: "var(--c-surface-2)",
+                border: "1px solid var(--c-border-2)", borderRadius: 10,
+                color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
               }}>
                 ← Voltar
               </button>
@@ -1337,9 +1337,9 @@ function NovoAgendamentoModal({
                 disabled={!selectedDate || !selectedSlot}
                 style={{
                   flex: 2, height: 42,
-                  background: selectedDate && selectedSlot ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "#1A1A1A",
+                  background: selectedDate && selectedSlot ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "var(--c-border)",
                   border: "none", borderRadius: 10,
-                  color: selectedDate && selectedSlot ? "white" : "#52525B",
+                  color: selectedDate && selectedSlot ? "white" : "var(--c-text-4)",
                   fontSize: 13, fontWeight: 600,
                   cursor: selectedDate && selectedSlot ? "pointer" : "not-allowed",
                   fontFamily: "inherit",
@@ -1351,9 +1351,9 @@ function NovoAgendamentoModal({
           ) : step === 3 ? (
             <>
               <button onClick={() => setStep(2)} style={{
-                flex: 1, height: 42, backgroundColor: "#161616",
-                border: "1px solid #252525", borderRadius: 10,
-                color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                flex: 1, height: 42, backgroundColor: "var(--c-surface-2)",
+                border: "1px solid var(--c-border-2)", borderRadius: 10,
+                color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
               }}>
                 ← Voltar
               </button>
@@ -1402,8 +1402,8 @@ function ModalEmployeeCard({
       onClick={onSelect}
       style={{
         width: 82, padding: "10px 6px",
-        backgroundColor: selected ? "rgba(0,102,255,0.07)" : "#0D0D0D",
-        border: selected ? "1px solid rgba(0,102,255,0.4)" : "1px solid #1F1F1F",
+        backgroundColor: selected ? "rgba(0,102,255,0.07)" : "var(--c-elevated)",
+        border: selected ? "1px solid rgba(0,102,255,0.4)" : "1px solid var(--c-border)",
         borderRadius: 12, cursor: "pointer",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
         transition: "all 0.15s", flexShrink: 0,
@@ -1414,7 +1414,7 @@ function ModalEmployeeCard({
           src={emp.avatarUrl}
           alt={emp.name}
           style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover",
-            border: selected ? "2px solid #0066FF" : "2px solid #252525",
+            border: selected ? "2px solid #0066FF" : "2px solid var(--c-border-2)",
           }}
         />
       ) : (
@@ -1422,17 +1422,17 @@ function ModalEmployeeCard({
           width: 38, height: 38, borderRadius: "50%",
           background: selected
             ? "linear-gradient(135deg, #0066FF, #0066FF99)"
-            : "linear-gradient(135deg,#252525,#1A1A1A)",
+            : "linear-gradient(135deg,var(--c-border-2),var(--c-border))",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 14, fontWeight: 700,
-          color: selected ? "#fff" : "#52525B",
+          color: selected ? "var(--c-text)" : "var(--c-text-4)",
         }}>
           {initials}
         </div>
       )}
       <span style={{
         fontSize: 10, fontWeight: 500, textAlign: "center", lineHeight: 1.3,
-        color: selected ? "#fff" : "#A1A1AA",
+        color: selected ? "var(--c-text)" : "var(--c-text-2)",
         maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
         {emp.name}
@@ -1580,10 +1580,10 @@ export default function AgendamentosPage() {
           gap: 16, marginBottom: 20,
         }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+            <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
               Agendamentos
             </h1>
-            <p style={{ fontSize: 13, color: "#52525B", margin: "4px 0 0" }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: "4px 0 0" }}>
               Gerencie os agendamentos do seu negócio
             </p>
           </div>
@@ -1610,19 +1610,19 @@ export default function AgendamentosPage() {
 
         {/* ── NAVEGAÇÃO DE DATA ── */}
         <div style={{
-          backgroundColor: "#111111", border: "1px solid #1F1F1F",
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
           borderRadius: 16, padding: "12px 14px", marginBottom: 10,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <NavArrow onClick={() => changeDate(-1)} direction="left" />
             <div style={{ flex: 1, textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", margin: 0, textTransform: "capitalize", letterSpacing: "0.05em" }}>
+              <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", margin: 0, textTransform: "capitalize", letterSpacing: "0.05em" }}>
                 {dateInfo.weekday}
               </p>
-              <p style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#fff", margin: "2px 0 0", letterSpacing: "-0.3px" }}>
+              <p style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.3px" }}>
                 {dateInfo.day} de{" "}
                 <span style={{ textTransform: "capitalize" }}>{dateInfo.month}</span>{" "}
-                <span style={{ color: "#52525B", fontWeight: 500 }}>{dateInfo.year}</span>
+                <span style={{ color: "var(--c-text-4)", fontWeight: 500 }}>{dateInfo.year}</span>
               </p>
             </div>
             <NavArrow onClick={() => changeDate(+1)} direction="right" />
@@ -1645,7 +1645,7 @@ export default function AgendamentosPage() {
           <div style={{ position: "relative", marginTop: 10 }}>
             <Search size={14} style={{
               position: "absolute", left: 12, top: "50%",
-              transform: "translateY(-50%)", color: "#3F3F46", pointerEvents: "none",
+              transform: "translateY(-50%)", color: "var(--c-text-4)", pointerEvents: "none",
             }} />
             <input
               value={searchQuery}
@@ -1654,10 +1654,10 @@ export default function AgendamentosPage() {
               onBlur={() => setSearchFocused(false)}
               placeholder="Buscar cliente, placa ou serviço..."
               style={{
-                width: "100%", height: 38, backgroundColor: "#0D0D0D",
-                border: `1px solid ${searchFocused ? "rgba(0,102,255,0.4)" : "#252525"}`,
+                width: "100%", height: 38, backgroundColor: "var(--c-elevated)",
+                border: `1px solid ${searchFocused ? "rgba(0,102,255,0.4)" : "var(--c-border-2)"}`,
                 borderRadius: 10, paddingLeft: 36, paddingRight: 12,
-                fontSize: 13, color: "#fff", outline: "none",
+                fontSize: 13, color: "var(--c-text)", outline: "none",
                 transition: "border-color 0.15s", fontFamily: "inherit",
                 boxSizing: "border-box",
               }}
@@ -1673,8 +1673,8 @@ export default function AgendamentosPage() {
                   fontSize: 12, fontWeight: 500, padding: "5px 12px", borderRadius: 8,
                   cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0,
                   backgroundColor: active ? (cfg ? cfg.bg : "rgba(255,255,255,0.06)") : "transparent",
-                  border: `1px solid ${active ? (cfg ? cfg.border : "rgba(255,255,255,0.15)") : "#252525"}`,
-                  color: active ? (cfg ? cfg.color : "#fff") : "#52525B",
+                  border: `1px solid ${active ? (cfg ? cfg.border : "rgba(255,255,255,0.15)") : "var(--c-border-2)"}`,
+                  color: active ? (cfg ? cfg.color : "var(--c-text)") : "var(--c-text-4)",
                   fontFamily: "inherit",
                 }}>
                   {f.label}
@@ -1691,19 +1691,19 @@ export default function AgendamentosPage() {
           gap: 8, marginBottom: 12,
         }}>
           {[
-            { label: "Total hoje",   value: String(filteredSchedules.length), color: "#fff"    },
+            { label: "Total hoje",   value: String(filteredSchedules.length), color: "var(--c-text)"    },
             { label: "Pendentes",    value: String(pendingCount),             color: "#F59E0B" },
             { label: "Confirmados",  value: String(confirmedCount),           color: "#3B82F6" },
             { label: "Em andamento", value: String(inProgressCount),          color: "#8B5CF6" },
             { label: "Faturado",     value: formatCurrency(totalRevenue),     color: "#10B981" },
           ].map((c, i) => (
             <div key={c.label} style={{
-              backgroundColor: "#111111", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
               borderRadius: 12, padding: "12px 14px",
               display: "flex", flexDirection: "column", gap: 4,
               gridColumn: isMobile && i === 4 ? "span 2" : undefined,
             }}>
-              <span style={{ fontSize: 10, color: "#52525B", fontWeight: 500, letterSpacing: "0.04em" }}>
+              <span style={{ fontSize: 10, color: "var(--c-text-4)", fontWeight: 500, letterSpacing: "0.04em" }}>
                 {c.label.toUpperCase()}
               </span>
               <span style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: c.color, letterSpacing: "-0.5px", lineHeight: 1 }}>
@@ -1735,13 +1735,13 @@ export default function AgendamentosPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[1, 2, 3].map((i) => (
               <div key={i} style={{
-                height: isMobile ? 110 : 88, backgroundColor: "#111111",
-                border: "1px solid #1F1F1F", borderRadius: 14, padding: "14px 16px",
+                height: isMobile ? 110 : 88, backgroundColor: "var(--c-surface)",
+                border: "1px solid var(--c-border)", borderRadius: 14, padding: "14px 16px",
                 animation: `skeletonPulse 1.5s ease-in-out ${i * 0.1}s infinite`,
               }}>
-                <div style={{ height: 14, width: "40%", backgroundColor: "#1F1F1F", borderRadius: 6 }} />
-                <div style={{ height: 12, width: "60%", backgroundColor: "#1A1A1A", borderRadius: 6, marginTop: 10 }} />
-                <div style={{ height: 12, width: "30%", backgroundColor: "#1A1A1A", borderRadius: 6, marginTop: 8 }} />
+                <div style={{ height: 14, width: "40%", backgroundColor: "var(--c-border)", borderRadius: 6 }} />
+                <div style={{ height: 12, width: "60%", backgroundColor: "var(--c-border)", borderRadius: 6, marginTop: 10 }} />
+                <div style={{ height: 12, width: "30%", backgroundColor: "var(--c-border)", borderRadius: 6, marginTop: 8 }} />
               </div>
             ))}
           </div>
@@ -1750,14 +1750,14 @@ export default function AgendamentosPage() {
         {/* ── EMPTY STATE ── */}
         {!loading && filteredSchedules.length === 0 && (
           <div style={{
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
             borderRadius: 16, padding: "56px 20px", textAlign: "center",
           }}>
-            <Calendar size={36} color="#222" style={{ margin: "0 auto 12px" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", margin: 0 }}>
+            <Calendar size={36} color="var(--c-border-2)" style={{ margin: "0 auto 12px" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
               Nenhum agendamento
             </p>
-            <p style={{ fontSize: 13, color: "#52525B", marginTop: 4 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 4 }}>
               {dateInfo.day} de {dateInfo.month} de {dateInfo.year}
             </p>
             <button
@@ -1790,8 +1790,8 @@ export default function AgendamentosPage() {
                   onMouseEnter={() => setHovCard(s.id)}
                   onMouseLeave={() => setHovCard(null)}
                   style={{
-                    backgroundColor: "#111111",
-                    border: `1px solid ${isHov ? "#2A2A2A" : "#1A1A1A"}`,
+                    backgroundColor: "var(--c-surface)",
+                    border: `1px solid ${isHov ? "var(--c-border-2)" : "var(--c-border)"}`,
                     borderRadius: 14,
                     transition: "all 0.2s ease",
                     transform: isHov ? "translateY(-1px)" : "translateY(0)",
@@ -1806,35 +1806,35 @@ export default function AgendamentosPage() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <div style={{ flexShrink: 0, textAlign: "center", minWidth: 44 }}>
-                            <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+                            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
                               {formatTime(s.scheduledAt)}
                             </p>
-                            <p style={{ fontSize: 10, color: "#3F3F46", margin: "1px 0 0" }}>
+                            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "1px 0 0" }}>
                               {formatShortDate(s.scheduledAt)}
                             </p>
                           </div>
                           <div style={{ width: 2, height: 40, borderRadius: 2, backgroundColor: st.color, flexShrink: 0, alignSelf: "center" }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{s.customer.name}</span>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{s.customer.name}</span>
                               {s.isSubscriber && (
                                 <span style={{ fontSize: 10, fontWeight: 600, color: "#A78BFA", backgroundColor: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 5, padding: "2px 6px" }}>Assinante</span>
                               )}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
-                              <Car size={11} color="#3F3F46" style={{ flexShrink: 0 }} />
-                              <span style={{ fontSize: 12, color: "#52525B" }}>
-                                {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "#71717A", fontWeight: 500 }}>{s.vehicle.plate}</span>
+                              <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+                              <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
+                                {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500 }}>{s.vehicle.plate}</span>
                               </span>
                             </div>
-                            <p style={{ fontSize: 11, color: "#3F3F46", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {serviceNames || "—"}
                             </p>
                           </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", backgroundColor: "#0D0D0D", borderRadius: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", backgroundColor: "var(--c-elevated)", borderRadius: 10 }}>
                           <div>
-                            <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
                             {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "1px 0 0" }}>-{formatCurrency(s.discountApplied)}</p>}
                             {s.paymentStatus === "PAID" ? (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 5, padding: "2px 6px", marginTop: 3 }}>
@@ -1855,29 +1855,29 @@ export default function AgendamentosPage() {
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={13} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
-                          {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "#3F3F46" }}>Cancelado</span>)}
+                          {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
                     ) : (
                       <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                         <div style={{ width: 52, flexShrink: 0, textAlign: "right" }}>
-                          <p style={{ fontSize: 17, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>{formatTime(s.scheduledAt)}</p>
-                          <p style={{ fontSize: 10, color: "#3F3F46", margin: "2px 0 0" }}>{formatShortDate(s.scheduledAt)}</p>
+                          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>{formatTime(s.scheduledAt)}</p>
+                          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0" }}>{formatShortDate(s.scheduledAt)}</p>
                         </div>
                         <div style={{ width: 3, height: 44, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.customer.name}</p>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.customer.name}</p>
                             {s.isSubscriber && (<span style={{ fontSize: 10, fontWeight: 600, color: "#A78BFA", backgroundColor: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 5, padding: "2px 7px", flexShrink: 0 }}>Assinante</span>)}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                            <Car size={11} color="#3F3F46" style={{ flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, color: "#52525B" }}>{[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "#71717A", fontWeight: 500 }}>{s.vehicle.plate}</span></span>
+                            <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>{[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500 }}>{s.vehicle.plate}</span></span>
                           </div>
-                          <p style={{ fontSize: 12, color: "#3F3F46", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{serviceNames || "—"}</p>
+                          <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{serviceNames || "—"}</p>
                         </div>
                         <div style={{ flexShrink: 0, textAlign: "right" }}>
-                          <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
+                          <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
                           {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "2px 0 0" }}>-{formatCurrency(s.discountApplied)}</p>}
                           {s.paymentStatus === "PAID" ? (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 6, padding: "2px 7px", marginTop: 4 }}><CheckCircle2 size={10} /> Pago · {getPaymentMethodLabel(s.paymentMethod)}</span>
@@ -1891,7 +1891,7 @@ export default function AgendamentosPage() {
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
-                          {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "#3F3F46" }}>Cancelado</span>)}
+                          {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
                     )}
@@ -1927,26 +1927,26 @@ export default function AgendamentosPage() {
             left:   isMobile ? 0 : "50%",
             right:  isMobile ? 0 : "auto",
             transform: isMobile ? "none" : "translate(-50%, -50%)",
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
             borderRadius: isMobile ? "20px 20px 0 0" : 20,
             padding: 24, width: isMobile ? "100%" : "100%",
             maxWidth: isMobile ? "none" : 420,
             zIndex: 101, boxShadow: "0 -8px 40px rgba(0,0,0,0.6)",
             animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)",
           }}>
-            {isMobile && <div style={{ width: 36, height: 4, backgroundColor: "#2A2A2A", borderRadius: 2, margin: "0 auto 16px" }} />}
+            {isMobile && <div style={{ width: 36, height: 4, backgroundColor: "var(--c-border-2)", borderRadius: 2, margin: "0 auto 16px" }} />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: "#fff", margin: 0 }}>Fechar comanda</h2>
-              <button onClick={() => setShowCloseModal(false)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#1A1A1A", border: "1px solid #252525", borderRadius: 8, cursor: "pointer", color: "#71717A" }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Fechar comanda</h2>
+              <button onClick={() => setShowCloseModal(false)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--c-border)", border: "1px solid var(--c-border-2)", borderRadius: 8, cursor: "pointer", color: "var(--c-text-3)" }}>
                 <X size={15} />
               </button>
             </div>
-            <div style={{ backgroundColor: "#0A0A0A", borderRadius: 12, padding: 14, marginBottom: 18 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>{selectedSchedule.customer.name}</p>
-              <p style={{ fontSize: 13, color: "#71717A", margin: "4px 0 0" }}>{selectedSchedule.scheduleServices.map((ss) => ss.service.name).join(", ") || "—"}</p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid #1A1A1A" }}>
-                <span style={{ fontSize: 13, color: "#52525B" }}>Total a cobrar</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff" }}>{formatCurrency(selectedSchedule.totalPrice)}</span>
+            <div style={{ backgroundColor: "var(--c-bg)", borderRadius: 12, padding: 14, marginBottom: 18 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{selectedSchedule.customer.name}</p>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "4px 0 0" }}>{selectedSchedule.scheduleServices.map((ss) => ss.service.name).join(", ") || "—"}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
+                <span style={{ fontSize: 13, color: "var(--c-text-4)" }}>Total a cobrar</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)" }}>{formatCurrency(selectedSchedule.totalPrice)}</span>
               </div>
               {selectedSchedule.discountApplied > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
@@ -1955,17 +1955,17 @@ export default function AgendamentosPage() {
                 </div>
               )}
             </div>
-            <p style={{ fontSize: 11, fontWeight: 500, color: "#52525B", margin: "0 0 10px", letterSpacing: "0.05em" }}>FORMA DE PAGAMENTO</p>
+            <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.05em" }}>FORMA DE PAGAMENTO</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {PAYMENT_METHODS.map((m) => {
                 const sel = paymentMethod === m.value
                 const Icon = m.icon
                 return (
                   <button key={m.value} onClick={() => setPaymentMethod(m.value)} style={{
-                    backgroundColor: sel ? "rgba(0,102,255,0.1)" : "#0A0A0A",
-                    border: `1px solid ${sel ? "rgba(0,102,255,0.35)" : "#1F1F1F"}`,
+                    backgroundColor: sel ? "rgba(0,102,255,0.1)" : "var(--c-bg)",
+                    border: `1px solid ${sel ? "rgba(0,102,255,0.35)" : "var(--c-border)"}`,
                     borderRadius: 10, padding: "12px 14px",
-                    color: sel ? "#3B82F6" : "#71717A",
+                    color: sel ? "#3B82F6" : "var(--c-text-3)",
                     fontSize: 13, fontWeight: sel ? 600 : 400, cursor: "pointer",
                     transition: "all 0.15s", display: "flex", flexDirection: "column",
                     alignItems: "flex-start", gap: 7, fontFamily: "inherit",
@@ -2007,9 +2007,9 @@ function NavArrow({ onClick, direction }: { onClick: () => void; direction: "lef
       style={{
         width: 34, height: 34, borderRadius: 10, display: "flex",
         alignItems: "center", justifyContent: "center",
-        backgroundColor: hov ? "#252525" : "#1A1A1A",
-        border: "1px solid #2A2A2A", cursor: "pointer",
-        transition: "background-color 0.15s", color: "#A1A1AA", flexShrink: 0,
+        backgroundColor: hov ? "var(--c-border-2)" : "var(--c-border)",
+        border: "1px solid var(--c-border-2)", cursor: "pointer",
+        transition: "background-color 0.15s", color: "var(--c-text-2)", flexShrink: 0,
         fontFamily: "inherit",
       }}
     >

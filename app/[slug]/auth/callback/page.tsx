@@ -7,10 +7,10 @@ import { setCustomerToken } from "@/lib/customer-auth"
 export default function CustomerAuthCallback() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
-        <p style={{ fontSize: 14, color: "#52525B" }}>Autenticando...</p>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <p style={{ fontSize: 14, color: "var(--c-text-4)" }}>Autenticando...</p>
       </div>
     }>
       <CustomerAuthCallbackContent />
@@ -68,7 +68,7 @@ function CustomerAuthCallbackContent() {
 
   return (
     <div style={{
-      minHeight: "100vh", backgroundColor: "#0A0A0A",
+      minHeight: "100vh", backgroundColor: "var(--c-bg)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", gap: 16,
       fontFamily: "'Inter',-apple-system,sans-serif",
@@ -76,10 +76,10 @@ function CustomerAuthCallbackContent() {
       <style>{`@keyframes sp { to { transform: rotate(360deg); } }`}</style>
       <div style={{
         width: 36, height: 36, borderRadius: "50%",
-        border: "3px solid #1F1F1F", borderTopColor: "#0066FF",
+        border: "3px solid var(--c-border)", borderTopColor: "#0066FF",
         animation: "sp 0.7s linear infinite",
       }} />
-      <p style={{ fontSize: 14, color: "#52525B" }}>Autenticando...</p>
+      <p style={{ fontSize: 14, color: "var(--c-text-4)" }}>Autenticando...</p>
     </div>
   )
 }

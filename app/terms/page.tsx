@@ -12,15 +12,15 @@ export default function TermsPage() {
       margin: "0 auto",
       padding: "60px 24px",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      color: "#FAFAFA",
-      background: "#09090B",
+      color: "var(--c-text)",
+      background: "var(--c-bg)",
       minHeight: "100vh",
       lineHeight: 1.7,
     }}>
       <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
         Termos de Serviço
       </h1>
-      <p style={{ color: "#71717A", marginBottom: 40 }}>
+      <p style={{ color: "var(--c-text-3)", marginBottom: 40 }}>
         Última atualização: 6 de março de 2026
       </p>
 
@@ -170,14 +170,14 @@ function Section({
       <h2 style={{
         fontSize: 20,
         fontWeight: 600,
-        color: "#FAFAFA",
+        color: "var(--c-text)",
         marginBottom: 12,
         paddingBottom: 8,
-        borderBottom: "1px solid #27272A",
+        borderBottom: "1px solid var(--c-text-4)",
       }}>
         {title}
       </h2>
-      <div style={{ color: "#A1A1AA" }}>{children}</div>
+      <div style={{ color: "var(--c-text-2)" }}>{children}</div>
     </section>
   )
 }

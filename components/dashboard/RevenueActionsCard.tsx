@@ -20,19 +20,19 @@ function ActionCard({ icon, color, title, sub, href }: { icon: React.ReactNode; 
       href={href}
       style={{
         flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 12,
-        background: "#111", border: "1px solid #1F1F1F", borderRadius: 14,
+        background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14,
         padding: "14px 16px", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
         transition: "border-color 0.15s", textDecoration: "none",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = color)}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1F1F1F")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--c-border)")}
     >
       <div style={{ width: 38, height: 38, borderRadius: 10, background: `${color}1A`, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>{title}</p>
-        <p style={{ fontSize: 12, color: "#71717A", margin: "2px 0 0" }}>{sub}</p>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{title}</p>
+        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>{sub}</p>
       </div>
       <ArrowRight size={16} color={color} style={{ flexShrink: 0 }} />
     </Link>
@@ -59,7 +59,7 @@ export default function RevenueActionsCard() {
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p style={{ fontSize: 12, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>
         💰 Ações de receita
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

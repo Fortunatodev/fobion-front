@@ -3,7 +3,7 @@ export default function Loading() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#0A0A0A",
+        backgroundColor: "var(--c-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -14,7 +14,7 @@ export default function Loading() {
           width: 32,
           height: 32,
           borderRadius: "50%",
-          border: "3px solid #1F1F1F",
+          border: "3px solid var(--c-border)",
           borderTopColor: "#0066FF",
           animation: "forbion-spin 0.7s linear infinite",
         }}

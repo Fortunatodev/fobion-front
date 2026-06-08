@@ -10,9 +10,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#09090B",
+      background: "var(--c-bg)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      color: "#FAFAFA",
+      color: "var(--c-text)",
     }}>
       {/* ── Header (hidden on login) ──────────────────────────────────── */}
       {!isLogin && (
@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 6,
-              color: "#71717A",
+              color: "var(--c-text-3)",
               fontSize: 12,
               fontWeight: 500,
               cursor: "pointer",
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onMouseLeave={e => {
               e.currentTarget.style.background = "rgba(255,255,255,0.04)"
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
-              e.currentTarget.style.color = "#71717A"
+              e.currentTarget.style.color = "var(--c-text-3)"
             }}
           >
             Sair

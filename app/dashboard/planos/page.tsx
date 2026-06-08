@@ -77,7 +77,7 @@ function Spinner({ size = 14, color = "white" }: { size?: number; color?: string
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6, display: "block" }}>
+    <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6, display: "block" }}>
       {children}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
     </label>
   )
@@ -100,10 +100,10 @@ function FieldInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
-          height: 42, backgroundColor: "#0A0A0A",
-          border: `1px solid ${focused ? "#0066FF" : "#252525"}`,
+          height: 42, backgroundColor: "var(--c-bg)",
+          border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "0 14px",
-          fontSize: 14, color: "#ffffff", outline: "none",
+          fontSize: 14, color: "var(--c-text)", outline: "none",
           width: "100%", boxSizing: "border-box",
           transition: "border-color 0.15s", fontFamily: "inherit",
         }}
@@ -127,10 +127,10 @@ function FieldTextarea({
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         rows={3}
         style={{
-          backgroundColor: "#0A0A0A",
-          border: `1px solid ${focused ? "#0066FF" : "#252525"}`,
+          backgroundColor: "var(--c-bg)",
+          border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "10px 14px",
-          fontSize: 14, color: "#ffffff", outline: "none",
+          fontSize: 14, color: "var(--c-text)", outline: "none",
           width: "100%", boxSizing: "border-box", resize: "vertical",
           transition: "border-color 0.15s", fontFamily: "inherit", minHeight: 72,
         }}
@@ -160,8 +160,8 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
       style={{
         height: 40, padding: "0 18px", borderRadius: 10,
         fontSize: 13, fontWeight: 600, cursor: "pointer",
-        background: "transparent", border: "1px solid #252525",
-        color: hov ? "#ffffff" : "#A1A1AA",
+        background: "transparent", border: "1px solid var(--c-border-2)",
+        color: hov ? "var(--c-text)" : "var(--c-text-2)",
         transition: "color 0.15s", fontFamily: "inherit",
       }}>Cancelar</button>
   )
@@ -203,8 +203,8 @@ function ServiceRuleCard({
 
   return (
     <div style={{
-      backgroundColor: enabled ? "rgba(0,102,255,0.04)" : "#0A0A0A",
-      border: `1px solid ${enabled ? "rgba(0,102,255,0.15)" : "#1F1F1F"}`,
+      backgroundColor: enabled ? "rgba(0,102,255,0.04)" : "var(--c-bg)",
+      border: `1px solid ${enabled ? "rgba(0,102,255,0.15)" : "var(--c-border)"}`,
       borderRadius: 12, padding: 14,
       transition: "all 0.2s",
     }}>
@@ -215,7 +215,7 @@ function ServiceRuleCard({
             onClick={() => onToggle(!enabled)}
             style={{
               width: 20, height: 20, borderRadius: 6,
-              border: `2px solid ${enabled ? "#0066FF" : "#3F3F46"}`,
+              border: `2px solid ${enabled ? "#0066FF" : "var(--c-text-4)"}`,
               backgroundColor: enabled ? "#0066FF" : "transparent",
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               transition: "all 0.15s", flexShrink: 0, padding: 0,
@@ -228,8 +228,8 @@ function ServiceRuleCard({
             )}
           </button>
           <div>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{service.name}</span>
-            <span style={{ fontSize: 12, color: "#71717A", marginLeft: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{service.name}</span>
+            <span style={{ fontSize: 12, color: "var(--c-text-3)", marginLeft: 8 }}>
               {formatCurrency(service.price)}
             </span>
           </div>
@@ -257,15 +257,15 @@ function ServiceRuleCard({
         }}>
           {/* Discount Type */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Tipo
             </span>
             <select
               value={rule.discountType}
               onChange={(e) => onUpdate({ discountType: e.target.value as DiscountType })}
               style={{
-                height: 34, backgroundColor: "#111111", border: "1px solid #252525",
-                borderRadius: 8, padding: "0 8px", fontSize: 12, color: "#fff",
+                height: 34, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                borderRadius: 8, padding: "0 8px", fontSize: 12, color: "var(--c-text)",
                 outline: "none", cursor: "pointer", fontFamily: "inherit",
                 appearance: "none", WebkitAppearance: "none",
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
@@ -280,7 +280,7 @@ function ServiceRuleCard({
 
           {/* Discount Value */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               {rule.discountType === "FREE" ? "Valor" : rule.discountType === "PERCENTAGE" ? "%" : "R$"}
             </span>
             <div style={{ position: "relative" }}>
@@ -299,9 +299,9 @@ function ServiceRuleCard({
                 }}
                 placeholder={rule.discountType === "FREE" ? "—" : "0"}
                 style={{
-                  height: 34, width: "100%", backgroundColor: rule.discountType === "FREE" ? "#0A0A0A" : "#111111",
-                  border: "1px solid #252525", borderRadius: 8,
-                  padding: "0 8px", fontSize: 12, color: rule.discountType === "FREE" ? "#3F3F46" : "#fff",
+                  height: 34, width: "100%", backgroundColor: rule.discountType === "FREE" ? "var(--c-bg)" : "var(--c-surface)",
+                  border: "1px solid var(--c-border-2)", borderRadius: 8,
+                  padding: "0 8px", fontSize: 12, color: rule.discountType === "FREE" ? "var(--c-text-4)" : "var(--c-text)",
                   outline: "none", boxSizing: "border-box", fontFamily: "inherit",
                 }}
               />
@@ -310,7 +310,7 @@ function ServiceRuleCard({
 
           {/* Max Usages */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Limite
             </span>
             <input
@@ -323,9 +323,9 @@ function ServiceRuleCard({
               }}
               placeholder="∞"
               style={{
-                height: 34, width: "100%", backgroundColor: "#111111",
-                border: "1px solid #252525", borderRadius: 8,
-                padding: "0 8px", fontSize: 12, color: "#fff",
+                height: 34, width: "100%", backgroundColor: "var(--c-surface)",
+                border: "1px solid var(--c-border-2)", borderRadius: 8,
+                padding: "0 8px", fontSize: 12, color: "var(--c-text)",
                 outline: "none", boxSizing: "border-box", fontFamily: "inherit",
               }}
             />
@@ -540,8 +540,8 @@ function PlanosContent() {
           from{opacity:0;transform:translate(-50%,-44%)}
           to{opacity:1;transform:translate(-50%,-50%)}
         }
-        textarea::placeholder, input::placeholder { color: #3F3F46; }
-        select option { background: #111111; }
+        textarea::placeholder, input::placeholder { color: var(--c-text-4); }
+        select option { background: var(--c-surface); }
       `}</style>
 
       <div style={{
@@ -556,10 +556,10 @@ function PlanosContent() {
           alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 32,
         }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
               Planos de Assinatura
             </h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>
               {loading ? "Carregando..." : `${activePlans.length} plano${activePlans.length !== 1 ? "s" : ""} ativo${activePlans.length !== 1 ? "s" : ""}`}
             </p>
           </div>
@@ -574,10 +574,10 @@ function PlanosContent() {
         }}>
           <Crown size={16} color="#0066FF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
               Planos de fidelidade com regras por serviço
             </p>
-            <p style={{ fontSize: 12, color: "#71717A", marginTop: 4, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 4, lineHeight: 1.6 }}>
               Configure desconto individual por serviço: grátis, percentual ou valor fixo.
               Defina limite de usos por ciclo (ex: 5 lavagens/mês).
             </p>
@@ -604,7 +604,7 @@ function PlanosContent() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
             {[1, 2, 3].map((i) => (
               <div key={i} style={{
-                height: 220, backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                height: 220, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                 borderRadius: 20, animation: `skeletonPl 1.5s ease ${i * 0.1}s infinite`,
               }} />
             ))}
@@ -614,11 +614,11 @@ function PlanosContent() {
         {/* ── EMPTY ───────────────────────────────────────────────────── */}
         {!loading && !error && plans.length === 0 && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
-            <Crown size={40} color="#1F1F1F" style={{ margin: "0 auto" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 16 }}>
+            <Crown size={40} color="var(--c-border)" style={{ margin: "0 auto" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
               Nenhum plano criado ainda
             </p>
-            <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
               Crie planos de fidelidade para aumentar a recorrência
             </p>
             <button onClick={() => setShowModal("create")} style={{
@@ -645,8 +645,8 @@ function PlanosContent() {
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
                     position: "relative", overflow: "hidden",
-                    backgroundColor: "#111111",
-                    border: `1px solid ${hov ? "#252525" : plan.isActive ? "#1F1F1F" : "#161616"}`,
+                    backgroundColor: "var(--c-surface)",
+                    border: `1px solid ${hov ? "var(--c-border-2)" : plan.isActive ? "var(--c-border)" : "var(--c-surface-2)"}`,
                     opacity: plan.isActive ? 1 : 0.55,
                     borderRadius: 20, padding: 24,
                     transition: "all 0.2s ease",
@@ -671,12 +671,12 @@ function PlanosContent() {
                           background: "linear-gradient(135deg,#7C3AED,#0066FF)",
                           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                         }}>
-                          <Crown size={15} color="#fff" />
+                          <Crown size={15} color="var(--c-text)" />
                         </div>
-                        <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>{plan.name}</p>
+                        <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{plan.name}</p>
                       </div>
                       {plan.description && (
-                        <p style={{ fontSize: 12, color: "#71717A", marginTop: 6, lineHeight: 1.5 }}>
+                        <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 6, lineHeight: 1.5 }}>
                           {plan.description}
                         </p>
                       )}
@@ -693,8 +693,8 @@ function PlanosContent() {
                         {plan.isActive ? "Ativo" : "Inativo"}
                       </span>
                       <span style={{
-                        fontSize: 10, backgroundColor: "#161616", border: "1px solid #252525",
-                        color: "#A1A1AA", borderRadius: 6, padding: "3px 8px",
+                        fontSize: 10, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+                        color: "var(--c-text-2)", borderRadius: 6, padding: "3px 8px",
                       }}>
                         {plan.interval === "MONTHLY" ? "Mensal" : "Anual"}
                       </span>
@@ -704,10 +704,10 @@ function PlanosContent() {
                   {/* Preço */}
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                      <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
+                      <span style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px" }}>
                         {formatCurrency(plan.price)}
                       </span>
-                      <span style={{ fontSize: 13, color: "#71717A" }}>
+                      <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>
                         /{plan.interval === "MONTHLY" ? "mês" : "ano"}
                       </span>
                     </div>
@@ -727,8 +727,8 @@ function PlanosContent() {
                   {svcCount > 0 && (
                     <div style={{ marginTop: 14 }}>
                       <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
-                        <Package size={12} color="#A1A1AA" />
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        <Package size={12} color="var(--c-text-2)" />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                           Serviços ({svcCount})
                         </span>
                       </div>
@@ -736,9 +736,9 @@ function PlanosContent() {
                         {plan.planServices!.map((ps) => (
                           <div key={ps.id} style={{
                             display: "flex", justifyContent: "space-between", alignItems: "center",
-                            backgroundColor: "#0A0A0A", borderRadius: 8, padding: "6px 10px",
+                            backgroundColor: "var(--c-bg)", borderRadius: 8, padding: "6px 10px",
                           }}>
-                            <span style={{ fontSize: 12, color: "#D4D4D8" }}>{ps.service.name}</span>
+                            <span style={{ fontSize: 12, color: "var(--c-text-2)" }}>{ps.service.name}</span>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <span style={{
                                 fontSize: 10, fontWeight: 600, color: "#10B981",
@@ -749,8 +749,8 @@ function PlanosContent() {
                               </span>
                               {ps.maxUsages && (
                                 <span style={{
-                                  fontSize: 10, color: "#A1A1AA",
-                                  backgroundColor: "#161616",
+                                  fontSize: 10, color: "var(--c-text-2)",
+                                  backgroundColor: "var(--c-surface-2)",
                                   borderRadius: 4, padding: "2px 6px",
                                 }}>
                                   {ps.maxUsages}x
@@ -764,13 +764,13 @@ function PlanosContent() {
                   )}
 
                   {/* Separator */}
-                  <div style={{ height: 1, backgroundColor: "#1A1A1A", margin: "16px 0 14px" }} />
+                  <div style={{ height: 1, backgroundColor: "var(--c-border)", margin: "16px 0 14px" }} />
 
                   {/* Footer */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <Users size={13} color="#A1A1AA" />
-                      <span style={{ fontSize: 12, color: "#71717A" }}>
+                      <Users size={13} color="var(--c-text-2)" />
+                      <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
                         {plan.activeSubscribersCount} assinante{plan.activeSubscribersCount !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -785,7 +785,7 @@ function PlanosContent() {
                         </SmallIconBtn>
                       )}
                       <SmallIconBtn title="Editar plano"
-                        bg="#161616" border="#252525" color="#A1A1AA" hoverBg="#1F1F1F"
+                        bg="var(--c-surface-2)" border="var(--c-border-2)" color="var(--c-text-2)" hoverBg="var(--c-border)"
                         onClick={() => openEditModal(plan)}>
                         <Edit3 size={13} />
                       </SmallIconBtn>
@@ -813,7 +813,7 @@ function PlanosContent() {
           <div onClick={(e) => e.stopPropagation()} style={{
             position: "fixed", top: "50%", left: "50%",
             transform: "translate(-50%,-50%)",
-            backgroundColor: "#111111", border: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
             borderRadius: 20, padding: 28, width: "100%", maxWidth: 560, zIndex: 101,
             boxShadow: "0 32px 64px rgba(0,0,0,0.7)",
             animation: "slideUpPl 0.3s cubic-bezier(0.16,1,0.3,1)",
@@ -823,14 +823,14 @@ function PlanosContent() {
           }}>
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 {showModal === "create" ? "Novo plano" : "Editar plano"}
               </h2>
               <button onClick={closeModal} style={{
-                background: "rgba(255,255,255,0.05)", border: "1px solid #252525",
+                background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-2)",
                 borderRadius: 8, width: 32, height: 32, display: "flex",
                 alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#71717A", flexShrink: 0,
+                cursor: "pointer", color: "var(--c-text-3)", flexShrink: 0,
               }}><X size={16} /></button>
             </div>
 
@@ -868,18 +868,18 @@ function PlanosContent() {
                       onChange={(e) => { setFormDiscount(e.target.value); setFormError(null) }}
                       placeholder="0"
                       style={{
-                        height: 42, width: "100%", backgroundColor: "#0A0A0A",
-                        border: "1px solid #252525", borderRadius: 10,
-                        padding: "0 32px 0 14px", fontSize: 14, color: "#fff",
+                        height: 42, width: "100%", backgroundColor: "var(--c-bg)",
+                        border: "1px solid var(--c-border-2)", borderRadius: 10,
+                        padding: "0 32px 0 14px", fontSize: 14, color: "var(--c-text)",
                         outline: "none", boxSizing: "border-box", fontFamily: "inherit",
                       }}
                     />
                     <span style={{
                       position: "absolute", right: 12, top: "50%",
-                      transform: "translateY(-50%)", color: "#52525B", fontSize: 13,
+                      transform: "translateY(-50%)", color: "var(--c-text-4)", fontSize: 13,
                     }}>%</span>
                   </div>
-                  <p style={{ fontSize: 10, color: "#52525B", marginTop: 4 }}>
+                  <p style={{ fontSize: 10, color: "var(--c-text-4)", marginTop: 4 }}>
                     Aplicado em serviços sem regra própria
                   </p>
                 </div>
@@ -890,8 +890,8 @@ function PlanosContent() {
                     onChange={(e) => setFormPaymentLink(e.target.value)}
                     placeholder="https://pay.cactopay.com/..."
                     style={{
-                      height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
-                      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "#fff",
+                      height: 42, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "var(--c-text)",
                       outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit",
                     }}
                   />
@@ -902,22 +902,22 @@ function PlanosContent() {
               <div style={{ marginTop: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <Package size={15} color="#0066FF" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>
                     Serviços incluídos no plano
                   </span>
-                  <span style={{ fontSize: 11, color: "#71717A" }}>
+                  <span style={{ fontSize: 11, color: "var(--c-text-3)" }}>
                     ({serviceRules.size} de {services.length})
                   </span>
                 </div>
 
-                <p style={{ fontSize: 11, color: "#52525B", marginBottom: 10, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", marginBottom: 10, lineHeight: 1.5 }}>
                   Selecione os serviços e configure o tipo de desconto e limite de usos por ciclo.
                   Serviços sem regra usam o desconto global (%).
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
                   {services.length === 0 ? (
-                    <div style={{ fontSize: 13, color: "#71717A", padding: 12 }}>Carregando serviços...</div>
+                    <div style={{ fontSize: 13, color: "var(--c-text-3)", padding: 12 }}>Carregando serviços...</div>
                   ) : (
                     services.map((s) => (
                       <ServiceRuleCard
@@ -976,8 +976,8 @@ function SelectField({ value, onChange, children }: {
 }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} style={{
-      height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
-      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "#fff",
+      height: 42, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "var(--c-text)",
       outline: "none", cursor: "pointer", fontFamily: "inherit",
       appearance: "none", WebkitAppearance: "none",
       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,

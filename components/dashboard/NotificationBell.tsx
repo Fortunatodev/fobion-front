@@ -145,7 +145,7 @@ export default function NotificationBell() {
           cursor: "pointer",
           padding: 6,
           borderRadius: 8,
-          color: open ? "#fff" : "#71717A",
+          color: open ? "var(--c-text)" : "var(--c-text-3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -161,9 +161,9 @@ export default function NotificationBell() {
             minWidth: 16, height: 16,
             borderRadius: 999, padding: "0 4px",
             backgroundColor: "#EF4444",
-            color: "#fff", fontSize: 9, fontWeight: 700,
+            color: "var(--c-text)", fontSize: 9, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
-            border: "2px solid #0A0A0A",
+            border: "2px solid var(--c-bg)",
             lineHeight: 1,
             animation: "bellPulse 0.3s ease",
           }}>
@@ -178,7 +178,7 @@ export default function NotificationBell() {
           <style>{`
             @keyframes bellDrop  { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
             @keyframes bellPulse { 0%{transform:scale(0.5)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
-            .notif-item:hover { background: #161616 !important; }
+            .notif-item:hover { background: var(--c-surface-2) !important; }
           `}</style>
 
           <div ref={panelRef} style={{
@@ -188,8 +188,8 @@ export default function NotificationBell() {
             width: 340,
             maxHeight: 420,
             overflowY: "auto",
-            backgroundColor: "#111",
-            border: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)",
+            border: "1px solid var(--c-border)",
             borderRadius: 14,
             boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
             zIndex: 9999,
@@ -198,10 +198,10 @@ export default function NotificationBell() {
             {/* Header */}
             <div style={{
               padding: "14px 16px 10px",
-              borderBottom: "1px solid #1A1A1A",
+              borderBottom: "1px solid var(--c-border)",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>
                 Notificações
               </span>
               {items.length > 0 && (
@@ -209,7 +209,7 @@ export default function NotificationBell() {
                   onClick={() => setItems([])}
                   style={{
                     background: "none", border: "none",
-                    fontSize: 11, color: "#52525B", cursor: "pointer",
+                    fontSize: 11, color: "var(--c-text-4)", cursor: "pointer",
                     fontFamily: "inherit",
                   }}
                 >
@@ -221,18 +221,18 @@ export default function NotificationBell() {
             {/* Lista */}
             {items.length === 0 ? (
               <div style={{ padding: "32px 16px", textAlign: "center" }}>
-                <Bell size={28} color="#1F1F1F" style={{ display: "block", margin: "0 auto 10px" }} />
-                <p style={{ fontSize: 13, color: "#52525B", margin: 0 }}>
+                <Bell size={28} color="var(--c-border)" style={{ display: "block", margin: "0 auto 10px" }} />
+                <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: 0 }}>
                   Nenhuma notificação
                 </p>
-                <p style={{ fontSize: 11, color: "#3F3F46", margin: "4px 0 0" }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                   Elas aparecerão em tempo real aqui
                 </p>
               </div>
             ) : (
               <div>
                 {items.map((item, idx) => {
-                  const color = STATUS_COLOR[item.type] ?? "#71717A"
+                  const color = STATUS_COLOR[item.type] ?? "var(--c-text-3)"
                   const icon  = STATUS_ICON[item.type]  ?? "🔔"
                   return (
                     <div
@@ -240,7 +240,7 @@ export default function NotificationBell() {
                       className="notif-item"
                       style={{
                         padding: "12px 16px",
-                        borderBottom: idx < items.length - 1 ? "1px solid #141414" : "none",
+                        borderBottom: idx < items.length - 1 ? "1px solid var(--c-surface)" : "none",
                         cursor: "default",
                         transition: "background 0.12s",
                       }}
@@ -261,23 +261,23 @@ export default function NotificationBell() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
                             <span style={{
-                              fontSize: 12, fontWeight: 600, color: "#E5E7EB",
+                              fontSize: 12, fontWeight: 600, color: "var(--c-text-2)",
                               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                             }}>
                               {item.title}
                             </span>
-                            <span style={{ fontSize: 10, color: "#3F3F46", flexShrink: 0 }}>
+                            <span style={{ fontSize: 10, color: "var(--c-text-4)", flexShrink: 0 }}>
                               {fmtAgo(item.createdAt)}
                             </span>
                           </div>
                           <p style={{
-                            fontSize: 11, color: "#71717A", margin: "3px 0 0",
+                            fontSize: 11, color: "var(--c-text-3)", margin: "3px 0 0",
                             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                           }}>
                             {item.message}
                           </p>
                           <span style={{
-                            fontSize: 10, color: "#52525B", marginTop: 2, display: "inline-block",
+                            fontSize: 10, color: "var(--c-text-4)", marginTop: 2, display: "inline-block",
                           }}>
                             🕐 {fmtTime(item.timeISO)}
                           </span>

@@ -74,7 +74,7 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
           style={{
             fontSize: s.text,
             fontWeight: 800,
-            background: "linear-gradient(135deg, #ffffff 0%, #a0b4ff 100%)",
+            background: "linear-gradient(135deg, var(--c-text) 0%, #a0b4ff 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

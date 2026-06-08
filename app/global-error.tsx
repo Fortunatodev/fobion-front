@@ -15,7 +15,7 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100vh",
-          backgroundColor: "#0A0A0A",
+          backgroundColor: "var(--c-bg)",
           color: "#E4E4E7",
           display: "flex",
           alignItems: "center",
@@ -26,12 +26,12 @@ export default function GlobalError({
       >
         <div style={{ maxWidth: 480, textAlign: "center" }}>
           <h2 style={{ fontSize: 22, marginBottom: 12 }}>Erro inesperado</h2>
-          <p style={{ color: "#A1A1AA", fontSize: 14 }}>
+          <p style={{ color: "var(--c-text-2)", fontSize: 14 }}>
             Não conseguimos carregar a aplicação. Recarregue a página em alguns
             segundos.
           </p>
           {error.digest && (
-            <p style={{ color: "#52525B", fontSize: 12, marginTop: 12 }}>
+            <p style={{ color: "var(--c-text-4)", fontSize: 12, marginTop: 12 }}>
               Código: {error.digest}
             </p>
           )}
@@ -41,9 +41,9 @@ export default function GlobalError({
               marginTop: 24,
               padding: "10px 20px",
               borderRadius: 8,
-              border: "1px solid #2A2A2A",
+              border: "1px solid var(--c-border-2)",
               background: "#0066FF",
-              color: "#FFFFFF",
+              color: "var(--c-text)",
               cursor: "pointer",
               fontSize: 14,
             }}

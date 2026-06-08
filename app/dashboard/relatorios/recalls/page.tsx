@@ -45,24 +45,24 @@ export default function RecallsPage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 48px" }}>
-      <button onClick={() => router.push("/dashboard/relatorios")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginBottom: 14 }}>
+      <button onClick={() => router.push("/dashboard/relatorios")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginBottom: 14 }}>
         <ArrowLeft size={15} /> Relatórios
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <ShieldCheck size={20} color="#10B981" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#F9FAFB", margin: 0, letterSpacing: "-0.5px" }}>Retornos & Garantias</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Retornos & Garantias</h1>
       </div>
-      <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 24px" }}>Serviços com garantia perto de vencer — chame o cliente pra reagendar e fature de novo.</p>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Serviços com garantia perto de vencer — chame o cliente pra reagendar e fature de novo.</p>
 
-      {loading && <p style={{ color: "#71717A", fontSize: 14 }}>Carregando…</p>}
+      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
       {!loading && !error && recalls.length === 0 && (
         <div style={{ textAlign: "center", padding: "56px 0" }}>
-          <Calendar size={40} color="#2A2A2A" style={{ margin: "0 auto" }} />
-          <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 14 }}>Nenhum retorno pendente</p>
-          <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
+          <Calendar size={40} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>Nenhum retorno pendente</p>
+          <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
             Defina a {"“garantia (dias)”"} nos seus serviços (ex.: vitrificação 180). Ao fechar a comanda,
             os retornos aparecem aqui automaticamente.
           </p>
@@ -78,14 +78,14 @@ export default function RecallsPage() {
             const color = overdue ? "#EF4444" : soon ? "#F59E0B" : "#10B981"
             const link = waLink(r.customerPhone, r.customerName, r.serviceName, d)
             return (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F", borderRadius: 12, padding: "12px 16px" }}>
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "12px 16px" }}>
                 <div style={{ width: 4, height: 36, borderRadius: 2, background: color, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{r.serviceName}</span>
-                    {r.plate && <span style={{ fontSize: 11, fontWeight: 600, color: "#A1A1AA", backgroundColor: "#1A1A1A", borderRadius: 5, padding: "1px 7px" }}>{r.plate}</span>}
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{r.serviceName}</span>
+                    {r.plate && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-2)", backgroundColor: "var(--c-border)", borderRadius: 5, padding: "1px 7px" }}>{r.plate}</span>}
                   </div>
-                  <p style={{ fontSize: 12, color: "#71717A", margin: "2px 0 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>
                     {r.customerName ?? "Cliente"} · garantia {overdue ? `venceu há ${Math.abs(d)} dias` : `vence em ${d} dias`}
                   </p>
                 </div>
@@ -97,7 +97,7 @@ export default function RecallsPage() {
                     <MessageCircle size={14} /> Reagendar
                   </a>
                 ) : (
-                  <span style={{ fontSize: 11, color: "#52525B", flexShrink: 0 }}>sem telefone</span>
+                  <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>sem telefone</span>
                 )}
               </div>
             )

@@ -105,7 +105,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#09090B",
+      backgroundColor: "var(--c-bg)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       padding: "24px 16px",
     }}>
@@ -130,7 +130,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
 
         {/* ── Title ──────────────────────────────────────────────────── */}
         <h1 style={{
-          fontSize: 26, fontWeight: 800, color: "#FAFAFA",
+          fontSize: 26, fontWeight: 800, color: "var(--c-text)",
           textAlign: "center", margin: "0 0 12px", lineHeight: 1.3,
         }}>
           {title}
@@ -138,7 +138,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
 
         {/* ── Description ────────────────────────────────────────────── */}
         <p style={{
-          fontSize: 15, color: "#A1A1AA", textAlign: "center",
+          fontSize: 15, color: "var(--c-text-2)", textAlign: "center",
           lineHeight: 1.7, margin: "0 0 28px", maxWidth: 440,
           marginLeft: "auto", marginRight: "auto",
         }}>
@@ -152,8 +152,8 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
             marginBottom: 28,
           }}>
             <div style={{
-              background: "#111113", borderRadius: 14,
-              border: "1px solid #1F1F23", padding: "16px 18px",
+              background: "var(--c-surface)", borderRadius: 14,
+              border: "1px solid var(--c-border)", padding: "16px 18px",
               textAlign: "center",
             }}>
               <div style={{
@@ -161,18 +161,18 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
                 gap: 8, marginBottom: 8,
               }}>
                 <CalendarDays size={16} color="#3B82F6" />
-                <span style={{ fontSize: 12, color: "#71717A", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <span style={{ fontSize: 12, color: "var(--c-text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Agendamentos
                 </span>
               </div>
-              <span style={{ fontSize: 28, fontWeight: 800, color: "#FAFAFA" }}>
+              <span style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)" }}>
                 {lock.scheduleCount.toLocaleString("pt-BR")}
               </span>
             </div>
 
             <div style={{
-              background: "#111113", borderRadius: 14,
-              border: "1px solid #1F1F23", padding: "16px 18px",
+              background: "var(--c-surface)", borderRadius: 14,
+              border: "1px solid var(--c-border)", padding: "16px 18px",
               textAlign: "center",
             }}>
               <div style={{
@@ -180,11 +180,11 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
                 gap: 8, marginBottom: 8,
               }}>
                 <Users size={16} color="#10B981" />
-                <span style={{ fontSize: 12, color: "#71717A", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <span style={{ fontSize: 12, color: "var(--c-text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Clientes
                 </span>
               </div>
-              <span style={{ fontSize: 28, fontWeight: 800, color: "#FAFAFA" }}>
+              <span style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)" }}>
                 {lock.customerCount.toLocaleString("pt-BR")}
               </span>
             </div>
@@ -194,11 +194,11 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
         {/* ── Motivational text ──────────────────────────────────────── */}
         {hasStats && (
           <p style={{
-            fontSize: 13, color: "#71717A", textAlign: "center",
+            fontSize: 13, color: "var(--c-text-3)", textAlign: "center",
             lineHeight: 1.6, margin: "0 0 28px", fontStyle: "italic",
           }}>
-            Você já gerenciou <strong style={{ color: "#A1A1AA" }}>{lock.scheduleCount}</strong> agendamento{lock.scheduleCount !== 1 ? "s" : ""}{" "}
-            e <strong style={{ color: "#A1A1AA" }}>{lock.customerCount}</strong> cliente{lock.customerCount !== 1 ? "s" : ""} com a nossa plataforma.
+            Você já gerenciou <strong style={{ color: "var(--c-text-2)" }}>{lock.scheduleCount}</strong> agendamento{lock.scheduleCount !== 1 ? "s" : ""}{" "}
+            e <strong style={{ color: "var(--c-text-2)" }}>{lock.customerCount}</strong> cliente{lock.customerCount !== 1 ? "s" : ""} com a nossa plataforma.
             Não perca esse controle.
           </p>
         )}
@@ -212,7 +212,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <Crown size={18} color="#F59E0B" />
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#FAFAFA" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>
               Recomendado: Plano PRO
             </span>
           </div>
@@ -225,7 +225,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
             ].map((item, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "#7C3AED", flexShrink: 0 }}>{item.icon}</span>
-                <span style={{ fontSize: 13, color: "#A1A1AA" }}>{item.text}</span>
+                <span style={{ fontSize: 13, color: "var(--c-text-2)" }}>{item.text}</span>
               </div>
             ))}
           </div>
@@ -243,9 +243,9 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 padding: "15px 24px", borderRadius: 14,
                 background: redirecting
-                  ? "#27272A"
+                  ? "var(--c-text-4)"
                   : "linear-gradient(135deg, #0066FF, #7C3AED)",
-                color: "#fff", fontSize: 15, fontWeight: 700,
+                color: "var(--c-text)", fontSize: 15, fontWeight: 700,
                 border: "none", cursor: redirecting ? "wait" : "pointer",
                 transition: "all 0.2s ease",
                 boxShadow: redirecting ? "none" : "0 4px 20px rgba(0,102,255,0.25)",
@@ -282,19 +282,19 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "13px 24px", borderRadius: 14,
-              backgroundColor: "#111113",
-              border: "1px solid #27272A",
-              color: "#A1A1AA", fontSize: 14, fontWeight: 600,
+              backgroundColor: "var(--c-surface)",
+              border: "1px solid var(--c-text-4)",
+              color: "var(--c-text-2)", fontSize: 14, fontWeight: 600,
               textDecoration: "none",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = "#3F3F46"
-              e.currentTarget.style.color = "#FAFAFA"
+              e.currentTarget.style.borderColor = "var(--c-text-4)"
+              e.currentTarget.style.color = "var(--c-text)"
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = "#27272A"
-              e.currentTarget.style.color = "#A1A1AA"
+              e.currentTarget.style.borderColor = "var(--c-text-4)"
+              e.currentTarget.style.color = "var(--c-text-2)"
             }}
           >
             <MessageCircle size={16} />
@@ -309,12 +309,12 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "10px 24px", borderRadius: 14,
               background: "transparent", border: "none",
-              color: "#52525B", fontSize: 13, fontWeight: 500,
+              color: "var(--c-text-4)", fontSize: 13, fontWeight: 500,
               cursor: "pointer",
               transition: "color 0.15s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#A1A1AA" }}
-            onMouseLeave={e => { e.currentTarget.style.color = "#52525B" }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--c-text-2)" }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--c-text-4)" }}
           >
             <RefreshCw size={14} />
             Já paguei — verificar novamente
@@ -323,7 +323,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
 
         {/* ── Social proof ───────────────────────────────────────────── */}
         <p style={{
-          fontSize: 12, color: "#3F3F46", textAlign: "center",
+          fontSize: 12, color: "var(--c-text-4)", textAlign: "center",
           marginTop: 32, lineHeight: 1.6,
         }}>
           {isInactive

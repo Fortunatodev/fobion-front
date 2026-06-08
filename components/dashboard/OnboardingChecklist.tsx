@@ -76,8 +76,8 @@ export default function OnboardingChecklist({
   return (
     <div
       style={{
-        backgroundColor: "#111111",
-        border: "1px solid #1F1F1F",
+        backgroundColor: "var(--c-surface)",
+        border: "1px solid var(--c-border)",
         borderRadius: 16,
         padding: 20,
         marginBottom: 24,
@@ -92,11 +92,11 @@ export default function OnboardingChecklist({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Rocket size={17} color="#fff" />
+            <Rocket size={17} color="var(--c-text)" />
           </div>
           <div>
-            <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0 }}>Configure sua loja</p>
-            <p style={{ fontSize: 12, color: "#71717A", margin: "2px 0 0" }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Configure sua loja</p>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>
               {doneCount} de {total} concluídos · termine pra começar a receber agendamentos
             </p>
           </div>
@@ -104,16 +104,16 @@ export default function OnboardingChecklist({
         <button
           onClick={dismiss}
           title="Dispensar"
-          style={{ background: "none", border: "none", color: "#52525B", cursor: "pointer", padding: 4, display: "flex" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#A1A1AA")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#52525B")}
+          style={{ background: "none", border: "none", color: "var(--c-text-4)", cursor: "pointer", padding: 4, display: "flex" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--c-text-2)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--c-text-4)")}
         >
           <X size={16} />
         </button>
       </div>
 
       {/* barra de progresso */}
-      <div style={{ height: 6, borderRadius: 4, background: "#1F1F1F", overflow: "hidden", marginBottom: 18 }}>
+      <div style={{ height: 6, borderRadius: 4, background: "var(--c-border)", overflow: "hidden", marginBottom: 18 }}>
         <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#0066FF,#7C3AED)", borderRadius: 4, transition: "width 0.4s ease" }} />
       </div>
 
@@ -127,26 +127,26 @@ export default function OnboardingChecklist({
             style={{
               display: "flex", alignItems: "center", gap: 12,
               textAlign: "left", width: "100%",
-              background: s.done ? "transparent" : "#0A0A0A",
-              border: `1px solid ${s.done ? "transparent" : "#1F1F1F"}`,
+              background: s.done ? "transparent" : "var(--c-bg)",
+              border: `1px solid ${s.done ? "transparent" : "var(--c-border)"}`,
               borderRadius: 12, padding: "11px 14px",
               cursor: s.done ? "default" : "pointer",
               fontFamily: "inherit", transition: "all 0.15s",
               opacity: s.done ? 0.55 : 1,
             }}
             onMouseEnter={(e) => { if (!s.done) e.currentTarget.style.borderColor = "#0066FF" }}
-            onMouseLeave={(e) => { if (!s.done) e.currentTarget.style.borderColor = "#1F1F1F" }}
+            onMouseLeave={(e) => { if (!s.done) e.currentTarget.style.borderColor = "var(--c-border)" }}
           >
             {s.done ? (
               <CheckCircle2 size={20} color="#10B981" style={{ flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid #3F3F46", flexShrink: 0 }} />
+              <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--c-text-4)", flexShrink: 0 }} />
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13.5, fontWeight: 600, color: s.done ? "#71717A" : "#fff", margin: 0, textDecoration: s.done ? "line-through" : "none" }}>
+              <p style={{ fontSize: 13.5, fontWeight: 600, color: s.done ? "var(--c-text-3)" : "var(--c-text)", margin: 0, textDecoration: s.done ? "line-through" : "none" }}>
                 {s.label}
               </p>
-              {!s.done && <p style={{ fontSize: 12, color: "#71717A", margin: "1px 0 0" }}>{s.hint}</p>}
+              {!s.done && <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "1px 0 0" }}>{s.hint}</p>}
             </div>
             {!s.done && <ArrowRight size={16} color="#0066FF" style={{ flexShrink: 0 }} />}
           </button>

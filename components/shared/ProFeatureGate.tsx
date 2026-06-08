@@ -40,13 +40,13 @@ export default function ProFeatureGate({
         </div>
 
         {/* Title */}
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>
           Recurso PRO
         </h2>
 
         {/* Feature name */}
-        <p style={{ fontSize: 15, color: "#A1A1AA", margin: "0 0 8px" }}>
-          <strong style={{ color: "#fff" }}>{featureName}</strong> faz parte do plano{" "}
+        <p style={{ fontSize: 15, color: "var(--c-text-2)", margin: "0 0 8px" }}>
+          <strong style={{ color: "var(--c-text)" }}>{featureName}</strong> faz parte do plano{" "}
           <span style={{
             color: "#F59E0B",
             fontWeight: 600,
@@ -60,7 +60,7 @@ export default function ProFeatureGate({
         </p>
 
         {description && (
-          <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6, margin: "0 0 24px" }}>
+          <p style={{ fontSize: 13, color: "var(--c-text-3)", lineHeight: 1.6, margin: "0 0 24px" }}>
             {description}
           </p>
         )}
@@ -77,7 +77,7 @@ export default function ProFeatureGate({
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "12px 20px", borderRadius: 10,
               background: "linear-gradient(135deg, #F59E0B, #D97706)",
-              color: "#fff", fontSize: 14, fontWeight: 600,
+              color: "var(--c-text)", fontSize: 14, fontWeight: 600,
               textDecoration: "none", transition: "opacity 0.15s",
             }}
           >
@@ -91,8 +91,8 @@ export default function ProFeatureGate({
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "10px 20px", borderRadius: 10,
               backgroundColor: "transparent",
-              border: "1px solid #1F1F1F",
-              color: "#71717A", fontSize: 13, fontWeight: 500,
+              border: "1px solid var(--c-border)",
+              color: "var(--c-text-3)", fontSize: 13, fontWeight: 500,
               textDecoration: "none", transition: "all 0.15s",
             }}
           >

@@ -114,7 +114,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{
-      backgroundColor: "#0D0D0D",
+      backgroundColor: "var(--c-elevated)",
       border: "1px solid rgba(255,255,255,0.06)",
       borderRadius: 16,
       boxShadow: "0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02)",
@@ -131,7 +131,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function SkeletonBlock({ h = 120 }: { h?: number }) {
-  return <div style={{ backgroundColor: "#0D0D0D", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, height: h, animation: "skR 1.4s ease infinite" }} />
+  return <div style={{ backgroundColor: "var(--c-elevated)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, height: h, animation: "skR 1.4s ease infinite" }} />
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
@@ -202,13 +202,13 @@ function SummaryCard({
           </div>
         )}
       </div>
-      <p style={{ fontSize: 11, fontWeight: 500, color: "#6B7280", margin: 0, textTransform: "uppercase", letterSpacing: "0.6px" }}>
+      <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", margin: 0, textTransform: "uppercase", letterSpacing: "0.6px" }}>
         {label}
       </p>
-      <p style={{ fontSize: 28, fontWeight: 800, color: "#F9FAFB", margin: "2px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+      <p style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
         {displayValue}
       </p>
-      {sub && <p style={{ fontSize: 11, color: "#4B5563", margin: "6px 0 0" }}>{sub}</p>}
+      {sub && <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "6px 0 0" }}>{sub}</p>}
     </Card>
   )
 }
@@ -223,12 +223,12 @@ function ChartTooltip({ active, payload, label, formatValue, isCurrency }: {
   const val = payload[0]?.value ?? 0
   return (
     <div style={{
-      backgroundColor: "#1A1A1A", border: "1px solid #2A2A2A",
+      backgroundColor: "var(--c-border)", border: "1px solid var(--c-border-2)",
       borderRadius: 10, padding: "10px 14px",
       boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
     }}>
-      <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>{label ? fmtFull(label) : ""}</p>
-      <p style={{ fontSize: 15, fontWeight: 700, color: "#F9FAFB", margin: "3px 0 0" }}>
+      <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: 0 }}>{label ? fmtFull(label) : ""}</p>
+      <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: "3px 0 0" }}>
         {formatValue ? formatValue(val) : isCurrency ? fmt(val) : val}
       </p>
     </div>
@@ -252,7 +252,7 @@ function AreaChartComponent({
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 16px" }}>{title}</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>{title}</h3>
       <ResponsiveContainer width="100%" height={height}>
         <RArea data={sampled} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
           <defs>
@@ -264,14 +264,14 @@ function AreaChartComponent({
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
           <XAxis
             dataKey="date" tickFormatter={fmtShort}
-            tick={{ fill: "#4B5563", fontSize: 10 }}
+            tick={{ fill: "var(--c-text-4)", fontSize: 10 }}
             axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
             tickLine={false}
             interval={Math.max(Math.floor(sampled.length / (isMobile ? 4 : 6)), 0)}
           />
           <YAxis
             tickFormatter={(v: number) => formatValue(v)}
-            tick={{ fill: "#4B5563", fontSize: 10 }}
+            tick={{ fill: "var(--c-text-4)", fontSize: 10 }}
             axisLine={false} tickLine={false}
             width={isMobile ? 50 : 60}
           />
@@ -286,7 +286,7 @@ function AreaChartComponent({
             strokeWidth={2.5}
             fill={`url(#grad-area-${color.slice(1)})`}
             dot={false}
-            activeDot={{ r: 5, fill: color, stroke: "#0D0D0D", strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: color, stroke: "var(--c-elevated)", strokeWidth: 2 }}
             animationDuration={1200}
             animationEasing="ease-out"
           />
@@ -311,7 +311,7 @@ function BarChartComponent({
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 16px" }}>{title}</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>{title}</h3>
       <ResponsiveContainer width="100%" height={height}>
         <RBar data={sampled} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
           <defs>
@@ -323,13 +323,13 @@ function BarChartComponent({
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
           <XAxis
             dataKey="date" tickFormatter={fmtShort}
-            tick={{ fill: "#4B5563", fontSize: 10 }}
+            tick={{ fill: "var(--c-text-4)", fontSize: 10 }}
             axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
             tickLine={false}
             interval={Math.max(Math.floor(sampled.length / (isMobile ? 4 : 6)), 0)}
           />
           <YAxis
-            tick={{ fill: "#4B5563", fontSize: 10 }}
+            tick={{ fill: "var(--c-text-4)", fontSize: 10 }}
             axisLine={false} tickLine={false}
             width={isMobile ? 30 : 35}
             allowDecimals={false}
@@ -365,7 +365,7 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
   const offsets = dashLens.map((_, i) => -dashLens.slice(0, i).reduce((a, b) => a + b, 0))
   const slices = items.map((sc, i) => ({
     ...sc,
-    ...(STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "#6B7280" }),
+    ...(STATUS_CONFIG[sc.status] ?? { label: sc.status, color: "var(--c-text-3)" }),
     pct: total > 0 ? sc.count / total : 0,
     dashLen: dashLens[i],
     dashOffset: offsets[i],
@@ -373,7 +373,7 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
 
   return (
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 20px" }}>Distribuição por Status</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 20px" }}>Distribuição por Status</h3>
       <div style={{ display: "flex", gap: 28, alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
         <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
@@ -388,16 +388,16 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
             ) : null)}
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 24, fontWeight: 800, color: "#F9FAFB" }}>{total}</span>
-            <span style={{ fontSize: 10, color: "#4B5563", marginTop: -2 }}>total</span>
+            <span style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)" }}>{total}</span>
+            <span style={{ fontSize: 10, color: "var(--c-text-4)", marginTop: -2 }}>total</span>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
           {slices.map(sl => (
             <div key={sl.status} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: sl.color, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: "#9CA3AF", flex: 1 }}>{sl.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", minWidth: 24, textAlign: "right" }}>{sl.count}</span>
+              <span style={{ fontSize: 13, color: "var(--c-text-2)", flex: 1 }}>{sl.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", minWidth: 24, textAlign: "right" }}>{sl.count}</span>
             </div>
           ))}
         </div>
@@ -417,20 +417,20 @@ function HeatMap({ data, isMobile }: { data: HeatmapCell[]; isMobile: boolean })
     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <Clock size={14} color="#7C3AED" />
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>Mapa de Calor</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Mapa de Calor</h3>
       </div>
-      <p style={{ fontSize: 11, color: "#6B7280", margin: "0 0 12px", minHeight: 16 }}>
+      <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "0 0 12px", minHeight: 16 }}>
         {tip || "Passe o mouse para ver detalhes"}
       </p>
       <div style={{ overflowX: "auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: `36px repeat(${hours.length}, 1fr)`, gap: 2, minWidth: isMobile ? 500 : "auto" }}>
           <div />
           {hours.map(h => (
-            <div key={h} style={{ fontSize: 9, color: "#4B5563", textAlign: "center", paddingBottom: 2 }}>{`${h}h`}</div>
+            <div key={h} style={{ fontSize: 9, color: "var(--c-text-4)", textAlign: "center", paddingBottom: 2 }}>{`${h}h`}</div>
           ))}
           {[0, 1, 2, 3, 4, 5, 6].map(day => (
             <div key={day} style={{ display: "contents" }}>
-              <div style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center" }}>{WEEK_LABELS[day]}</div>
+              <div style={{ fontSize: 11, color: "var(--c-text-3)", display: "flex", alignItems: "center" }}>{WEEK_LABELS[day]}</div>
               {hours.map(hour => {
                 const cell = data.find(d => d.day === day && d.hour === hour)
                 const count = cell?.count ?? 0
@@ -452,11 +452,11 @@ function HeatMap({ data, isMobile }: { data: HeatmapCell[]; isMobile: boolean })
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
-        <span style={{ fontSize: 9, color: "#4B5563" }}>Menos</span>
+        <span style={{ fontSize: 9, color: "var(--c-text-4)" }}>Menos</span>
         {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
           <div key={i} style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: v === 0 ? "rgba(255,255,255,0.02)" : `rgba(0,102,255,${0.12 + v * 0.88})` }} />
         ))}
-        <span style={{ fontSize: 9, color: "#4B5563" }}>Mais</span>
+        <span style={{ fontSize: 9, color: "var(--c-text-4)" }}>Mais</span>
       </div>
     </Card>
   )
@@ -478,8 +478,8 @@ function InsightCard({ icon, title, description, accent }: {
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#F9FAFB", margin: 0 }}>{title}</p>
-        <p style={{ fontSize: 12, color: "#6B7280", margin: "4px 0 0", lineHeight: 1.5 }}>{description}</p>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{title}</p>
+        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0", lineHeight: 1.5 }}>{description}</p>
       </div>
     </Card>
   )
@@ -549,7 +549,7 @@ function PainelDeSaude() {
         icon: <Lightbulb size={16} />,
         title: "Dados insuficientes para gerar insights",
         description: "Registre seus primeiros agendamentos para o Painel de Saúde diagnosticar seu negócio.",
-        accent: "#6B7280",
+        accent: "var(--c-text-3)",
       })
       return tips
     }
@@ -583,8 +583,8 @@ function PainelDeSaude() {
         @keyframes skR{0%,100%{opacity:.4}50%{opacity:.8}}
         ::-webkit-scrollbar{width:6px;height:6px}
         ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:#1F1F1F;border-radius:3px}
-        ::-webkit-scrollbar-thumb:hover{background:#2A2A2A}
+        ::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:var(--c-border-2)}
       `}</style>
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "16px 14px" : "24px 24px 48px", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
@@ -593,9 +593,9 @@ function PainelDeSaude() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Activity size={20} color="#0066FF" />
-              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#F9FAFB", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
+              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
             </div>
-            <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
             {/* V2-B3: atalhos pros painéis de Retenção (RFM) e Recalls/Garantias */}
             <div style={{ display: "flex", gap: 16, marginLeft: 30, marginTop: 8, flexWrap: "wrap" }}>
               <Link href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
@@ -606,10 +606,10 @@ function PainelDeSaude() {
               </Link>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 3, backgroundColor: "#0D0D0D", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 3 }}>
+          <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 3 }}>
             {PERIODS.map(opt => {
               const active = period === opt.value
-              return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "#fff" : "#6B7280", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
+              return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
             })}
           </div>
         </div>
@@ -662,22 +662,22 @@ function PainelDeSaude() {
                 <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                     <Star size={14} color="#F59E0B" />
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>Serviços que mais vendem</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Serviços que mais vendem</h3>
                   </div>
                   {data.servicosMaisPopulares.length === 0 ? (
-                    <p style={{ fontSize: 13, color: "#4B5563", textAlign: "center", padding: "24px 0" }}>Nenhum dado disponivel</p>
+                    <p style={{ fontSize: 13, color: "var(--c-text-4)", textAlign: "center", padding: "24px 0" }}>Nenhum dado disponivel</p>
                   ) : data.servicosMaisPopulares.map((svc, i) => {
                     const pct = Math.round((svc.count / maxSvcCnt) * 100)
                     return (
                       <div key={svc.id} style={{ marginBottom: i < data.servicosMaisPopulares.length - 1 ? 16 : 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                            <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: i === 0 ? "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(124,58,237,0.1))" : "rgba(255,255,255,0.03)", border: `1px solid ${i === 0 ? "rgba(0,102,255,0.2)" : "rgba(255,255,255,0.05)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#0066FF" : "#4B5563" }}>
+                            <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: i === 0 ? "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(124,58,237,0.1))" : "rgba(255,255,255,0.03)", border: `1px solid ${i === 0 ? "rgba(0,102,255,0.2)" : "rgba(255,255,255,0.05)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#0066FF" : "var(--c-text-4)" }}>
                               {i + 1}
                             </div>
                             <div style={{ minWidth: 0 }}>
-                              <p style={{ fontSize: 13, fontWeight: 600, color: "#F9FAFB", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</p>
-                              <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0" }}>{svc.count} agendamento{svc.count !== 1 ? "s" : ""} · {fmt(svc.total)}</p>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</p>
+                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0" }}>{svc.count} agendamento{svc.count !== 1 ? "s" : ""} · {fmt(svc.total)}</p>
                             </div>
                           </div>
                         </div>
@@ -692,7 +692,7 @@ function PainelDeSaude() {
                 <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px", display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                     <Calendar size={14} color="#7C3AED" />
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>Dias mais movimentados</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Dias mais movimentados</h3>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
                     {[...data.agendamentosPorDia].sort((a, b) => a.day - b.day).map(dia => {
@@ -700,11 +700,11 @@ function PainelDeSaude() {
                       const isTop = dia.count === maxAgDia && dia.count > 0
                       return (
                         <div key={dia.day} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "#F9FAFB" : "#6B7280", width: 28, flexShrink: 0 }}>{WEEK_LABELS[dia.day] ?? dia.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-3)", width: 28, flexShrink: 0 }}>{WEEK_LABELS[dia.day] ?? dia.label}</span>
                           <div style={{ flex: 1, height: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 4 }}>
                             <div style={{ height: 8, borderRadius: 4, width: `${Math.max(pct, 2)}%`, background: isTop ? "linear-gradient(90deg,#10B981,#0066FF)" : "rgba(0,102,255,0.5)", transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "#F9FAFB" : "#9CA3AF", width: 24, textAlign: "right", flexShrink: 0 }}>{dia.count}</span>
+                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-2)", width: 24, textAlign: "right", flexShrink: 0 }}>{dia.count}</span>
                         </div>
                       )
                     })}
@@ -719,22 +719,22 @@ function PainelDeSaude() {
                 <DonutChart data={data.statusCounts} total={data.totalAgendamentos} isMobile={isMobile} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 14px" }}>Base de Clientes</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 14px" }}>Base de Clientes</h3>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Users size={18} color="#0066FF" style={{ margin: "0 auto 6px", display: "block" }} />
-                        <p style={{ fontSize: 20, fontWeight: 800, color: "#F9FAFB", margin: 0 }}>{data.totalCustomers}</p>
-                        <p style={{ fontSize: 10, color: "#6B7280", margin: "2px 0 0" }}>Total clientes</p>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalCustomers}</p>
+                        <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Total clientes</p>
                       </div>
                       <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Crown size={18} color="#F59E0B" style={{ margin: "0 auto 6px", display: "block" }} />
-                        <p style={{ fontSize: 20, fontWeight: 800, color: "#F9FAFB", margin: 0 }}>{data.totalActiveSubscribers}</p>
-                        <p style={{ fontSize: 10, color: "#6B7280", margin: "2px 0 0" }}>Assinantes ativos</p>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalActiveSubscribers}</p>
+                        <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Assinantes ativos</p>
                       </div>
                     </div>
                     <div style={{ marginTop: 14 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: "#6B7280" }}>Conversão para assinante</span>
+                        <span style={{ fontSize: 11, color: "var(--c-text-3)" }}>Conversão para assinante</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: data.insights.subscriberRatio >= 20 ? "#10B981" : "#F59E0B" }}>{data.insights.subscriberRatio}%</span>
                       </div>
                       <div style={{ width: "100%", height: 5, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 3 }}>
@@ -745,7 +745,7 @@ function PainelDeSaude() {
 
                   {(data.faturamentoPorMetodo?.length ?? 0) > 0 && (
                     <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: "0 0 14px" }}>Metodos de Pagamento</h3>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 14px" }}>Metodos de Pagamento</h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {data.faturamentoPorMetodo!.map(m => {
                           const maxM = Math.max(...data.faturamentoPorMetodo!.map(x => x.total), 1)
@@ -753,10 +753,10 @@ function PainelDeSaude() {
                           return (
                             <div key={m.method}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9CA3AF" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--c-text-2)" }}>
                                   {PAYMENT_ICONS[m.method]}<span style={{ fontSize: 12 }}>{PAYMENT_LABELS[m.method] ?? m.method}</span>
                                 </div>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "#F9FAFB" }}>{fmt(m.total)}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)" }}>{fmt(m.total)}</span>
                               </div>
                               <div style={{ width: "100%", height: 4, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 2 }}>
                                 <div style={{ height: 4, borderRadius: 2, background: "linear-gradient(90deg,#0066FF,#7C3AED)", width: `${pct}%`, transition: "width 0.6s ease" }} />
@@ -783,8 +783,8 @@ function PainelDeSaude() {
                 const tips = buildInsights(data)
                 return tips.length === 0 ? (
                   <Card style={{ padding: 32, textAlign: "center" }}>
-                    <Lightbulb size={24} color="#1F1F1F" style={{ margin: "0 auto 8px", display: "block" }} />
-                    <p style={{ fontSize: 13, color: "#4B5563" }}>Dados insuficientes para gerar insights.</p>
+                    <Lightbulb size={24} color="var(--c-border)" style={{ margin: "0 auto 8px", display: "block" }} />
+                    <p style={{ fontSize: 13, color: "var(--c-text-4)" }}>Dados insuficientes para gerar insights.</p>
                   </Card>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: 12 }}>
@@ -798,8 +798,8 @@ function PainelDeSaude() {
 
         {!loading && !data && !error && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
-            <BarChart2 size={40} color="#1F1F1F" style={{ margin: "0 auto 12px", display: "block" }} />
-            <p style={{ fontSize: 15, color: "#4B5563" }}>Nenhum dado encontrado</p>
+            <BarChart2 size={40} color="var(--c-border)" style={{ margin: "0 auto 12px", display: "block" }} />
+            <p style={{ fontSize: 15, color: "var(--c-text-4)" }}>Nenhum dado encontrado</p>
           </div>
         )}
       </div>
@@ -813,7 +813,7 @@ function SectionTitle({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
       {icon}
-      <h2 style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", margin: 0, textTransform: "uppercase", letterSpacing: "0.8px" }}>{text}</h2>
+      <h2 style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text-3)", margin: 0, textTransform: "uppercase", letterSpacing: "0.8px" }}>{text}</h2>
     </div>
   )
 }

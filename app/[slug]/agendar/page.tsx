@@ -107,7 +107,7 @@ function FInput({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>
+      <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>
         {label}{required && <span style={{ color: "#EF4444" }}> *</span>}
       </label>
       <input
@@ -116,8 +116,8 @@ function FInput({
         readOnly={readOnly}
         style={{
           height: 40, padding: "0 12px", borderRadius: 10,
-          border: "1px solid #2A2A2A", backgroundColor: readOnly ? "#0D0D0D" : "#161616",
-          color: readOnly ? "#71717A" : "#fff", fontSize: 14, outline: "none",
+          border: "1px solid var(--c-border-2)", backgroundColor: readOnly ? "var(--c-elevated)" : "var(--c-surface-2)",
+          color: readOnly ? "var(--c-text-3)" : "var(--c-text)", fontSize: 14, outline: "none",
           fontFamily: "inherit", boxSizing: "border-box", width: "100%",
           cursor: readOnly ? "not-allowed" : undefined,
         }}
@@ -137,9 +137,9 @@ interface SlotItem {
 export default function AgendarPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
       </div>
     }>
       <AgendarContent />
@@ -474,8 +474,8 @@ function AgendarContent() {
   if (loading) return (
     <>
       <style>{`@keyframes spinAg{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "spinAg 0.7s linear infinite" }} />
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "spinAg 0.7s linear infinite" }} />
       </div>
     </>
   )
@@ -492,19 +492,19 @@ function AgendarContent() {
         @keyframes skPulse { 0%,100%{opacity:.4} 50%{opacity:.9} }
         .ag-slot-btn:hover:not(:disabled) {
           border-color: ${theme} !important;
-          color: #fff !important;
+          color: var(--c-text) !important;
           background: rgba(${themeRgb}, 0.08) !important;
         }
         .ag-emp-card:hover { border-color: ${theme} !important; }
         .ag-day-btn:hover:not(:disabled):not(.ag-day-sel):not(.ag-day-past) {
-          background: #111827 !important;
-          color: #fff !important;
+          background: var(--c-surface) !important;
+          color: var(--c-text) !important;
         }
         * { box-sizing: border-box; }
       `}</style>
 
       <div style={{
-        minHeight: "100vh", backgroundColor: "#0A0A0A",
+        minHeight: "100vh", backgroundColor: "var(--c-bg)",
         fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
 
@@ -512,7 +512,7 @@ function AgendarContent() {
         <div style={{
           position: "sticky", top: 0, zIndex: 40,
           backgroundColor: "rgba(10,10,10,0.97)", backdropFilter: "blur(12px)",
-          borderBottom: "1px solid #1A1A1A",
+          borderBottom: "1px solid var(--c-border)",
         }}>
           <div style={{
             maxWidth: 760, margin: "0 auto", padding: "0 20px",
@@ -523,14 +523,14 @@ function AgendarContent() {
               style={{
                 background: "none", border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: 6,
-                fontSize: 13, color: "#A1A1AA", fontFamily: "inherit", padding: 0,
+                fontSize: 13, color: "var(--c-text-2)", fontFamily: "inherit", padding: 0,
               }}
             >
               <ChevronLeft size={16} /> Voltar
             </button>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>{business!.name}</p>
-              <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{business!.name}</p>
+              <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0" }}>
                 {step === 1 ? "Escolha data e horário" : step === 2 ? "Seus dados" : "Confirmado!"}
               </p>
             </div>
@@ -539,7 +539,7 @@ function AgendarContent() {
         </div>
 
         {/* Progress */}
-        <div style={{ height: 2, backgroundColor: "#111" }}>
+        <div style={{ height: 2, backgroundColor: "var(--c-surface)" }}>
           <div style={{
             height: "100%",
             background: `linear-gradient(90deg,${theme},#7C3AED)`,
@@ -556,11 +556,11 @@ function AgendarContent() {
 
               {/* Resumo dos serviços */}
               <div style={{
-                backgroundColor: "#09090B", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
                 borderRadius: 18, padding: isMobile ? "14px 16px" : "16px 20px",
                 marginBottom: 16,
               }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#52525B", margin: "0 0 10px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                   Serviços selecionados
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -571,17 +571,17 @@ function AgendarContent() {
                       <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           {isFree && <Gift size={12} color="#10B981" />}
-                          <span style={{ fontSize: 13, color: "#F9FAFB", fontWeight: 500 }}>{s.name}</span>
+                          <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 500 }}>{s.name}</span>
                         </div>
                         <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0 }}>
-                          <span style={{ fontSize: 12, color: "#6B7280" }}>{formatDuration(s.durationMinutes)}</span>
+                          <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{formatDuration(s.durationMinutes)}</span>
                           {disc && disc.effectivePrice < s.price ? (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
                               {isFree ? (
                                 <span style={{ fontSize: 13, color: "#10B981", fontWeight: 700 }}>Grátis</span>
                               ) : (
                                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={{ fontSize: 11, color: "#52525B", textDecoration: "line-through" }}>{formatCurrency(s.price)}</span>
+                                  <span style={{ fontSize: 11, color: "var(--c-text-4)", textDecoration: "line-through" }}>{formatCurrency(s.price)}</span>
                                   <span style={{ fontSize: 13, color: "#10B981", fontWeight: 700 }}>{formatCurrency(disc.effectivePrice)}</span>
                                 </div>
                               )}
@@ -598,13 +598,13 @@ function AgendarContent() {
                   })}
                 </div>
                 {selectedServices.length > 1 && (
-                  <div style={{ borderTop: "1px solid #1F1F1F", marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 12, color: "#6B7280" }}>Total</span>
+                  <div style={{ borderTop: "1px solid var(--c-border)", marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>Total</span>
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: "#6B7280" }}>{formatDuration(totalSelected.duration)}</span>
+                      <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{formatDuration(totalSelected.duration)}</span>
                       {hasAnyDiscount ? (
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#52525B", textDecoration: "line-through" }}>{formatCurrency(totalSelected.price)}</span>
+                          <span style={{ fontSize: 11, color: "var(--c-text-4)", textDecoration: "line-through" }}>{formatCurrency(totalSelected.price)}</span>
                           <span style={{ fontSize: 13, color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalWithDiscount)}</span>
                         </div>
                       ) : (
@@ -614,7 +614,7 @@ function AgendarContent() {
                   </div>
                 )}
                 {hasAnyDiscount && (
-                  <div style={{ borderTop: "1px solid #1F1F1F", marginTop: 10, paddingTop: 10 }}>
+                  <div style={{ borderTop: "1px solid var(--c-border)", marginTop: 10, paddingTop: 10 }}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 8, padding: "6px 10px" }}>
                       <Percent size={12} color="#10B981" />
                       <span style={{ fontSize: 12, color: "#10B981", fontWeight: 600 }}>
@@ -628,17 +628,17 @@ function AgendarContent() {
               {/* ── Profissional ── */}
               {showEmpStep && (
                 <div style={{
-                  backgroundColor: "#09090B", border: "1px solid #1F1F1F",
+                  backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
                   borderRadius: 18, padding: isMobile ? "14px 16px" : "16px 20px",
                   marginBottom: 16,
                 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#52525B", margin: "0 0 14px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text-4)", margin: "0 0 14px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                     Com quem você quer ser atendido?
                   </p>
                   {loadingEmployees ? (
                     <div style={{ display: "flex", gap: 10 }}>
                       {[1,2,3].map(i => (
-                        <div key={i} style={{ width: 82, height: 104, borderRadius: 14, backgroundColor: "#111827", animation: `skPulse 1.4s ease ${i*0.1}s infinite` }} />
+                        <div key={i} style={{ width: 82, height: 104, borderRadius: 14, backgroundColor: "var(--c-surface)", animation: `skPulse 1.4s ease ${i*0.1}s infinite` }} />
                       ))}
                     </div>
                   ) : (
@@ -666,14 +666,14 @@ function AgendarContent() {
 
               {/* ── Calendário + Slots (layout 2 colunas no desktop) ── */}
               <div style={{
-                backgroundColor: "#09090B", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
                 borderRadius: 18, padding: isMobile ? "14px 14px" : "20px 24px",
                 marginBottom: 16,
               }}>
-                <p style={{ fontSize: 15, fontWeight: 600, color: "#F9FAFB", margin: "0 0 4px" }}>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: "0 0 4px" }}>
                   Escolha a data e o horário
                 </p>
-                <p style={{ fontSize: 12, color: "#9CA3AF", margin: "0 0 18px" }}>
+                <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: "0 0 18px" }}>
                   Selecione o dia no calendário e depois o horário disponível.
                 </p>
 
@@ -685,7 +685,7 @@ function AgendarContent() {
 
                   {/* Calendário */}
                   <div style={{
-                    backgroundColor: "#0B0B0F", border: "1px solid #1F2937",
+                    backgroundColor: "#0B0B0F", border: "1px solid var(--c-surface-2)",
                     borderRadius: 14, padding: isMobile ? 12 : 16,
                     marginBottom: isMobile ? 16 : 0,
                   }}>
@@ -695,23 +695,23 @@ function AgendarContent() {
                         onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n })}
                         style={{
                           width: isMobile ? 28 : 32, height: isMobile ? 28 : 32,
-                          borderRadius: "50%", backgroundColor: "#111827",
-                          border: "1px solid #1F2937", color: "#E5E7EB",
+                          borderRadius: "50%", backgroundColor: "var(--c-surface)",
+                          border: "1px solid var(--c-surface-2)", color: "var(--c-text-2)",
                           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                           flexShrink: 0,
                         }}
                       >
                         <ChevronLeft size={14} />
                       </button>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "#F9FAFB" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>
                         {MONTHS[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
                       </span>
                       <button
                         onClick={() => setCalendarMonth(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n })}
                         style={{
                           width: isMobile ? 28 : 32, height: isMobile ? 28 : 32,
-                          borderRadius: "50%", backgroundColor: "#111827",
-                          border: "1px solid #1F2937", color: "#E5E7EB",
+                          borderRadius: "50%", backgroundColor: "var(--c-surface)",
+                          border: "1px solid var(--c-surface-2)", color: "var(--c-text-2)",
                           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                           flexShrink: 0,
                         }}
@@ -723,7 +723,7 @@ function AgendarContent() {
                     {/* Labels dias da semana */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", marginBottom: 4 }}>
                       {WEEKDAYS.map(d => (
-                        <div key={d} style={{ textAlign: "center", fontSize: 11, color: "#6B7280", fontWeight: 500, paddingBottom: 4 }}>
+                        <div key={d} style={{ textAlign: "center", fontSize: 11, color: "var(--c-text-3)", fontWeight: 500, paddingBottom: 4 }}>
                           {d.charAt(0)}
                         </div>
                       ))}
@@ -766,7 +766,7 @@ function AgendarContent() {
                                   fontSize: 13, fontWeight: sel || tod ? 600 : 400,
                                   border: tod && !sel ? `1px solid ${theme}` : "none",
                                   background: sel ? theme : "transparent",
-                                  color: past ? "#4B5563" : sel ? "#fff" : tod ? theme : "#D1D5DB",
+                                  color: past ? "var(--c-text-4)" : sel ? "var(--c-text)" : tod ? theme : "var(--c-text-2)",
                                   cursor: past ? "not-allowed" : "pointer",
                                   fontFamily: "inherit",
                                   transition: "all 0.12s",
@@ -784,14 +784,14 @@ function AgendarContent() {
 
                   {/* Slots */}
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#E5E7EB", margin: "0 0 10px" }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text-2)", margin: "0 0 10px" }}>
                       {selectedDate
                         ? `Horários — ${new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}`
                         : "Selecione uma data"}
                     </p>
 
                     {!selectedDate && (
-                      <p style={{ fontSize: 12, color: "#6B7280", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
                         Escolha um dia no calendário para ver os horários disponíveis.
                       </p>
                     )}
@@ -800,7 +800,7 @@ function AgendarContent() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(80px,1fr))", gap: 8 }}>
                         {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} style={{
-                            height: 34, borderRadius: 10, backgroundColor: "#111827",
+                            height: 34, borderRadius: 10, backgroundColor: "var(--c-surface)",
                             animation: `skPulse 1.4s ease ${i*0.05}s infinite`,
                           }} />
                         ))}
@@ -808,7 +808,7 @@ function AgendarContent() {
                     )}
 
                     {selectedDate && !loadingSlots && availableSlots.length === 0 && (
-                      <p style={{ fontSize: 12, color: "#6B7280", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
                         Nenhum horário disponível. Tente outra data.
                       </p>
                     )}
@@ -834,9 +834,9 @@ function AgendarContent() {
                               title={disabled ? "Horário indisponível" : undefined}
                               style={{
                                 height: 34, borderRadius: 10, fontSize: 13, fontWeight: sel ? 700 : 500,
-                                background:  sel     ? theme   : disabled ? "#0D0D0D" : "#020617",
-                                border:      sel     ? `1px solid ${theme}` : disabled ? "1px solid #161616" : "1px solid #1F2937",
-                                color:       sel     ? "#fff"  : disabled ? "#3F3F46" : "#E5E7EB",
+                                background:  sel     ? theme   : disabled ? "var(--c-elevated)" : "#020617",
+                                border:      sel     ? `1px solid ${theme}` : disabled ? "1px solid var(--c-surface-2)" : "1px solid var(--c-surface-2)",
+                                color:       sel     ? "var(--c-text)"  : disabled ? "var(--c-text-4)" : "var(--c-text-2)",
                                 opacity:     disabled ? 0.35   : 1,
                                 cursor:      disabled ? "not-allowed" : "pointer",
                                 pointerEvents: disabled ? "none" : "auto",
@@ -853,7 +853,7 @@ function AgendarContent() {
 
                     {selectedDate && !loadingSlots && availableSlots.length > 0 &&
                       availableSlots.every(s => !s.available) && (
-                      <p style={{ fontSize: 12, color: "#6B7280", margin: "8px 0 0", textAlign: "center" }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "8px 0 0", textAlign: "center" }}>
                         Nenhum horário disponível para este profissional neste dia.
                       </p>
                     )}
@@ -868,7 +868,7 @@ function AgendarContent() {
                   style={{
                     width: "100%", height: 50, borderRadius: 14,
                     background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
-                    border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
+                    border: "none", color: "var(--c-text)", fontSize: 15, fontWeight: 700,
                     cursor: "pointer", fontFamily: "inherit",
                     boxShadow: `0 4px 24px rgba(${themeRgb},0.3)`,
                     animation: "fadeAg 0.2s ease",
@@ -886,10 +886,10 @@ function AgendarContent() {
 
               {/* Resumo do agendamento */}
               <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                 borderRadius: 16, padding: "16px 20px", marginBottom: 20,
               }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#52525B", margin: "0 0 10px", letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.04em" }}>
                   SEU AGENDAMENTO
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -910,7 +910,7 @@ function AgendarContent() {
                   {hasAnyDiscount && (
                     <>
                       <SummaryRow label={`Desconto assinante — ${activeSub?.planName}`} value={`-${formatCurrency(totalSelected.price - totalWithDiscount)}`} />
-                      <div style={{ borderTop: "1px solid #1F1F1F", marginTop: 4, paddingTop: 6, display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <div style={{ borderTop: "1px solid var(--c-border)", marginTop: 4, paddingTop: 6, display: "flex", justifyContent: "space-between", gap: 12 }}>
                         <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600 }}>Valor final</span>
                         <span style={{ fontSize: 14, color: "#10B981", fontWeight: 800 }}>
                           {formatCurrency(totalWithDiscount)}
@@ -923,10 +923,10 @@ function AgendarContent() {
 
               {/* Dados cliente */}
               <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                 borderRadius: 16, padding: "16px 20px", marginBottom: 16,
               }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#52525B", margin: "0 0 14px", letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-4)", margin: "0 0 14px", letterSpacing: "0.04em" }}>
                   SEUS DADOS
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -938,10 +938,10 @@ function AgendarContent() {
 
               {/* Dados veículo */}
               <div style={{
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                 borderRadius: 16, padding: "16px 20px", marginBottom: 16,
               }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#52525B", margin: "0 0 14px", letterSpacing: "0.04em" }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-4)", margin: "0 0 14px", letterSpacing: "0.04em" }}>
                   DADOS DO VEÍCULO
                 </p>
 
@@ -954,9 +954,9 @@ function AgendarContent() {
                       style={{
                         height: 32, padding: "0 14px", borderRadius: 8, fontSize: 12,
                         fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
-                        border: vehicleType === t ? `1px solid ${theme}` : "1px solid #2A2A2A",
+                        border: vehicleType === t ? `1px solid ${theme}` : "1px solid var(--c-border-2)",
                         background: vehicleType === t ? `rgba(${themeRgb},0.1)` : "transparent",
-                        color: vehicleType === t ? theme : "#71717A",
+                        color: vehicleType === t ? theme : "var(--c-text-3)",
                       }}
                     >
                       {VEHICLE_TYPE_LABELS[t]}
@@ -995,8 +995,8 @@ function AgendarContent() {
                 disabled={submitting}
                 style={{
                   width: "100%", height: 48, borderRadius: 14,
-                  background: submitting ? "#1A1A1A" : `linear-gradient(135deg, #10B981, #059669)`,
-                  border: "none", color: submitting ? "#52525B" : "#fff",
+                  background: submitting ? "var(--c-border)" : `linear-gradient(135deg, #10B981, #059669)`,
+                  border: "none", color: submitting ? "var(--c-text-4)" : "var(--c-text)",
                   fontSize: 15, fontWeight: 700,
                   cursor: submitting ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
@@ -1005,7 +1005,7 @@ function AgendarContent() {
               >
                 {submitting ? (
                   <>
-                    <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid #3F3F46", borderTopColor: "#fff", animation: "spinAg 0.7s linear infinite" }} />
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid var(--c-text-4)", borderTopColor: "var(--c-text)", animation: "spinAg 0.7s linear infinite" }} />
                     Confirmando...
                   </>
                 ) : (
@@ -1043,19 +1043,19 @@ function AgendarContent() {
                     margin: "0 auto 16px",
                     boxShadow: `0 8px 32px rgba(${themeRgb}, 0.25)`,
                   }}>
-                    <CheckCircle2 size={30} color="#fff" />
+                    <CheckCircle2 size={30} color="var(--c-text)" />
                   </div>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: "0 0 6px" }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: "0 0 6px" }}>
                     Agendamento confirmado
                   </h2>
-                  <p style={{ fontSize: 13, color: "#71717A", margin: 0 }}>
+                  <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: 0 }}>
                     Tudo certo! Aqui está o resumo do seu agendamento.
                   </p>
                 </div>
 
                 {/* Resumo */}
                 <div style={{
-                  backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                  backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                   borderRadius: 16, padding: "16px 20px", marginBottom: 16, textAlign: "left",
                 }}>
                   <SummaryRow label="Serviços" value={svcNames} />
@@ -1065,7 +1065,7 @@ function AgendarContent() {
                   <SummaryRow label="Valor" value={formatCurrency(finalPrice)} />
                   {business!.address && (
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, color: "#71717A", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: 13, color: "var(--c-text-3)", display: "flex", alignItems: "center", gap: 4 }}>
                         <MapPin size={12} /> Local
                       </span>
                       <a
@@ -1082,10 +1082,10 @@ function AgendarContent() {
 
                 {/* O que acontece agora */}
                 <div style={{
-                  backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+                  backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
                   borderRadius: 14, padding: "14px 16px", marginBottom: 16,
                 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "#52525B", margin: "0 0 10px", letterSpacing: "0.03em" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.03em" }}>
                     O QUE ACONTECE AGORA
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1094,21 +1094,21 @@ function AgendarContent() {
                         <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Clock size={13} color={theme} />
                         </div>
-                        <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Você receberá uma confirmação por e-mail</span>
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Você receberá uma confirmação por e-mail</span>
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                       <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <Bell size={13} color={theme} />
                       </div>
-                      <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Enviaremos um lembrete 24h antes do horário</span>
+                      <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Enviaremos um lembrete 24h antes do horário</span>
                     </div>
                     {business!.address && (
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <MapPin size={13} color={theme} />
                         </div>
-                        <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.4 }}>Compareça no endereço no horário marcado</span>
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Compareça no endereço no horário marcado</span>
                       </div>
                     )}
                   </div>
@@ -1124,8 +1124,8 @@ function AgendarContent() {
                     style={{
                       width: "100%", height: 44, borderRadius: 12, fontSize: 13, fontWeight: 500,
                       backgroundColor: "transparent",
-                      border: "1px solid #1F1F1F",
-                      color: "#A1A1AA", cursor: "pointer",
+                      border: "1px solid var(--c-border)",
+                      color: "var(--c-text-2)", cursor: "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                       fontFamily: "inherit", transition: "all 0.15s", marginBottom: 12,
                     }}
@@ -1150,10 +1150,10 @@ function AgendarContent() {
                       <Percent size={14} color="#7C3AED" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, color: "#D1D5DB", margin: "0 0 2px", fontWeight: 500 }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: "0 0 2px", fontWeight: 500 }}>
                         Economize nas próximas visitas
                       </p>
-                      <p style={{ fontSize: 11, color: "#71717A", margin: 0 }}>
+                      <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: 0 }}>
                         Planos a partir de {formatCurrency(cheapestPlan.price)}/mês com desconto em serviços
                       </p>
                     </div>
@@ -1177,7 +1177,7 @@ function AgendarContent() {
                   style={{
                     width: "100%", height: 48, borderRadius: 14,
                     background: `linear-gradient(135deg, ${theme}, #7C3AED)`,
-                    border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
+                    border: "none", color: "var(--c-text)", fontSize: 15, fontWeight: 700,
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
@@ -1209,8 +1209,8 @@ function EmployeeCard({
       onClick={onSelect}
       style={{
         width: 90, padding: "12px 8px",
-        backgroundColor: selected ? `rgba(${themeRgb},0.07)` : "#161616",
-        border: selected ? `1px solid ${theme}` : "1px solid #1F1F1F",
+        backgroundColor: selected ? `rgba(${themeRgb},0.07)` : "var(--c-surface-2)",
+        border: selected ? `1px solid ${theme}` : "1px solid var(--c-border)",
         borderRadius: 14, cursor: "pointer",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
         transition: "all 0.15s", flexShrink: 0,
@@ -1222,7 +1222,7 @@ function EmployeeCard({
           src={emp.avatarUrl}
           alt={emp.name}
           style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover",
-            border: selected ? `2px solid ${theme}` : "2px solid #2A2A2A",
+            border: selected ? `2px solid ${theme}` : "2px solid var(--c-border-2)",
           }}
         />
       ) : (
@@ -1230,10 +1230,10 @@ function EmployeeCard({
           width: 44, height: 44, borderRadius: "50%",
           background: selected
             ? `linear-gradient(135deg, ${theme}, ${theme}99)`
-            : "linear-gradient(135deg,#2A2A2A,#1A1A1A)",
+            : "linear-gradient(135deg,var(--c-border-2),var(--c-border))",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 16, fontWeight: 700,
-          color: selected ? "#fff" : "#52525B",
+          color: selected ? "var(--c-text)" : "var(--c-text-4)",
         }}>
           {initials}
         </div>
@@ -1242,7 +1242,7 @@ function EmployeeCard({
       {/* Nome */}
       <span style={{
         fontSize: 11, fontWeight: 500, textAlign: "center", lineHeight: 1.3,
-        color: selected ? "#fff" : "#A1A1AA",
+        color: selected ? "var(--c-text)" : "var(--c-text-2)",
         maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
         {emp.name}
@@ -1266,8 +1266,8 @@ function EmployeeCard({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-      <span style={{ fontSize: 13, color: "#71717A" }}>{label}</span>
-      <span style={{ fontSize: 13, color: "#fff", fontWeight: 500, textAlign: "right" }}>{value}</span>
+      <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>{label}</span>
+      <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 500, textAlign: "right" }}>{value}</span>
     </div>
   )
 }

@@ -30,7 +30,7 @@ function Field({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 11, fontWeight: 500, color: "#71717A", letterSpacing: "0.03em" }}>
+      <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>
         {label} {required && <span style={{ color: "#EF4444" }}>*</span>}
       </label>
       <input
@@ -40,8 +40,8 @@ function Field({
         placeholder={placeholder}
         style={{
           height: 40, padding: "0 12px", borderRadius: 10,
-          border: "1px solid #2A2A2A", backgroundColor: "#161616",
-          color: "#fff", fontSize: 14, outline: "none",
+          border: "1px solid var(--c-border-2)", backgroundColor: "var(--c-surface-2)",
+          color: "var(--c-text)", fontSize: 14, outline: "none",
           fontFamily: "inherit", boxSizing: "border-box", width: "100%",
         }}
       />
@@ -54,7 +54,7 @@ export default function EmployeesPage() {
     <Suspense fallback={
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
       </div>
     }>
       <EmployeesContent />
@@ -188,8 +188,8 @@ function EmployeesContent() {
         {/* ── Header ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Equipe</h1>
-            <p style={{ fontSize: 13, color: "#52525B", margin: "4px 0 0" }}>Gerencie os funcionários da sua loja</p>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Equipe</h1>
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: "4px 0 0" }}>Gerencie os funcionários da sua loja</p>
           </div>
           <button
             onClick={openCreate}
@@ -225,19 +225,19 @@ function EmployeesContent() {
         {loading && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
             {[1, 2, 3].map(i => (
-              <div key={i} style={{ height: 140, backgroundColor: "#111111", border: "1px solid #1F1F1F", borderRadius: 16, animation: `skelEmp 1.5s ease ${i * 0.1}s infinite` }} />
+              <div key={i} style={{ height: 140, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, animation: `skelEmp 1.5s ease ${i * 0.1}s infinite` }} />
             ))}
           </div>
         )}
 
         {/* ── Empty state ── */}
         {!loading && employees.length === 0 && (
-          <div style={{ backgroundColor: "#111111", border: "1px solid #1F1F1F", borderRadius: 20, padding: "64px 20px", textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: "#161616", border: "1px solid #1F1F1F", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <Users size={26} color="#2A2A2A" />
+          <div style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, padding: "64px 20px", textAlign: "center" }}>
+            <div style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Users size={26} color="var(--c-border-2)" />
             </div>
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", margin: 0 }}>Nenhum funcionário cadastrado ainda</p>
-            <p style={{ fontSize: 13, color: "#52525B", marginTop: 6 }}>Adicione sua equipe para que clientes possam escolher o profissional</p>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>Nenhum funcionário cadastrado ainda</p>
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 6 }}>Adicione sua equipe para que clientes possam escolher o profissional</p>
             <button
               onClick={openCreate}
               style={{ marginTop: 20, padding: "10px 22px", background: "linear-gradient(135deg, #0066FF, #7C3AED)", border: "none", borderRadius: 12, color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
@@ -258,8 +258,8 @@ function EmployeesContent() {
                   onMouseEnter={() => setHoveredId(emp.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
-                    backgroundColor: "#111111",
-                    border: `1px solid ${isHov ? "#2A2A2A" : "#1F1F1F"}`,
+                    backgroundColor: "var(--c-surface)",
+                    border: `1px solid ${isHov ? "var(--c-border-2)" : "var(--c-border)"}`,
                     borderRadius: 16, padding: 20,
                     transition: "border-color 0.15s",
                   }}
@@ -270,18 +270,18 @@ function EmployeesContent() {
                       width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
                       background: "linear-gradient(135deg, #0066FF, #7C3AED)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, fontWeight: 700, color: "#fff",
+                      fontSize: 16, fontWeight: 700, color: "var(--c-text)",
                     }}>
                       {getInitials(emp.name)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.name}</p>
-                      <p style={{ fontSize: 12, color: "#52525B", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.email}</p>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.name}</p>
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.email}</p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
                       <span style={{
                         fontSize: 10, fontWeight: 600, borderRadius: 99, padding: "3px 8px",
-                        color:           emp.active ? "#10B981" : "#71717A",
+                        color:           emp.active ? "#10B981" : "var(--c-text-3)",
                         backgroundColor: emp.active ? "rgba(16,185,129,0.1)" : "rgba(113,113,122,0.1)",
                         border:          emp.active ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(113,113,122,0.2)",
                       }}>
@@ -290,7 +290,7 @@ function EmployeesContent() {
                       {/* ── Calendar status badge ── */}
                       <span style={{
                         fontSize: 10, fontWeight: 600,
-                        color:           emp.calendarConnected ? "#3B82F6" : "#52525B",
+                        color:           emp.calendarConnected ? "#3B82F6" : "var(--c-text-4)",
                         backgroundColor: emp.calendarConnected ? "rgba(59,130,246,0.1)" : "rgba(82,82,91,0.1)",
                         border:          emp.calendarConnected ? "1px solid rgba(59,130,246,0.2)" : "1px solid rgba(82,82,91,0.2)",
                         borderRadius: 99, padding: "3px 8px",
@@ -306,7 +306,7 @@ function EmployeesContent() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                     <button
                       onClick={() => openEdit(emp)}
-                      style={{ flex: 1, minWidth: 70, height: 34, borderRadius: 8, border: "1px solid #2A2A2A", backgroundColor: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit" }}
+                      style={{ flex: 1, minWidth: 70, height: 34, borderRadius: 8, border: "1px solid var(--c-border-2)", backgroundColor: "transparent", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "inherit" }}
                     >
                       <Pencil size={12} /> Editar
                     </button>
@@ -378,16 +378,16 @@ function EmployeesContent() {
           <div onClick={closeModal} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", zIndex: 100 }} />
           <div style={{
             position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-            backgroundColor: "#111111", border: "1px solid #1F1F1F", borderRadius: 20,
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20,
             width: 440, padding: 28, zIndex: 101,
             boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
             animation: "fadeIn 0.2s ease",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 {showModal === "create" ? "Novo funcionário" : "Editar funcionário"}
               </h2>
-              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer", color: "#52525B", padding: 4 }}>
+              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-text-4)", padding: 4 }}>
                 <X size={18} />
               </button>
             </div>
@@ -407,7 +407,7 @@ function EmployeesContent() {
             <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
               <button
                 onClick={closeModal}
-                style={{ flex: 1, height: 44, borderRadius: 12, border: "1px solid #2A2A2A", backgroundColor: "transparent", color: "#A1A1AA", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: "1px solid var(--c-border-2)", backgroundColor: "transparent", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
               >
                 Cancelar
               </button>
@@ -417,7 +417,7 @@ function EmployeesContent() {
                 style={{ flex: 2, height: 44, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0066FF, #7C3AED)", color: "white", fontSize: 14, fontWeight: 600, cursor: actionLoading === "save" ? "not-allowed" : "pointer", opacity: actionLoading === "save" ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}
               >
                 {actionLoading === "save"
-                  ? <><span style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spinEmp 0.7s linear infinite", display: "inline-block" }} /> Salvando...</>
+                  ? <><span style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "var(--c-text)", animation: "spinEmp 0.7s linear infinite", display: "inline-block" }} /> Salvando...</>
                   : "Salvar"}
               </button>
             </div>

@@ -32,7 +32,7 @@ export default function RootPage() {
         position: "relative",
         minHeight: "100vh",
         background: "#0A0A0B",
-        color: "#FAFAFA",
+        color: "var(--c-text)",
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         overflow: "hidden",
       }}
@@ -99,7 +99,7 @@ export default function RootPage() {
                 justifyContent: "center",
                 fontSize: 16,
                 fontWeight: 800,
-                color: "#fff",
+                color: "var(--c-text)",
                 boxShadow: "0 4px 16px rgba(0,102,255,0.35)",
               }}
             >
@@ -110,7 +110,7 @@ export default function RootPage() {
                 fontSize: 18,
                 fontWeight: 700,
                 letterSpacing: "-0.02em",
-                color: "#FAFAFA",
+                color: "var(--c-text)",
               }}
             >
               Forbion
@@ -123,7 +123,7 @@ export default function RootPage() {
               style={{
                 fontSize: 13,
                 fontWeight: 500,
-                color: "#A1A1AA",
+                color: "var(--c-text-2)",
                 padding: "8px 14px",
                 textDecoration: "none",
               }}
@@ -133,7 +133,7 @@ export default function RootPage() {
             <Link
               href="/auth/login"
               style={{
-                background: "#FAFAFA",
+                background: "var(--c-text)",
                 color: "#0A0A0B",
                 padding: "9px 20px",
                 borderRadius: 10,
@@ -173,7 +173,7 @@ export default function RootPage() {
             >
               <span
                 style={{
-                  background: "#FAFAFA",
+                  background: "var(--c-text)",
                   color: "#0A0A0B",
                   padding: "2px 10px",
                   borderRadius: 100,
@@ -193,7 +193,7 @@ export default function RootPage() {
                 letterSpacing: "-0.03em",
                 lineHeight: 1.05,
                 margin: "0 0 24px",
-                color: "#FAFAFA",
+                color: "var(--c-text)",
               }}
             >
               Gerencie sua{" "}
@@ -215,7 +215,7 @@ export default function RootPage() {
             <p
               style={{
                 fontSize: 17,
-                color: "#A1A1AA",
+                color: "var(--c-text-2)",
                 maxWidth: 560,
                 margin: "0 auto 36px",
                 lineHeight: 1.65,
@@ -237,7 +237,7 @@ export default function RootPage() {
                 href="/auth/login"
                 style={{
                   background: "linear-gradient(135deg, #0066FF, #2563EB)",
-                  color: "#fff",
+                  color: "var(--c-text)",
                   padding: "14px 28px",
                   borderRadius: 12,
                   fontSize: 15,
@@ -275,7 +275,7 @@ export default function RootPage() {
               </a>
             </div>
 
-            <p style={{ fontSize: 12, color: "#52525B", marginTop: 20 }}>
+            <p style={{ fontSize: 12, color: "var(--c-text-4)", marginTop: 20 }}>
               Sem cartão de crédito para começar · Cancele quando quiser
             </p>
           </section>
@@ -337,7 +337,7 @@ export default function RootPage() {
                     fontSize: 16,
                     fontWeight: 700,
                     margin: "0 0 10px",
-                    color: "#FAFAFA",
+                    color: "var(--c-text)",
                     letterSpacing: "-0.01em",
                   }}
                 >
@@ -346,7 +346,7 @@ export default function RootPage() {
                 <p
                   style={{
                     fontSize: 14,
-                    color: "#A1A1AA",
+                    color: "var(--c-text-2)",
                     margin: 0,
                     lineHeight: 1.6,
                   }}
@@ -364,7 +364,7 @@ export default function RootPage() {
             borderTop: "1px solid rgba(255,255,255,0.06)",
             padding: "28px 32px",
             textAlign: "center",
-            color: "#71717A",
+            color: "var(--c-text-3)",
             fontSize: 13,
           }}
         >
@@ -379,13 +379,13 @@ export default function RootPage() {
             }}
           >
             <span>© {new Date().getFullYear()} Forbion. Todos os direitos reservados.</span>
-            <a href="https://forbion.digital" style={{ color: "#71717A", textDecoration: "none" }}>
+            <a href="https://forbion.digital" style={{ color: "var(--c-text-3)", textDecoration: "none" }}>
               Site
             </a>
-            <Link href="/terms" style={{ color: "#71717A", textDecoration: "none" }}>
+            <Link href="/terms" style={{ color: "var(--c-text-3)", textDecoration: "none" }}>
               Termos
             </Link>
-            <Link href="/privacy" style={{ color: "#71717A", textDecoration: "none" }}>
+            <Link href="/privacy" style={{ color: "var(--c-text-3)", textDecoration: "none" }}>
               Privacidade
             </Link>
           </div>

@@ -36,12 +36,12 @@ function waLink(phone: string | null, name: string) {
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   return (
-    <div style={{ backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 14, padding: "16px 18px" }}>
+    <div style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, padding: "16px 18px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <span style={{ color }}>{icon}</span>
-        <span style={{ fontSize: 12, color: "#A1A1AA", fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 500 }}>{label}</span>
       </div>
-      <p style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>{value}</p>
+      <p style={{ fontSize: 26, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{value}</p>
     </div>
   )
 }
@@ -66,17 +66,17 @@ export default function RetencaoPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px" }}>
-      <button onClick={() => router.push("/dashboard/relatorios")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginBottom: 14 }}>
+      <button onClick={() => router.push("/dashboard/relatorios")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginBottom: 14 }}>
         <ArrowLeft size={15} /> Relatórios
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <Users size={20} color="#0066FF" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#F9FAFB", margin: 0, letterSpacing: "-0.5px" }}>Retenção de clientes</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Retenção de clientes</h1>
       </div>
-      <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 24px" }}>Quem está voltando, quem sumiu, e quanto de receita está em risco.</p>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Quem está voltando, quem sumiu, e quanto de receita está em risco.</p>
 
-      {loading && <p style={{ color: "#71717A", fontSize: 14 }}>Carregando…</p>}
+      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
       {!loading && data && (
@@ -86,22 +86,22 @@ export default function RetencaoPage() {
             <AlertTriangle size={26} color="#EF4444" />
             <div>
               <p style={{ fontSize: 13, color: "#FCA5A5", margin: 0, fontWeight: 500 }}>Receita em risco (clientes inativos/perdidos)</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: "2px 0 0" }}>{fmt(data.receitaEmRisco)}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: "2px 0 0" }}>{fmt(data.receitaEmRisco)}</p>
             </div>
-            <span style={{ marginLeft: "auto", fontSize: 12, color: "#71717A", maxWidth: 220, textAlign: "right" }}>
+            <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", maxWidth: 220, textAlign: "right" }}>
               é o ticket médio somado de quem parou de vir. Reative no WhatsApp 👇
             </span>
           </div>
 
           {/* Buckets */}
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" }}>Por recência</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" }}>Por recência</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
             <StatCard icon={<Clock size={16} />} label="Ativos (≤15 dias)" value={data.recency.ativos} color="#10B981" />
             <StatCard icon={<Clock size={16} />} label="Inativos (15-30 dias)" value={data.recency.inativos} color="#F59E0B" />
             <StatCard icon={<Clock size={16} />} label="Perdidos (30+ dias)" value={data.recency.perdidos} color="#EF4444" />
           </div>
 
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: "#A1A1AA", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" }}>Por frequência</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" }}>Por frequência</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
             <StatCard icon={<UserPlus size={16} />} label="Novos (1 visita)" value={data.frequency.novos} color="#0066FF" />
             <StatCard icon={<Repeat size={16} />} label="Recorrentes (2-3)" value={data.frequency.recorrentes} color="#7C3AED" />
@@ -109,24 +109,24 @@ export default function RetencaoPage() {
           </div>
 
           {/* Recuperáveis */}
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: "0 0 12px" }}>
-            Clientes a recuperar <span style={{ color: "#71717A", fontWeight: 400, fontSize: 13 }}>({data.recuperaveis.length})</span>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: "0 0 12px" }}>
+            Clientes a recuperar <span style={{ color: "var(--c-text-3)", fontWeight: 400, fontSize: 13 }}>({data.recuperaveis.length})</span>
           </h2>
           {data.recuperaveis.length === 0 ? (
-            <p style={{ color: "#71717A", fontSize: 14 }}>Nenhum cliente inativo no momento. 🎉</p>
+            <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Nenhum cliente inativo no momento. 🎉</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.recuperaveis.map((c) => {
                 const link = waLink(c.phone, c.name)
-                const b = BUCKET_LABEL[c.bucket] ?? { label: c.bucket, color: "#71717A" }
+                const b = BUCKET_LABEL[c.bucket] ?? { label: c.bucket, color: "var(--c-text-3)" }
                 return (
-                  <div key={c.customerId} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F", borderRadius: 12, padding: "12px 16px" }}>
+                  <div key={c.customerId} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "12px 16px" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{c.name}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{c.name}</span>
                         <span style={{ fontSize: 10, fontWeight: 600, color: b.color, backgroundColor: `${b.color}1A`, border: `1px solid ${b.color}33`, borderRadius: 6, padding: "1px 7px" }}>{b.label}</span>
                       </div>
-                      <p style={{ fontSize: 12, color: "#71717A", margin: "2px 0 0" }}>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>
                         Última visita há {c.lastVisitDays} dias · {c.visits} visita{c.visits !== 1 ? "s" : ""} · gastou {fmt(c.totalSpent)} · ticket médio {fmt(c.avgTicket)}
                       </p>
                     </div>
@@ -135,7 +135,7 @@ export default function RetencaoPage() {
                         <MessageCircle size={14} /> WhatsApp
                       </a>
                     ) : (
-                      <span style={{ fontSize: 11, color: "#52525B", flexShrink: 0 }}>sem telefone</span>
+                      <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>sem telefone</span>
                     )}
                   </div>
                 )

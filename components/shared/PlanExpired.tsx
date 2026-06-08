@@ -45,7 +45,7 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#0A0A0A",
+      backgroundColor: "var(--c-bg)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       padding: 24,
     }}>
@@ -66,24 +66,24 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
         </div>
 
         {/* Title */}
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: "0 0 12px" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: "0 0 12px" }}>
           {planStatus.isTrial
             ? "Seu período de teste terminou"
             : "Seu plano expirou"}
         </h1>
 
         {/* Subtitle */}
-        <p style={{ fontSize: 15, color: "#A1A1AA", lineHeight: 1.6, margin: "0 0 32px" }}>
+        <p style={{ fontSize: 15, color: "var(--c-text-2)", lineHeight: 1.6, margin: "0 0 32px" }}>
           {planStatus.isTrial ? (
             <>
-              Seu teste gratuito do plano <strong style={{ color: "#fff" }}>{planLabel}</strong>{" "}
-              {expiredDate ? <>terminou em <strong style={{ color: "#fff" }}>{expiredDate}</strong></> : "expirou"}.
+              Seu teste gratuito do plano <strong style={{ color: "var(--c-text)" }}>{planLabel}</strong>{" "}
+              {expiredDate ? <>terminou em <strong style={{ color: "var(--c-text)" }}>{expiredDate}</strong></> : "expirou"}.
               Assine para continuar gerenciando seus agendamentos.
             </>
           ) : (
             <>
-              Seu plano <strong style={{ color: "#fff" }}>{planLabel}</strong>{" "}
-              {expiredDate ? <>expirou em <strong style={{ color: "#fff" }}>{expiredDate}</strong></> : "expirou"}.
+              Seu plano <strong style={{ color: "var(--c-text)" }}>{planLabel}</strong>{" "}
+              {expiredDate ? <>expirou em <strong style={{ color: "var(--c-text)" }}>{expiredDate}</strong></> : "expirou"}.
               Renove para voltar a usar o dashboard.
             </>
           )}
@@ -98,8 +98,8 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "14px 24px", borderRadius: 12,
-              background: redirecting ? "#27272A" : "linear-gradient(135deg,#0066FF,#7C3AED)",
-              color: "#fff", fontSize: 15, fontWeight: 600,
+              background: redirecting ? "var(--c-text-4)" : "linear-gradient(135deg,#0066FF,#7C3AED)",
+              color: "var(--c-text)", fontSize: 15, fontWeight: 600,
               border: "none", cursor: redirecting ? "wait" : "pointer",
               fontFamily: "inherit",
             }}
@@ -121,9 +121,9 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "12px 24px", borderRadius: 12,
-              backgroundColor: "#111113",
-              border: "1px solid #1F1F1F",
-              color: "#A1A1AA", fontSize: 14, fontWeight: 500,
+              backgroundColor: "var(--c-surface)",
+              border: "1px solid var(--c-border)",
+              color: "var(--c-text-2)", fontSize: 14, fontWeight: 500,
               textDecoration: "none", transition: "all 0.15s",
             }}
           >

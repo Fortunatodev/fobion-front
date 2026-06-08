@@ -63,7 +63,7 @@ const STATUS_LABEL: Record<Status, string> = {
 const STATUS_COLOR: Record<Status, string> = {
   PENDING:  "#F59E0B",
   PAID:     "#10B981",
-  REFUNDED: "#6B7280",
+  REFUNDED: "var(--c-text-3)",
 }
 
 function fmt(cents: number): string {
@@ -206,7 +206,7 @@ export default function RepassesReportPage() {
         }}>
           <Link href="/dashboard/relatorios" style={{
             display: "inline-flex", alignItems: "center", gap: 6,
-            color: "#6B7280", fontSize: 12, textDecoration: "none",
+            color: "var(--c-text-3)", fontSize: 12, textDecoration: "none",
             width: "fit-content",
           }}>
             <ArrowLeft size={12} /> Relatórios
@@ -222,12 +222,12 @@ export default function RepassesReportPage() {
                 <Wallet size={20} color="#0066FF" />
                 <h1 style={{
                   fontSize: isMobile ? 20 : 24, fontWeight: 800,
-                  color: "#F9FAFB", letterSpacing: "-0.5px", margin: 0,
+                  color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0,
                 }}>
                   Repasses
                 </h1>
               </div>
-              <p style={{ fontSize: 13, color: "#6B7280", margin: "4px 0 0 30px" }}>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "4px 0 0 30px" }}>
                 Comissões dos funcionários por execução de serviço
               </p>
             </div>
@@ -235,7 +235,7 @@ export default function RepassesReportPage() {
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{
                 display: "flex", gap: 3,
-                backgroundColor: "#0D0D0D",
+                backgroundColor: "var(--c-elevated)",
                 border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 12, padding: 3,
               }}>
@@ -251,7 +251,7 @@ export default function RepassesReportPage() {
                         cursor: "pointer", transition: "all 0.15s",
                         border: "none", fontFamily: "inherit",
                         backgroundColor: active ? "#0066FF" : "transparent",
-                        color: active ? "#fff" : "#6B7280",
+                        color: active ? "var(--c-text)" : "var(--c-text-3)",
                         boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none",
                       }}
                     >
@@ -268,8 +268,8 @@ export default function RepassesReportPage() {
                   fontSize: 12, fontWeight: 600,
                   cursor: !data || data.transactions.length === 0 ? "not-allowed" : "pointer",
                   border: "1px solid rgba(255,255,255,0.08)",
-                  backgroundColor: "#0D0D0D",
-                  color: !data || data.transactions.length === 0 ? "#4B5563" : "#F9FAFB",
+                  backgroundColor: "var(--c-elevated)",
+                  color: !data || data.transactions.length === 0 ? "var(--c-text-4)" : "var(--c-text)",
                   fontFamily: "inherit",
                   display: "inline-flex", alignItems: "center", gap: 6,
                   opacity: !data || data.transactions.length === 0 ? 0.55 : 1,
@@ -333,7 +333,7 @@ export default function RepassesReportPage() {
           }}>
             {[1,2,3].map(i => (
               <div key={i} style={{
-                backgroundColor: "#0D0D0D",
+                backgroundColor: "var(--c-elevated)",
                 border: "1px solid rgba(255,255,255,0.04)",
                 borderRadius: 16, height: 110,
                 animation: "skR 1.4s ease infinite",
@@ -368,28 +368,28 @@ export default function RepassesReportPage() {
                 label="Estornado (cancelados)"
                 value={data.totals.refunded}
                 icon={<XCircle size={18} />}
-                color="#6B7280"
+                color="var(--c-text-3)"
               />
             </div>
 
             {/* POR FUNCIONÁRIO */}
             <div style={{
-              backgroundColor: "#0D0D0D",
+              backgroundColor: "var(--c-elevated)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 16, padding: isMobile ? "18px 14px" : "20px 24px",
               marginBottom: 16,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                 <Users size={14} color="#0066FF" />
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB", margin: 0 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                   Por funcionário
                 </h3>
               </div>
 
               {data.employees.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "32px 0" }}>
-                  <Receipt size={28} color="#1F1F1F" style={{ margin: "0 auto 8px", display: "block" }} />
-                  <p style={{ fontSize: 13, color: "#4B5563", margin: 0 }}>
+                  <Receipt size={28} color="var(--c-border)" style={{ margin: "0 auto 8px", display: "block" }} />
+                  <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: 0 }}>
                     Nenhum repasse no período.
                   </p>
                   <p style={{ fontSize: 12, color: "#374151", margin: "4px 0 0" }}>
@@ -426,18 +426,18 @@ export default function RepassesReportPage() {
                             }}
                           >
                             {isExpanded
-                              ? <ChevronUp   size={14} color="#6B7280" />
-                              : <ChevronDown size={14} color="#6B7280" />}
+                              ? <ChevronUp   size={14} color="var(--c-text-3)" />
+                              : <ChevronDown size={14} color="var(--c-text-3)" />}
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <p style={{
-                                fontSize: 14, fontWeight: 600, color: "#F9FAFB",
+                                fontSize: 14, fontWeight: 600, color: "var(--c-text)",
                                 margin: 0, overflow: "hidden",
                                 textOverflow: "ellipsis", whiteSpace: "nowrap",
                               }}>
                                 {emp.employeeName}
                                 {!emp.employeeActive && (
                                   <span style={{
-                                    fontSize: 10, color: "#6B7280", marginLeft: 8,
+                                    fontSize: 10, color: "var(--c-text-3)", marginLeft: 8,
                                     border: "1px solid rgba(255,255,255,0.08)",
                                     borderRadius: 4, padding: "1px 6px",
                                   }}>
@@ -445,7 +445,7 @@ export default function RepassesReportPage() {
                                   </span>
                                 )}
                               </p>
-                              <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0" }}>
+                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0" }}>
                                 {emp.transactionCount} repasse{emp.transactionCount !== 1 ? "s" : ""}
                               </p>
                             </div>
@@ -458,7 +458,7 @@ export default function RepassesReportPage() {
                             <Pill label="Pendente"  value={emp.totalPending}  color="#F59E0B" />
                             <Pill label="Pago"      value={emp.totalPaid}     color="#10B981" />
                             {emp.totalRefunded > 0 && (
-                              <Pill label="Estornado" value={emp.totalRefunded} color="#6B7280" />
+                              <Pill label="Estornado" value={emp.totalRefunded} color="var(--c-text-3)" />
                             )}
                             <button
                               onClick={() => handleMarkPaid(emp)}
@@ -471,7 +471,7 @@ export default function RepassesReportPage() {
                                 background: emp.totalPending > 0 && !isMarking
                                   ? "linear-gradient(90deg, #10B981, #059669)"
                                   : "rgba(255,255,255,0.04)",
-                                color: emp.totalPending > 0 && !isMarking ? "#fff" : "#4B5563",
+                                color: emp.totalPending > 0 && !isMarking ? "var(--c-text)" : "var(--c-text-4)",
                                 opacity: isMarking ? 0.6 : 1,
                                 whiteSpace: "nowrap",
                               }}
@@ -488,7 +488,7 @@ export default function RepassesReportPage() {
                             padding: isMobile ? "10px" : "8px 16px 12px",
                           }}>
                             {txs.length === 0 ? (
-                              <p style={{ fontSize: 12, color: "#4B5563", padding: "8px 0" }}>
+                              <p style={{ fontSize: 12, color: "var(--c-text-4)", padding: "8px 0" }}>
                                 Sem transações.
                               </p>
                             ) : (
@@ -506,24 +506,24 @@ export default function RepassesReportPage() {
                                   }}>
                                     <div style={{ minWidth: 0 }}>
                                       <p style={{
-                                        margin: 0, color: "#F9FAFB", fontWeight: 500,
+                                        margin: 0, color: "var(--c-text)", fontWeight: 500,
                                         overflow: "hidden",
                                         textOverflow: "ellipsis", whiteSpace: "nowrap",
                                       }}>
                                         {tx.service?.name ?? "(serviço removido)"}
                                       </p>
-                                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6B7280" }}>
+                                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--c-text-3)" }}>
                                         {tx.schedule ? fmtDate(tx.schedule.scheduledAt) : fmtDate(tx.createdAt)}
                                       </p>
                                     </div>
                                     {!isMobile && (
-                                      <div style={{ color: "#9CA3AF" }}>
+                                      <div style={{ color: "var(--c-text-2)" }}>
                                         {fmt(tx.basePrice)} × {tx.commissionPercent}%
                                       </div>
                                     )}
                                     {!isMobile && (
                                       <div style={{
-                                        textAlign: "right", color: "#F9FAFB", fontWeight: 600,
+                                        textAlign: "right", color: "var(--c-text)", fontWeight: 600,
                                       }}>
                                         {fmt(tx.commissionAmount)}
                                       </div>
@@ -535,7 +535,7 @@ export default function RepassesReportPage() {
                                     )}
                                     {isMobile && (
                                       <div style={{ textAlign: "right" }}>
-                                        <p style={{ margin: 0, color: "#F9FAFB", fontWeight: 600 }}>
+                                        <p style={{ margin: 0, color: "var(--c-text)", fontWeight: 600 }}>
                                           {fmt(tx.commissionAmount)}
                                         </p>
                                         <div style={{ marginTop: 4 }}>
@@ -556,7 +556,7 @@ export default function RepassesReportPage() {
               )}
             </div>
 
-            <p style={{ fontSize: 11, color: "#4B5563", margin: 0, textAlign: "center" }}>
+            <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: 0, textAlign: "center" }}>
               Período: {fmtDate(data.period.startDate)} até {fmtDate(data.period.endDate)}
             </p>
           </>
@@ -571,7 +571,7 @@ function TotalCard({ label, value, icon, color }: {
 }) {
   return (
     <div style={{
-      backgroundColor: "#0D0D0D",
+      backgroundColor: "var(--c-elevated)",
       border: "1px solid rgba(255,255,255,0.06)",
       borderRadius: 16,
       padding: "20px 18px",
@@ -586,11 +586,11 @@ function TotalCard({ label, value, icon, color }: {
         {icon}
       </div>
       <p style={{
-        fontSize: 11, fontWeight: 500, color: "#6B7280", margin: 0,
+        fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", margin: 0,
         textTransform: "uppercase", letterSpacing: "0.6px",
       }}>{label}</p>
       <p style={{
-        fontSize: 26, fontWeight: 800, color: "#F9FAFB",
+        fontSize: 26, fontWeight: 800, color: "var(--c-text)",
         margin: "4px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1,
       }}>{fmt(value)}</p>
     </div>
@@ -604,7 +604,7 @@ function Pill({ label, value, color }: { label: string; value: number; color: st
       minWidth: 80,
     }}>
       <span style={{
-        fontSize: 9, fontWeight: 600, color: "#6B7280",
+        fontSize: 9, fontWeight: 600, color: "var(--c-text-3)",
         textTransform: "uppercase", letterSpacing: "0.6px",
       }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color }}>

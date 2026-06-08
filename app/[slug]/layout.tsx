@@ -112,8 +112,8 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         }
         * { box-sizing:border-box; }
         ::-webkit-scrollbar { width:6px; }
-        ::-webkit-scrollbar-track { background:#0A0A0A; }
-        ::-webkit-scrollbar-thumb { background:#2F2F2F; border-radius:3px; }
+        ::-webkit-scrollbar-track { background:var(--c-bg); }
+        ::-webkit-scrollbar-thumb { background:var(--c-border-2); border-radius:3px; }
 
         /* ✅ Esconde links desktop e auth no mobile */
         @media (max-width: 767px) {
@@ -123,7 +123,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
         {/* ── NAVBAR ── */}
         <nav style={{
@@ -150,12 +150,12 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                     style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", display: "block" }}
                   />
                 ) : (
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white" }}>
                     {(businessName || slug).charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
                 {businessName || slug}
               </span>
             </div>
@@ -166,9 +166,9 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                 <a
                   key={link.href}
                   href={link.href}
-                  style={{ height: 36, padding: "0 14px", borderRadius: 8, display: "flex", alignItems: "center", fontSize: 13, fontWeight: 500, color: "#A1A1AA", textDecoration: "none", transition: "color 0.15s ease, background 0.15s ease", whiteSpace: "nowrap" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "#A1A1AA"; e.currentTarget.style.background = "transparent" }}
+                  style={{ height: 36, padding: "0 14px", borderRadius: 8, display: "flex", alignItems: "center", fontSize: 13, fontWeight: 500, color: "var(--c-text-2)", textDecoration: "none", transition: "color 0.15s ease, background 0.15s ease", whiteSpace: "nowrap" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--c-text)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--c-text-2)"; e.currentTarget.style.background = "transparent" }}
                 >
                   {link.label}
                 </a>
@@ -181,14 +181,14 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                 <>
                   <button
                     onClick={() => router.push(`/${slug}/cliente`)}
-                    style={{ display: "flex", gap: 8, alignItems: "center", height: 36, padding: "0 12px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
+                    style={{ display: "flex", gap: 8, alignItems: "center", height: 36, padding: "0 12px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text)", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.09)" }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
                   >
                     {payload.picture ? (
                       <img src={payload.picture} alt={payload.name} width={22} height={22} style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                      <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "white", fontWeight: 700, flexShrink: 0 }}>
                         {initials}
                       </div>
                     )}
@@ -198,9 +198,9 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   </button>
                   <button
                     onClick={handleLogout}
-                    style={{ height: 36, padding: "0 12px", borderRadius: 10, background: "transparent", border: "1px solid #1F1F1F", color: "#71717A", fontSize: 12, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
+                    style={{ height: 36, padding: "0 12px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 12, cursor: "pointer", transition: "all 0.15s ease", fontFamily: "inherit" }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = "#EF4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)" }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "#71717A"; e.currentTarget.style.borderColor = "#1F1F1F" }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--c-text-3)"; e.currentTarget.style.borderColor = "var(--c-border)" }}
                   >
                     Sair
                   </button>
@@ -208,7 +208,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
               ) : (
                 <button
                   onClick={() => router.push(`/${slug}/login`)}
-                  style={{ height: 36, padding: "0 16px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", transition: "opacity 0.15s ease", fontFamily: "inherit" }}
+                  style={{ height: 36, padding: "0 16px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", transition: "opacity 0.15s ease", fontFamily: "inherit" }}
                   onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85" }}
                   onMouseLeave={(e) => { e.currentTarget.style.opacity = "1" }}
                 >
@@ -220,7 +220,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
             {/* ✅ Burger — só aparece no mobile */}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
-              style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#A1A1AA", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ display: "none", width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text-2)", cursor: "pointer", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               className="slug-burger"
             >
               <span style={{ fontSize: 18, lineHeight: 1 }}>{mobileMenuOpen ? "✕" : "☰"}</span>
@@ -242,15 +242,15 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
             }}
           >
             {/* ✅ Perfil do dono no topo do menu mobile */}
-            <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 20px", borderBottom: "1px solid #111111", marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 20px", borderBottom: "1px solid var(--c-surface)", marginBottom: 8 }}>
               {ownerAvatarUrl ? (
                 <img src={ownerAvatarUrl} alt={businessName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)" }} />
               ) : (
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "white", flexShrink: 0 }}>
                   {(businessName || slug).charAt(0).toUpperCase()}
                 </div>
               )}
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{businessName || slug}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{businessName || slug}</span>
             </div>
 
             <nav style={{ display: "flex", flexDirection: "column", gap: 0, padding: "0 24px" }}>
@@ -259,7 +259,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  style={{ height: 52, display: "flex", alignItems: "center", fontSize: 16, fontWeight: 500, color: "#fff", textDecoration: "none", borderBottom: "1px solid #111111" }}
+                  style={{ height: 52, display: "flex", alignItems: "center", fontSize: 16, fontWeight: 500, color: "var(--c-text)", textDecoration: "none", borderBottom: "1px solid var(--c-surface)" }}
                 >
                   {link.label}
                 </a>
@@ -269,7 +269,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   <>
                     <button
                       onClick={() => { setMobileMenuOpen(false); router.push(`/${slug}/cliente`) }}
-                      style={{ height: 48, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                      style={{ height: 48, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--c-text)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                     >
                       Minha conta
                     </button>
@@ -283,7 +283,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                 ) : (
                   <button
                     onClick={() => { setMobileMenuOpen(false); router.push(`/${slug}/login`) }}
-                    style={{ height: 48, borderRadius: 12, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                    style={{ height: 48, borderRadius: 12, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Entrar com Google
                   </button>
@@ -306,7 +306,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
           justifyContent: "center",
           gap: 6,
         }}>
-          <span style={{ fontSize: 11, color: "#3F3F46" }}>Powered by</span>
+          <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>Powered by</span>
           <ForbionLogo size="sm" as="span" />
         </footer>
       </div>

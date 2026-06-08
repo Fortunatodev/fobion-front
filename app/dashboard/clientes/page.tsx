@@ -50,7 +50,7 @@ function FieldInput({
   const [focused, setFocused] = useState(false)
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6 }}>
+      <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6 }}>
         {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
       </label>
       <input
@@ -61,10 +61,10 @@ function FieldInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
-          height: 42, backgroundColor: "#0A0A0A",
-          border: `1px solid ${focused ? "#0066FF" : "#252525"}`,
+          height: 42, backgroundColor: "var(--c-bg)",
+          border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
           borderRadius: 10, padding: "0 14px",
-          fontSize: 14, color: "#ffffff",
+          fontSize: 14, color: "var(--c-text)",
           outline: "none", width: "100%",
           boxSizing: "border-box",
           transition: "border-color 0.15s ease",
@@ -243,8 +243,8 @@ export default function ClientesPage() {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0);   }
         }
-        input::placeholder { color: #3F3F46; }
-        select option { background: #111111; }
+        input::placeholder { color: var(--c-text-4); }
+        select option { background: var(--c-surface); }
       `}</style>
 
       <div
@@ -274,14 +274,14 @@ export default function ClientesPage() {
               style={{
                 fontSize:      isMobile ? 22 : 28,
                 fontWeight:    800,
-                color:         "#ffffff",
+                color:         "var(--c-text)",
                 margin:        0,
                 letterSpacing: "-0.5px",
               }}
             >
               Clientes
             </h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>
               {loading ? "Carregando..." : `${customers.length} cliente${customers.length !== 1 ? "s" : ""} cadastrado${customers.length !== 1 ? "s" : ""}`}
             </p>
           </div>
@@ -307,7 +307,7 @@ export default function ClientesPage() {
           <div style={{ flex: 1, minWidth: isMobile ? "100%" : 240, position: "relative", width: isMobile ? "100%" : undefined }}>
             <Search
               size={14}
-              color="#52525B"
+              color="var(--c-text-4)"
               style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
             />
             <input
@@ -317,25 +317,25 @@ export default function ClientesPage() {
               style={{
                 width:           "100%",
                 height:          40,
-                backgroundColor: "#111111",
-                border:          "1px solid #1F1F1F",
+                backgroundColor: "var(--c-surface)",
+                border:          "1px solid var(--c-border)",
                 borderRadius:    12,
                 paddingLeft:     36,
                 paddingRight:    14,
                 fontSize:        13,
-                color:           "#ffffff",
+                color:           "var(--c-text)",
                 outline:         "none",
                 boxSizing:       "border-box",
                 fontFamily:      "inherit",
               }}
               onFocus={(e)  => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
-              onBlur={(e)   => { e.target.style.borderColor = "#1F1F1F" }}
+              onBlur={(e)   => { e.target.style.borderColor = "var(--c-border)" }}
             />
           </div>
 
           {/* Stats badges */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <StatBadge value={customers.length} label="Total" color="#A1A1AA" bg="#111111" border="#1F1F1F" />
+            <StatBadge value={customers.length} label="Total" color="var(--c-text-2)" bg="var(--c-surface)" border="var(--c-border)" />
             <StatBadge value={withVehicles}    label="Com veículo" color="#0066FF" bg="rgba(0,102,255,0.06)" border="rgba(0,102,255,0.2)" />
             <StatBadge value={withoutVehicles} label="Sem veículo" color="#F59E0B" bg="rgba(245,158,11,0.06)" border="rgba(245,158,11,0.2)" />
           </div>
@@ -374,8 +374,8 @@ export default function ClientesPage() {
                 key={i}
                 style={{
                   height:          80,
-                  backgroundColor: "#111111",
-                  border:          "1px solid #1F1F1F",
+                  backgroundColor: "var(--c-surface)",
+                  border:          "1px solid var(--c-border)",
                   borderRadius:    16,
                   animation:       `skeletonPulse 1.5s ease-in-out infinite`,
                   animationDelay:  `${i * 0.07}s`,
@@ -388,12 +388,12 @@ export default function ClientesPage() {
         {/* ── EMPTY STATE ─────────────────────────────────────────────────── */}
         {!loading && !error && filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
-            <User size={40} color="#1F1F1F" style={{ margin: "0 auto" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#ffffff", marginTop: 16 }}>
+            <User size={40} color="var(--c-border)" style={{ margin: "0 auto" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
               {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado ainda"}
             </p>
             {searchQuery ? (
-              <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
                 Tente buscar por outro termo
               </p>
             ) : (
@@ -431,8 +431,8 @@ export default function ClientesPage() {
                   onMouseEnter={() => setHoveredId(customer.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
-                    backgroundColor: "#111111",
-                    border:          `1px solid ${hov ? "#252525" : "#1F1F1F"}`,
+                    backgroundColor: "var(--c-surface)",
+                    border:          `1px solid ${hov ? "var(--c-border-2)" : "var(--c-border)"}`,
                     borderRadius:    16,
                     padding:         isMobile ? "14px 14px" : "14px 18px",
                     display:         "flex",
@@ -469,7 +469,7 @@ export default function ClientesPage() {
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "#ffffff" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>
                         {customer.name}
                       </span>
                       {(customer._count?.schedules ?? 0) > 0 && (
@@ -499,8 +499,8 @@ export default function ClientesPage() {
                       }}
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Phone size={11} color="#52525B" />
-                        <span style={{ fontSize: 12, color: "#71717A" }}>{customer.phone}</span>
+                        <Phone size={11} color="var(--c-text-4)" />
+                        <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{customer.phone}</span>
                       </span>
 
                       {/* V2-B3: falar com o cliente no WhatsApp em 1 toque */}
@@ -518,11 +518,11 @@ export default function ClientesPage() {
 
                       {customer.email && (
                         <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                          <Mail size={11} color="#52525B" />
+                          <Mail size={11} color="var(--c-text-4)" />
                           <span
                             style={{
                               fontSize:    12,
-                              color:       "#71717A",
+                              color:       "var(--c-text-3)",
                               overflow:    "hidden",
                               textOverflow:"ellipsis",
                               whiteSpace:  "nowrap",
@@ -535,8 +535,8 @@ export default function ClientesPage() {
                       )}
 
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Calendar size={11} color="#52525B" />
-                        <span style={{ fontSize: 12, color: "#52525B" }}>
+                        <Calendar size={11} color="var(--c-text-4)" />
+                        <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
                           desde {formatDate(customer.createdAt)}
                         </span>
                       </span>
@@ -557,9 +557,9 @@ export default function ClientesPage() {
                       <span
                         style={{
                           fontSize:        11,
-                          color:           "#3F3F46",
-                          backgroundColor: "#161616",
-                          border:          "1px solid #1F1F1F",
+                          color:           "var(--c-text-4)",
+                          backgroundColor: "var(--c-surface-2)",
+                          border:          "1px solid var(--c-border)",
                           borderRadius:    6,
                           padding:         "3px 8px",
                         }}
@@ -574,9 +574,9 @@ export default function ClientesPage() {
                             style={{
                               fontSize:        11,
                               fontWeight:      500,
-                              color:           "#A1A1AA",
-                              backgroundColor: "#161616",
-                              border:          "1px solid #1F1F1F",
+                              color:           "var(--c-text-2)",
+                              backgroundColor: "var(--c-surface-2)",
+                              border:          "1px solid var(--c-border)",
                               borderRadius:    6,
                               padding:         "3px 8px",
                               display:         "flex",
@@ -584,7 +584,7 @@ export default function ClientesPage() {
                               gap:             5,
                             }}
                           >
-                            <Car size={10} color="#52525B" />
+                            <Car size={10} color="var(--c-text-4)" />
                             {v.plate}
                           </span>
                         ))}
@@ -592,9 +592,9 @@ export default function ClientesPage() {
                           <span
                             style={{
                               fontSize:        11,
-                              color:           "#52525B",
-                              backgroundColor: "#161616",
-                              border:          "1px solid #1F1F1F",
+                              color:           "var(--c-text-4)",
+                              backgroundColor: "var(--c-surface-2)",
+                              border:          "1px solid var(--c-border)",
                               borderRadius:    6,
                               padding:         "3px 6px",
                             }}
@@ -625,10 +625,10 @@ export default function ClientesPage() {
 
                     <IconBtn
                       title="Editar cliente"
-                      bg="#161616"
-                      border="#252525"
-                      color="#A1A1AA"
-                      hoverBg="#1F1F1F"
+                      bg="var(--c-surface-2)"
+                      border="var(--c-border-2)"
+                      color="var(--c-text-2)"
+                      hoverBg="var(--c-border)"
                       onClick={(e) => {
                         e.stopPropagation()
                         openEditModal(customer)
@@ -639,10 +639,10 @@ export default function ClientesPage() {
 
                     <IconBtn
                       title="Ver detalhes"
-                      bg="#161616"
-                      border="#252525"
-                      color="#A1A1AA"
-                      hoverBg="#1F1F1F"
+                      bg="var(--c-surface-2)"
+                      border="var(--c-border-2)"
+                      color="var(--c-text-2)"
+                      hoverBg="var(--c-border)"
                       onClick={() => router.push(`/dashboard/clientes/${customer.id}`)}
                     >
                       <ChevronRight size={14} />
@@ -679,8 +679,8 @@ export default function ClientesPage() {
               top:             "50%",
               left:            "50%",
               transform:       "translate(-50%,-50%)",
-              backgroundColor: "#111111",
-              border:          "1px solid #1F1F1F",
+              backgroundColor: "var(--c-surface)",
+              border:          "1px solid var(--c-border)",
               borderRadius:    isMobile ? 16 : 20,
               padding:         isMobile ? 20 : 28,
               width:           isMobile ? "calc(100% - 32px)" : "100%",
@@ -700,7 +700,7 @@ export default function ClientesPage() {
               <>
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "#ffffff", margin: 0 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                     {showModal === "create" ? "Novo cliente" : "Editar cliente"}
                   </h2>
                   <button onClick={closeModal} style={closeButtonStyle}>
@@ -738,11 +738,11 @@ export default function ClientesPage() {
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
                   <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 700, color: "#ffffff", margin: 0 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                       Adicionar veículo
                     </h2>
                     {selectedCustomer && (
-                      <p style={{ fontSize: 13, color: "#71717A", marginTop: 4 }}>
+                      <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4 }}>
                         para {selectedCustomer.name}
                       </p>
                     )}
@@ -775,7 +775,7 @@ export default function ClientesPage() {
 
                     {/* Type select */}
                     <div style={{ display: "flex", flexDirection: "column" }}>
-                      <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6 }}>
                         Tipo
                       </label>
                       <select
@@ -783,12 +783,12 @@ export default function ClientesPage() {
                         onChange={(e) => setVehicleType(e.target.value)}
                         style={{
                           height:          42,
-                          backgroundColor: "#0A0A0A",
-                          border:          "1px solid #252525",
+                          backgroundColor: "var(--c-bg)",
+                          border:          "1px solid var(--c-border-2)",
                           borderRadius:    10,
                           padding:         "0 14px",
                           fontSize:        14,
-                          color:           "#ffffff",
+                          color:           "var(--c-text)",
                           outline:         "none",
                           cursor:          "pointer",
                           fontFamily:      "inherit",
@@ -833,7 +833,7 @@ export default function ClientesPage() {
 
 const closeButtonStyle: React.CSSProperties = {
   background:   "rgba(255,255,255,0.05)",
-  border:       "1px solid #252525",
+  border:       "1px solid var(--c-border-2)",
   borderRadius: 8,
   width:        32,
   height:       32,
@@ -841,7 +841,7 @@ const closeButtonStyle: React.CSSProperties = {
   alignItems:   "center",
   justifyContent:"center",
   cursor:       "pointer",
-  color:        "#71717A",
+  color:        "var(--c-text-3)",
   flexShrink:   0,
 }
 
@@ -880,8 +880,8 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
         fontWeight:      600,
         cursor:          "pointer",
         background:      "transparent",
-        border:          "1px solid #252525",
-        color:           hov ? "#ffffff" : "#A1A1AA",
+        border:          "1px solid var(--c-border-2)",
+        color:           hov ? "var(--c-text)" : "var(--c-text-2)",
         transition:      "color 0.15s ease",
         fontFamily:      "inherit",
       }}

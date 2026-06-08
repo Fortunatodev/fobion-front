@@ -102,7 +102,7 @@ function Spinner({ size = 14, color = "white" }: { size?: number; color?: string
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", display: "block", marginBottom: 6 }}>
+    <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", display: "block", marginBottom: 6 }}>
       {children}{required && <span style={{ color: "#EF4444" }}> *</span>}
     </label>
   )
@@ -126,9 +126,9 @@ function TextInput({
       onBlur={() => setFocused(false)}
       style={{
         width: "100%", height: 42, padding: "0 14px",
-        backgroundColor: readOnly ? "#0D0D0D" : "#0A0A0A",
-        border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "#252525"}`,
-        borderRadius: 10, fontSize: 14, color: readOnly ? "#52525B" : "#fff",
+        backgroundColor: readOnly ? "var(--c-elevated)" : "var(--c-bg)",
+        border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "var(--c-border-2)"}`,
+        borderRadius: 10, fontSize: 14, color: readOnly ? "var(--c-text-4)" : "var(--c-text)",
         outline: "none", fontFamily: "inherit",
         transition: "border-color 0.15s",
         boxSizing: "border-box" as const,
@@ -150,8 +150,8 @@ function SaveBtn({
       disabled={loading}
       style={{
         height: 40, padding: "0 22px", borderRadius: 10, border: "none",
-        background: loading ? "#161616" : gradient,
-        color: loading ? "#52525B" : "#fff",
+        background: loading ? "var(--c-surface-2)" : gradient,
+        color: loading ? "var(--c-text-4)" : "var(--c-text)",
         fontSize: 13, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", gap: 8,
         fontFamily: "inherit", transition: "all 0.2s",
@@ -165,7 +165,7 @@ function SaveBtn({
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      backgroundColor: "#111111", border: "1px solid #1F1F1F",
+      backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
       borderRadius: 16, padding: "24px 20px",
     }}>
       {children}
@@ -183,7 +183,7 @@ function TabBtn({ label, Icon, active, onClick }: {
         display: "flex", alignItems: "center", gap: 8,
         padding: "8px 16px", borderRadius: 10, border: "none",
         backgroundColor: active ? "rgba(0,102,255,0.1)" : "transparent",
-        color: active ? "#fff" : "#71717A",
+        color: active ? "var(--c-text)" : "var(--c-text-3)",
         fontSize: 13, fontWeight: active ? 600 : 400,
         cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
         whiteSpace: "nowrap", flexShrink: 0,
@@ -211,9 +211,9 @@ function DescTextarea({
       rows={3}
       style={{
         width: "100%", padding: "10px 14px",
-        backgroundColor: "#0A0A0A",
-        border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "#252525"}`,
-        borderRadius: 10, fontSize: 14, color: "#fff",
+        backgroundColor: "var(--c-bg)",
+        border: `1px solid ${focused ? "rgba(0,102,255,0.4)" : "var(--c-border-2)"}`,
+        borderRadius: 10, fontSize: 14, color: "var(--c-text)",
         outline: "none", fontFamily: "inherit", resize: "vertical",
         transition: "border-color 0.15s", boxSizing: "border-box" as const,
       }}
@@ -227,8 +227,8 @@ function ExternalLinkBtn({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       style={{
         height: 38, padding: "0 16px", borderRadius: 10,
-        border: "1px solid #252525", backgroundColor: "transparent",
-        color: "#A1A1AA", fontSize: 12, fontWeight: 500,
+        border: "1px solid var(--c-border-2)", backgroundColor: "transparent",
+        color: "var(--c-text-2)", fontSize: 12, fontWeight: 500,
         cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
         fontFamily: "inherit",
       }}
@@ -247,16 +247,16 @@ function HourRow({ hour, onToggle, onOpenChange, onCloseChange }: {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-      padding: "10px 0", borderBottom: "1px solid #161616",
+      padding: "10px 0", borderBottom: "1px solid var(--c-surface-2)",
     }}>
-      <div style={{ width: 80, fontSize: 13, color: "#A1A1AA", flexShrink: 0 }}>
+      <div style={{ width: 80, fontSize: 13, color: "var(--c-text-2)", flexShrink: 0 }}>
         {DAY_LABELS[hour.dayOfWeek]}
       </div>
       <div
         onClick={onToggle}
         style={{
           width: 40, height: 22, borderRadius: 100,
-          backgroundColor: hour.isOpen ? "#0066FF" : "#252525",
+          backgroundColor: hour.isOpen ? "#0066FF" : "var(--c-border-2)",
           cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
         }}
       >
@@ -264,17 +264,17 @@ function HourRow({ hour, onToggle, onOpenChange, onCloseChange }: {
           position: "absolute", top: 3,
           left: hour.isOpen ? 21 : 3,
           width: 16, height: 16, borderRadius: "50%",
-          backgroundColor: "#fff", transition: "left 0.2s",
+          backgroundColor: "var(--c-text)", transition: "left 0.2s",
         }} />
       </div>
       {hour.isOpen ? (
         <>
           <TimeInput value={hour.openTime}  onChange={onOpenChange}  />
-          <span style={{ fontSize: 12, color: "#52525B" }}>até</span>
+          <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>até</span>
           <TimeInput value={hour.closeTime} onChange={onCloseChange} />
         </>
       ) : (
-        <span style={{ fontSize: 12, color: "#3F3F46" }}>Fechado</span>
+        <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Fechado</span>
       )}
     </div>
   )
@@ -287,9 +287,9 @@ function TimeInput({ value, onChange }: { value: string; onChange: (v: string) =
       value={value}
       onChange={e => onChange(e.target.value)}
       style={{
-        height: 34, padding: "0 10px", backgroundColor: "#0A0A0A",
-        border: "1px solid #252525", borderRadius: 8,
-        fontSize: 13, color: "#fff", outline: "none",
+        height: 34, padding: "0 10px", backgroundColor: "var(--c-bg)",
+        border: "1px solid var(--c-border-2)", borderRadius: 8,
+        fontSize: 13, color: "var(--c-text)", outline: "none",
         fontFamily: "inherit", width: 90,
       }}
     />
@@ -308,7 +308,7 @@ function UserAvatar({ name, picture }: { name: string; picture?: string | null }
       width: 52, height: 52, borderRadius: 14, flexShrink: 0,
       background: "linear-gradient(135deg,#7C3AED,#0066FF)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 18, fontWeight: 700, color: "#fff",
+      fontSize: 18, fontWeight: 700, color: "var(--c-text)",
     }}>
       {initials}
     </div>
@@ -350,11 +350,11 @@ function FeatureCell({ label, available, labelColor }: {
   label: string; available: boolean; labelColor: string
 }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #161616" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--c-surface-2)" }}>
       <span style={{ fontSize: 13, color: labelColor }}>{label}</span>
       {available
         ? <CheckCircle2 size={14} color="#10B981" />
-        : <X size={14} color="#3F3F46" />}
+        : <X size={14} color="var(--c-text-4)" />}
     </div>
   )
 }
@@ -369,7 +369,7 @@ function UpgradeBtn({ onClick }: { onClick: () => void }) {
       style={{
         width: "100%", height: 46, borderRadius: 12, border: "none",
         background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-        color: "#fff", fontSize: 14, fontWeight: 700,
+        color: "var(--c-text)", fontSize: 14, fontWeight: 700,
         cursor: "pointer", fontFamily: "inherit",
         boxShadow: hov ? "0 8px 30px rgba(0,102,255,0.4)" : "0 4px 20px rgba(0,102,255,0.2)",
         transform: hov ? "scale(1.01)" : "scale(1)",
@@ -388,7 +388,7 @@ export default function ConfiguracoesPage() {
     <Suspense fallback={
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
       </div>
     }>
       <ConfiguracoesContent />
@@ -628,9 +628,9 @@ function ConfiguracoesContent() {
       <>
         <style>{`@keyframes skelCfg{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 0 40px" }}>
-          <div style={{ height: 36, width: 200, backgroundColor: "#161616", borderRadius: 10, marginBottom: 8, animation: "skelCfg 1.5s ease infinite" }} />
-          <div style={{ height: 16, width: 280, backgroundColor: "#111", borderRadius: 8, marginBottom: 32, animation: "skelCfg 1.5s ease 0.1s infinite" }} />
-          <div style={{ height: 300, backgroundColor: "#111111", borderRadius: 16, animation: "skelCfg 1.5s ease 0.2s infinite" }} />
+          <div style={{ height: 36, width: 200, backgroundColor: "var(--c-surface-2)", borderRadius: 10, marginBottom: 8, animation: "skelCfg 1.5s ease infinite" }} />
+          <div style={{ height: 16, width: 280, backgroundColor: "var(--c-surface)", borderRadius: 8, marginBottom: 32, animation: "skelCfg 1.5s ease 0.1s infinite" }} />
+          <div style={{ height: 300, backgroundColor: "var(--c-surface)", borderRadius: 16, animation: "skelCfg 1.5s ease 0.2s infinite" }} />
         </div>
       </>
     )
@@ -653,10 +653,10 @@ function ConfiguracoesContent() {
 
         {/* ── HEADER ── */}
         <div style={{ marginBottom: isMobile ? 20 : 32 }}>
-          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
             Configurações
           </h1>
-          <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
+          <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>
             Gerencie as informações do seu negócio
           </p>
         </div>
@@ -686,7 +686,7 @@ function ConfiguracoesContent() {
         {/* ── TABS ── */}
         <div style={{
           display: "flex", gap: 4, marginBottom: 24,
-          backgroundColor: "#0D0D0D", border: "1px solid #1A1A1A",
+          backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
           borderRadius: 12, padding: 4,
           width: isMobile ? "100%" : "fit-content",
           overflowX: isMobile ? "auto" : undefined,
@@ -702,20 +702,20 @@ function ConfiguracoesContent() {
         {/* ══ TAB: NEGÓCIO ══════════════════════════════════════════════════ */}
         {activeTab === "negocio" && (
           <SectionCard>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 20px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: "0 0 20px" }}>
               Informações do negócio
             </h2>
 
             {/* URL pública */}
             <div style={{
-              backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
               borderRadius: 12, padding: "12px 16px", marginBottom: 24,
               display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
               flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
             }}>
               <div>
-                <p style={{ fontSize: 12, color: "#52525B", margin: "0 0 4px" }}>URL da sua loja pública</p>
-                <p style={{ fontSize: 13, color: "#A1A1AA", margin: 0, fontFamily: "monospace" }}>{publicUrl}</p>
+                <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "0 0 4px" }}>URL da sua loja pública</p>
+                <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: 0, fontFamily: "monospace" }}>{publicUrl}</p>
               </div>
               <ExternalLinkBtn onClick={() => window.open(publicUrl, "_blank")} />
             </div>
@@ -744,14 +744,14 @@ function ConfiguracoesContent() {
                 <DescTextarea value={formDescription} onChange={setFormDescription} placeholder="Conte um pouco sobre seu negócio..." />
               </div>
               <div>
-                <FieldLabel>CNPJ <span style={{ color: "#52525B", fontWeight: 400 }}>(necessário pra emitir NF-e)</span></FieldLabel>
+                <FieldLabel>CNPJ <span style={{ color: "var(--c-text-4)", fontWeight: 400 }}>(necessário pra emitir NF-e)</span></FieldLabel>
                 <TextInput value={formCnpj} onChange={setFormCnpj} placeholder="00.000.000/0000-00" />
               </div>
             </div>
 
             {/* ── SEÇÃO: PERFIL DO PROPRIETÁRIO ── */}
-            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid #1A1A1A" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: "0 0 16px" }}>
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid var(--c-border)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>
                 Perfil do proprietário
               </h3>
 
@@ -764,7 +764,7 @@ function ConfiguracoesContent() {
                       alt="Avatar"
                       style={{
                         width: 80, height: 80, borderRadius: "50%",
-                        objectFit: "cover", border: "2px solid #1F1F1F",
+                        objectFit: "cover", border: "2px solid var(--c-border)",
                         display: "block",
                       }}
                     />
@@ -773,7 +773,7 @@ function ConfiguracoesContent() {
                       width: 80, height: 80, borderRadius: "50%",
                       background: `linear-gradient(135deg, ${themeColor}, ${themeColor}99)`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 28, fontWeight: 800, color: "#fff",
+                      fontSize: 28, fontWeight: 800, color: "var(--c-text)",
                     }}>
                       {(formName || config?.name || "?").charAt(0).toUpperCase()}
                     </div>
@@ -786,15 +786,15 @@ function ConfiguracoesContent() {
                       position: "absolute", bottom: 0, right: 0,
                       width: 26, height: 26, borderRadius: "50%",
                       backgroundColor: uploadingAvatar ? "#004ACC" : themeColor,
-                      border: "2px solid #0A0A0A",
+                      border: "2px solid var(--c-bg)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       cursor: uploadingAvatar ? "not-allowed" : "pointer",
                       transition: "background 0.15s",
                     }}
                   >
                     {uploadingAvatar
-                      ? <Loader2 size={11} color="#fff" style={{ animation: "spinCfg 0.7s linear infinite" }} />
-                      : <Camera size={12} color="#fff" />}
+                      ? <Loader2 size={11} color="var(--c-text)" style={{ animation: "spinCfg 0.7s linear infinite" }} />
+                      : <Camera size={12} color="var(--c-text)" />}
                   </label>
 
                   <input
@@ -810,13 +810,13 @@ function ConfiguracoesContent() {
 
                 {/* Textos */}
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
                     Foto de perfil
                   </p>
-                  <p style={{ fontSize: 12, color: "#71717A", margin: "4px 0 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0" }}>
                     Aparece na sua loja para os clientes te reconhecerem.
                   </p>
-                  <p style={{ fontSize: 11, color: "#3F3F46", margin: "4px 0 0" }}>
+                  <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                     JPG, PNG ou WebP. Máximo 2MB.
                   </p>
                   {uploadingAvatar && (
@@ -830,9 +830,9 @@ function ConfiguracoesContent() {
             </div>
 
             {/* ── SEÇÃO: COR DA LOJA ── */}
-            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid #1A1A1A" }}>
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid var(--c-border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                   Cor da loja
                 </h3>
                 {colorSaved && (
@@ -841,7 +841,7 @@ function ConfiguracoesContent() {
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: 12, color: "#71717A", margin: "0 0 16px" }}>
+              <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "0 0 16px" }}>
                 Define a cor dos botões e destaques na sua vitrine
               </p>
 
@@ -855,7 +855,7 @@ function ConfiguracoesContent() {
                     style={{
                       width: 36, height: 36, borderRadius: 10,
                       backgroundColor: c.value,
-                      border: themeColor === c.value ? "3px solid #fff" : "3px solid transparent",
+                      border: themeColor === c.value ? "3px solid var(--c-text)" : "3px solid transparent",
                       cursor: "pointer",
                       transition: "all 0.15s",
                       boxShadow: themeColor === c.value ? `0 0 0 2px ${c.value}` : "none",
@@ -869,16 +869,16 @@ function ConfiguracoesContent() {
               {/* Preview ao vivo */}
               <div style={{
                 marginTop: 16, padding: 16, borderRadius: 14,
-                backgroundColor: "#0D0D0D", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)",
               }}>
-                <p style={{ fontSize: 11, color: "#52525B", margin: "0 0 10px", letterSpacing: "1px", textTransform: "uppercase" }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "1px", textTransform: "uppercase" }}>
                   Preview
                 </p>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   {/* Botão CTA */}
                   <button style={{
                     height: 36, padding: "0 16px", borderRadius: 10,
-                    backgroundColor: themeColor, color: "#fff",
+                    backgroundColor: themeColor, color: "var(--c-text)",
                     fontSize: 13, fontWeight: 600, border: "none", cursor: "default",
                     fontFamily: "inherit",
                     boxShadow: `0 4px 16px rgba(${themeRgb}, 0.35)`,
@@ -907,7 +907,7 @@ function ConfiguracoesContent() {
                     width: 32, height: 32, borderRadius: "50%",
                     background: `linear-gradient(135deg, ${themeColor}, ${themeColor}99)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 700, color: "#fff",
+                    fontSize: 13, fontWeight: 700, color: "var(--c-text)",
                   }}>
                     {(formName || "M").charAt(0).toUpperCase()}
                   </div>
@@ -930,10 +930,10 @@ function ConfiguracoesContent() {
           <SectionCard>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                   Horário de funcionamento
                 </h2>
-                <p style={{ fontSize: 13, color: "#52525B", marginTop: 4 }}>
+                <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 4 }}>
                   {openDays} dia{openDays !== 1 ? "s" : ""} aberto{openDays !== 1 ? "s" : ""} por semana
                 </p>
               </div>
@@ -941,8 +941,8 @@ function ConfiguracoesContent() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 18, borderRadius: 10, backgroundColor: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.15)" }}>
               <Clock size={14} color="#0066FF" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.5 }}>
-                Estes horários aparecem na sua <strong style={{ color: "#fff" }}>loja pública</strong> e definem o {"“Aberto agora”"}. Clique em <strong style={{ color: "#fff" }}>Salvar horários</strong> sempre que alterar.
+              <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.5 }}>
+                Estes horários aparecem na sua <strong style={{ color: "var(--c-text)" }}>loja pública</strong> e definem o {"“Aberto agora”"}. Clique em <strong style={{ color: "var(--c-text)" }}>Salvar horários</strong> sempre que alterar.
               </span>
             </div>
 
@@ -969,7 +969,7 @@ function ConfiguracoesContent() {
         {/* ══ TAB: MINHA CONTA ══════════════════════════════════════════════ */}
         {activeTab === "conta" && (
           <SectionCard>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 20px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: "0 0 20px" }}>
               Minha conta
             </h2>
 
@@ -978,15 +978,15 @@ function ConfiguracoesContent() {
               display: "flex", gap: 16, alignItems: isMobile ? "flex-start" : "center",
               flexDirection: isMobile ? "column" : "row",
               marginBottom: 24,
-              backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
               borderRadius: 14, padding: isMobile ? "16px 14px" : "16px 20px",
             }}>
               <UserAvatar name={user?.name ?? ""} picture={user?.picture} />
               <div>
-                <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                   {user?.name ?? "—"}
                 </p>
-                <p style={{ fontSize: 13, color: "#71717A", marginTop: 4 }}>
+                <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4 }}>
                   {user?.email ?? "—"}
                 </p>
                 <span style={{
@@ -1004,7 +1004,7 @@ function ConfiguracoesContent() {
 
             {/* Google connection */}
             <div style={{
-              backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
               borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px",
               display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
               flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
@@ -1013,8 +1013,8 @@ function ConfiguracoesContent() {
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <GoogleIcon />
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>Google</p>
-                  <p style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>Google</p>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2 }}>
                     Conectado como {user?.email}
                   </p>
                 </div>
@@ -1024,19 +1024,19 @@ function ConfiguracoesContent() {
 
             {/* Google Calendar integration */}
             <div style={{
-              backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
               borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px",
               display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
               flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
               marginBottom: 24,
             }}>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <Calendar size={16} color={calendarConnected ? "#10B981" : "#71717A"} />
+                <Calendar size={16} color={calendarConnected ? "#10B981" : "var(--c-text-3)"} />
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
                     Google Calendar
                   </p>
-                  <p style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2 }}>
                     {calendarConnected
                       ? "Agendamentos sincronizados com seu calendário"
                       : "Sincronize agendamentos com o Google Calendar"}
@@ -1068,7 +1068,7 @@ function ConfiguracoesContent() {
                     height: 32, padding: "0 14px", borderRadius: 8,
                     border: "none",
                     background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-                    color: "#fff", fontSize: 12, fontWeight: 600,
+                    color: "var(--c-text)", fontSize: 12, fontWeight: 600,
                     cursor: "pointer", fontFamily: "inherit",
                     transition: "all 0.15s",
                     display: "flex", alignItems: "center", gap: 6,
@@ -1097,8 +1097,8 @@ function ConfiguracoesContent() {
               flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0,
             }}>
               <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: 0 }}>Sair da conta</p>
-                <p style={{ fontSize: 12, color: "#71717A", marginTop: 4 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>Sair da conta</p>
+                <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 4 }}>
                   Você precisará fazer login novamente.
                 </p>
               </div>
@@ -1110,7 +1110,7 @@ function ConfiguracoesContent() {
         {/* ══ TAB: PLANO ════════════════════════════════════════════════════ */}
         {activeTab === "plano" && (
           <SectionCard>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 20px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: "0 0 20px" }}>
               Seu plano atual
             </h2>
 
@@ -1133,7 +1133,7 @@ function ConfiguracoesContent() {
                   <Clock size={15} color={color} style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color }}>{label}</span>
                   {(urgent || warn) && config?.plan !== "PRO" && (
-                    <span style={{ fontSize: 12, color: "#A1A1AA", marginLeft: "auto" }}>
+                    <span style={{ fontSize: 12, color: "var(--c-text-2)", marginLeft: "auto" }}>
                       Garanta o acesso fazendo o upgrade 👇
                     </span>
                   )}
@@ -1144,35 +1144,35 @@ function ConfiguracoesContent() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
               {/* BASIC */}
               <div style={{
-                border: `1px solid ${config?.plan === "BASIC" ? "rgba(0,102,255,0.3)" : "#1F1F1F"}`,
+                border: `1px solid ${config?.plan === "BASIC" ? "rgba(0,102,255,0.3)" : "var(--c-border)"}`,
                 borderRadius: 14, padding: "18px 20px",
-                backgroundColor: config?.plan === "BASIC" ? "rgba(0,102,255,0.04)" : "#0A0A0A",
+                backgroundColor: config?.plan === "BASIC" ? "rgba(0,102,255,0.04)" : "var(--c-bg)",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>BASIC</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>BASIC</span>
                   {config?.plan === "BASIC" && (
                     <span style={{ fontSize: 10, fontWeight: 600, color: "#0066FF", backgroundColor: "rgba(0,102,255,0.1)", border: "1px solid rgba(0,102,255,0.2)", borderRadius: 6, padding: "2px 8px" }}>
                       Atual{config?.isTrial ? " · Trial" : ""}
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: "8px 0 16px" }}>
-                  R$ 49<span style={{ fontSize: 13, fontWeight: 400, color: "#52525B" }}>/mês</span>
+                <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: "8px 0 16px" }}>
+                  R$ 49<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-text-4)" }}>/mês</span>
                 </p>
                 {PLAN_FEATURES.map(f => (
-                  <FeatureCell key={f.label} label={f.label} available={f.basic} labelColor="#A1A1AA" />
+                  <FeatureCell key={f.label} label={f.label} available={f.basic} labelColor="var(--c-text-2)" />
                 ))}
               </div>
 
               {/* PRO */}
               <div style={{
-                border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.3)" : "#1F1F1F"}`,
+                border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.3)" : "var(--c-border)"}`,
                 borderRadius: 14, padding: "18px 20px",
-                backgroundColor: config?.plan === "PRO" ? "rgba(245,158,11,0.04)" : "#0A0A0A",
+                backgroundColor: config?.plan === "PRO" ? "rgba(245,158,11,0.04)" : "var(--c-bg)",
                 position: "relative", overflow: "hidden",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", display: "flex", gap: 6, alignItems: "center" }}>
                     <Crown size={14} color="#F59E0B" /> PRO
                   </span>
                   {config?.plan === "PRO" && (
@@ -1181,11 +1181,11 @@ function ConfiguracoesContent() {
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: "8px 0 16px" }}>
-                  R$ 97<span style={{ fontSize: 13, fontWeight: 400, color: "#52525B" }}>/mês</span>
+                <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: "8px 0 16px" }}>
+                  R$ 97<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-text-4)" }}>/mês</span>
                 </p>
                 {PLAN_FEATURES.map(f => (
-                  <FeatureCell key={f.label} label={f.label} available={f.pro} labelColor="#fff" />
+                  <FeatureCell key={f.label} label={f.label} available={f.pro} labelColor="var(--c-text)" />
                 ))}
               </div>
             </div>

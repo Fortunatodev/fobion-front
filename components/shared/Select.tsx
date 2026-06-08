@@ -46,13 +46,13 @@ export default function Select({
           className={cn(
             "inline-flex items-center justify-between",
             "h-10 w-full px-3 rounded-xl",
-            "bg-[#111111] border text-sm",
+            "bg-[var(--c-surface)] border text-sm",
             "focus:outline-none focus:ring-1 transition-all duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             error
               ? "border-red-500 focus:border-red-500 focus:ring-red-500/30 text-white"
-              : "border-[#1F1F1F] focus:border-primary focus:ring-primary/30 text-white",
-            !value && "text-[#A1A1AA]",
+              : "border-[var(--c-border)] focus:border-primary focus:ring-primary/30 text-white",
+            !value && "text-[var(--c-text-2)]",
             className
           )}
         >
@@ -60,14 +60,14 @@ export default function Select({
           <RadixSelect.Icon>
             <ChevronDown
               size={14}
-              className="text-[#A1A1AA] transition-transform duration-200 [[data-state=open]_&]:rotate-180"
+              className="text-[var(--c-text-2)] transition-transform duration-200 [[data-state=open]_&]:rotate-180"
             />
           </RadixSelect.Icon>
         </RadixSelect.Trigger>
 
         <RadixSelect.Portal>
           <RadixSelect.Content
-            className="z-50 overflow-hidden bg-[#111111] border border-[#2F2F2F] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] animate-in fade-in zoom-in-95 duration-150"
+            className="z-50 overflow-hidden bg-[var(--c-surface)] border border-[var(--c-border-2)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] animate-in fade-in zoom-in-95 duration-150"
             position="popper"
             sideOffset={4}
           >
@@ -79,7 +79,7 @@ export default function Select({
                   className={cn(
                     "relative flex items-center gap-2 px-3 py-2 text-sm rounded-lg cursor-pointer select-none",
                     "text-white outline-none transition-colors duration-150",
-                    "data-[highlighted]:bg-[#1A1A1A]",
+                    "data-[highlighted]:bg-[var(--c-border)]",
                     "data-[state=checked]:text-primary"
                   )}
                 >

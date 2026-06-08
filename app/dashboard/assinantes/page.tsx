@@ -41,7 +41,7 @@ function getStatusConfig(status: string) {
     PENDING:   { label: "Pendente",   color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.2)"  },
     ACTIVE:    { label: "Ativo",      color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.2)"  },
     CANCELLED: { label: "Cancelado",  color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.2)"   },
-    EXPIRED:   { label: "Expirado",   color: "#A1A1AA", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" },
+    EXPIRED:   { label: "Expirado",   color: "var(--c-text-2)", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" },
     EXPIRING:  { label: "⏳ Expirando", color: "#F97316", bg: "rgba(249,115,22,0.08)",  border: "rgba(249,115,22,0.2)"  },
   }
   return map[status] ?? map["EXPIRED"]
@@ -83,13 +83,13 @@ function SelectField({ label, value, onChange, children, required }: {
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: "#A1A1AA", marginBottom: 6 }}>
+      <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6 }}>
         {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
       </label>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{
         width: "100%",
-        height: 42, backgroundColor: "#0A0A0A", border: "1px solid #252525",
-        borderRadius: 10, padding: "0 14px", fontSize: 14, color: value ? "#fff" : "#3F3F46",
+        height: 42, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+        borderRadius: 10, padding: "0 14px", fontSize: 14, color: value ? "var(--c-text)" : "var(--c-text-4)",
         outline: "none", cursor: "pointer", fontFamily: "inherit",
         appearance: "none", WebkitAppearance: "none",
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
@@ -140,7 +140,7 @@ function StatCard({ label, value, color, bg, border, isMobile }: {
       minWidth: 0, boxSizing: "border-box",
     }}>
       <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color, margin: 0 }}>{value}</p>
-      <p style={{ fontSize: isMobile ? 11 : 12, color: "#71717A", marginTop: 4, margin: "4px 0 0" }}>{label}</p>
+      <p style={{ fontSize: isMobile ? 11 : 12, color: "var(--c-text-3)", marginTop: 4, margin: "4px 0 0" }}>{label}</p>
     </div>
   )
 }
@@ -155,8 +155,8 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
       style={{
         height: 40, padding: "0 18px", borderRadius: 10,
         fontSize: 13, fontWeight: 600, cursor: "pointer",
-        background: "transparent", border: "1px solid #252525",
-        color: hov ? "#ffffff" : "#A1A1AA",
+        background: "transparent", border: "1px solid var(--c-border-2)",
+        color: hov ? "var(--c-text)" : "var(--c-text-2)",
         transition: "color 0.15s", fontFamily: "inherit",
       }}
     >
@@ -328,7 +328,7 @@ function AssinantesContent() {
           from { opacity:0; transform: translateY(24px) }
           to   { opacity:1; transform: translateY(0) }
         }
-        select option { background: #111111; }
+        select option { background: var(--c-surface); }
         * { box-sizing: border-box; }
       `}</style>
 
@@ -350,11 +350,11 @@ function AssinantesContent() {
           <div>
             <h1 style={{
               fontSize: isMobile ? 22 : 28,
-              fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px",
+              fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px",
             }}>
               Assinantes
             </h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6, margin: "6px 0 0" }}>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6, margin: "6px 0 0" }}>
               {loading
                 ? "Carregando..."
                 : `${countActive} assinante${countActive !== 1 ? "s" : ""} ativo${countActive !== 1 ? "s" : ""}`}
@@ -365,7 +365,7 @@ function AssinantesContent() {
 
         {/* ── FILTERS ───────────────────────────────────────────────────── */}
         <div style={{
-          backgroundColor: "#111111", border: "1px solid #1F1F1F",
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
           borderRadius: 16, padding: isMobile ? "12px 14px" : "14px 18px",
           marginBottom: 12,
           display: "flex",
@@ -375,7 +375,7 @@ function AssinantesContent() {
           {/* Search */}
           <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
             <Search
-              size={14} color="#52525B"
+              size={14} color="var(--c-text-4)"
               style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
             />
             <input
@@ -383,13 +383,13 @@ function AssinantesContent() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por cliente ou plano..."
               style={{
-                width: "100%", height: 38, backgroundColor: "#0A0A0A",
-                border: "1px solid #1F1F1F", borderRadius: 10,
-                paddingLeft: 36, paddingRight: 14, fontSize: 13, color: "#fff",
+                width: "100%", height: 38, backgroundColor: "var(--c-bg)",
+                border: "1px solid var(--c-border)", borderRadius: 10,
+                paddingLeft: 36, paddingRight: 14, fontSize: 13, color: "var(--c-text)",
                 outline: "none", fontFamily: "inherit",
               }}
               onFocus={(e)  => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
-              onBlur={(e)   => { e.target.style.borderColor = "#1F1F1F" }}
+              onBlur={(e)   => { e.target.style.borderColor = "var(--c-border)" }}
             />
           </div>
 
@@ -411,11 +411,11 @@ function AssinantesContent() {
                     padding: "5px 12px", borderRadius: 8, cursor: "pointer",
                     border: active
                       ? `1px solid ${cfg?.border ?? "rgba(0,102,255,0.3)"}`
-                      : "1px solid #1F1F1F",
+                      : "1px solid var(--c-border)",
                     backgroundColor: active
                       ? (cfg?.bg ?? "rgba(0,102,255,0.08)")
                       : "transparent",
-                    color: active ? (cfg?.color ?? "#0066FF") : "#71717A",
+                    color: active ? (cfg?.color ?? "#0066FF") : "var(--c-text-3)",
                     transition: "all 0.15s", fontFamily: "inherit",
                     whiteSpace: "nowrap", flexShrink: 0,
                   }}
@@ -434,7 +434,7 @@ function AssinantesContent() {
           gap: isMobile ? 6 : 8,
           marginBottom: isMobile ? 12 : 16,
         }}>
-          <StatCard label="Total"      value={subscriptions.length} color="#A1A1AA" bg="#111111"                  border="#1F1F1F"                   isMobile={isMobile} />
+          <StatCard label="Total"      value={subscriptions.length} color="var(--c-text-2)" bg="var(--c-surface)"                  border="var(--c-border)"                   isMobile={isMobile} />
           <StatCard label="Ativos"     value={countActive}          color="#10B981" bg="rgba(16,185,129,0.06)"   border="rgba(16,185,129,0.2)"      isMobile={isMobile} />
           <StatCard label="Pendentes"  value={countPending}         color="#F59E0B" bg="rgba(245,158,11,0.06)"   border="rgba(245,158,11,0.2)"      isMobile={isMobile} />
           <StatCard label="Expirando"  value={countExpiring}        color="#F97316" bg="rgba(249,115,22,0.06)"   border="rgba(249,115,22,0.2)"      isMobile={isMobile} />
@@ -465,7 +465,7 @@ function AssinantesContent() {
             {[1,2,3,4,5].map((i) => (
               <div key={i} style={{
                 height: isMobile ? 90 : 72,
-                backgroundColor: "#111111", border: "1px solid #1F1F1F",
+                backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
                 borderRadius: 14, animation: `skeletonAs 1.5s ease ${i * 0.07}s infinite`,
               }} />
             ))}
@@ -475,8 +475,8 @@ function AssinantesContent() {
         {/* ── EMPTY ─────────────────────────────────────────────────────── */}
         {!loading && !error && filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "64px 0" }}>
-            <Crown size={40} color="#1F1F1F" style={{ margin: "0 auto" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 16 }}>
+            <Crown size={40} color="var(--c-border)" style={{ margin: "0 auto" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
               {searchQuery ? "Nenhum assinante encontrado" : "Nenhuma assinatura cadastrada"}
             </p>
             {!searchQuery && (
@@ -509,8 +509,8 @@ function AssinantesContent() {
                   onMouseEnter={() => setHoveredId(sub.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
-                    backgroundColor: "#111111",
-                    border: `1px solid ${hov ? "#252525" : "#1F1F1F"}`,
+                    backgroundColor: "var(--c-surface)",
+                    border: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-border)"}`,
                     borderRadius: 14,
                     padding: isMobile ? "14px 14px" : "14px 20px",
                     display: "flex",
@@ -549,7 +549,7 @@ function AssinantesContent() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{
                         fontSize: isMobile ? 13 : 14,
-                        fontWeight: 600, color: "#fff",
+                        fontWeight: 600, color: "var(--c-text)",
                         display: "block",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>
@@ -559,10 +559,10 @@ function AssinantesContent() {
                       <div style={{ display: "flex", gap: 8, marginTop: 3, alignItems: "center", flexWrap: "wrap" }}>
                         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                           <Crown size={10} color="#7C3AED" />
-                          <span style={{ fontSize: 11, color: "#A1A1AA" }}>{sub.customerPlan.name}</span>
+                          <span style={{ fontSize: 11, color: "var(--c-text-2)" }}>{sub.customerPlan.name}</span>
                         </span>
-                        <span style={{ color: "#3F3F46", fontSize: 11 }}>·</span>
-                        <span style={{ fontSize: 11, color: "#71717A" }}>
+                        <span style={{ color: "var(--c-text-4)", fontSize: 11 }}>·</span>
+                        <span style={{ fontSize: 11, color: "var(--c-text-3)" }}>
                           {formatCurrency(sub.customerPlan.price)}/mês
                         </span>
                         {sub.customerPlan.discountPercent > 0 && (
@@ -573,7 +573,7 @@ function AssinantesContent() {
                       </div>
 
                       <div style={{ marginTop: 3 }}>
-                        <span style={{ fontSize: 11, color: "#52525B" }}>
+                        <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>
                           Desde {formatDate(sub.startedAt ?? sub.createdAt)}
                           {sub.expiresAt && (
                             <> · Vence {formatDate(sub.expiresAt)}</>
@@ -667,7 +667,7 @@ function AssinantesContent() {
                     )}
 
                     {(sub.status === "CANCELLED" || sub.status === "EXPIRED") && (
-                      <span style={{ fontSize: 11, color: "#3F3F46", padding: "0 4px" }}>Encerrada</span>
+                      <span style={{ fontSize: 11, color: "var(--c-text-4)", padding: "0 4px" }}>Encerrada</span>
                     )}
                   </div>
                 </div>
@@ -708,7 +708,7 @@ function AssinantesContent() {
                 borderRadius: "20px 20px 0 0",
                 animation: "slideUpMob 0.3s cubic-bezier(0.16,1,0.3,1)",
               } : {}),
-              backgroundColor: "#111111", border: "1px solid #1F1F1F",
+              backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
               borderRadius: isMobile ? "20px 20px 0 0" : 20,
               padding: isMobile ? "20px 16px 32px" : 28,
               width: isMobile ? "100%" : "100%",
@@ -724,23 +724,23 @@ function AssinantesContent() {
             {/* Drag handle (mobile) */}
             {isMobile && (
               <div style={{
-                width: 36, height: 4, backgroundColor: "#2A2A2A",
+                width: 36, height: 4, backgroundColor: "var(--c-border-2)",
                 borderRadius: 2, margin: "0 auto 16px",
               }} />
             )}
 
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 Nova assinatura
               </h2>
               <button
                 onClick={() => { setShowModal(false); setFormError(null) }}
                 style={{
-                  background: "rgba(255,255,255,0.05)", border: "1px solid #252525",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-2)",
                   borderRadius: 8, width: 32, height: 32, display: "flex",
                   alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", color: "#71717A", flexShrink: 0,
+                  cursor: "pointer", color: "var(--c-text-3)", flexShrink: 0,
                 }}
               >
                 <X size={16} />
@@ -779,13 +779,13 @@ function AssinantesContent() {
                   border: "1px solid rgba(124,58,237,0.1)",
                   borderRadius: 10, padding: 12,
                 }}>
-                  <p style={{ fontSize: 13, color: "#fff", margin: 0, fontWeight: 500 }}>
+                  <p style={{ fontSize: 13, color: "var(--c-text)", margin: 0, fontWeight: 500 }}>
                     {selectedCustomerObj.name}
                   </p>
-                  <p style={{ fontSize: 12, color: "#A1A1AA", marginTop: 4, margin: "4px 0 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-2)", marginTop: 4, margin: "4px 0 0" }}>
                     {selectedPlanObj.name} · {formatCurrency(selectedPlanObj.price)}/mês
                   </p>
-                  <p style={{ fontSize: 11, color: "#71717A", marginTop: 6, margin: "6px 0 0" }}>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 6, margin: "6px 0 0" }}>
                     A assinatura será criada com status PENDENTE
                   </p>
                 </div>

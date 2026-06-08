@@ -23,7 +23,7 @@ interface ServiceItem { id: string; name: string; price: number }
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 const STATUS: Record<string, { label: string; color: string }> = {
-  DRAFT:     { label: "Rascunho",  color: "#71717A" },
+  DRAFT:     { label: "Rascunho",  color: "var(--c-text-3)" },
   SENT:      { label: "Enviado",   color: "#0066FF" },
   APPROVED:  { label: "Aprovado",  color: "#10B981" },
   REJECTED:  { label: "Recusado",  color: "#EF4444" },
@@ -141,8 +141,8 @@ export default function OrcamentosPage() {
     try { await apiDelete(`/quotes/${id}`); fetchQuotes() } catch { /* noop */ }
   }
 
-  const inp: React.CSSProperties = { height: 40, padding: "0 12px", background: "#0A0A0A", border: "1px solid #252525", borderRadius: 10, color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
-  const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid #2A2A2A", color: "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+  const inp: React.CSSProperties = { height: 40, padding: "0 12px", background: "var(--c-bg)", border: "1px solid var(--c-border-2)", borderRadius: 10, color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
+  const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
   const pill = (bg: string, bd: string, c: string): React.CSSProperties => ({ display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 12px", borderRadius: 8, background: bg, border: `1px solid ${bd}`, color: c, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" })
 
   const isExpired = (q: Quote) => q.validUntil && new Date(q.validUntil) < new Date() && !["APPROVED", "CONVERTED", "REJECTED"].includes(q.status)
@@ -152,40 +152,40 @@ export default function OrcamentosPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <FileText size={22} color="#0066FF" />
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Orçamentos</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Orçamentos</h1>
         </div>
-        <button onClick={() => { resetForm(); setModal(true) }} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={() => { resetForm(); setModal(true) }} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <Plus size={15} /> Novo orçamento
         </button>
       </div>
-      <p style={{ fontSize: 13, color: "#71717A", margin: "0 0 24px" }}>Monte propostas (ticket alto: vitrificação, PPF), envie no WhatsApp e converta em venda.</p>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Monte propostas (ticket alto: vitrificação, PPF), envie no WhatsApp e converta em venda.</p>
 
-      {loading && <p style={{ color: "#71717A", fontSize: 14 }}>Carregando…</p>}
+      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
       {!loading && quotes.length === 0 && (
         <div style={{ textAlign: "center", padding: "56px 0" }}>
-          <FileText size={40} color="#2A2A2A" style={{ margin: "0 auto" }} />
-          <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginTop: 14 }}>Nenhum orçamento ainda</p>
-          <p style={{ fontSize: 13, color: "#71717A", marginTop: 6 }}>Crie uma proposta pra um serviço de ticket alto.</p>
+          <FileText size={40} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>Nenhum orçamento ainda</p>
+          <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>Crie uma proposta pra um serviço de ticket alto.</p>
         </div>
       )}
 
       {!loading && quotes.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {quotes.map((q) => {
-            const st = STATUS[q.status] ?? { label: q.status, color: "#71717A" }
+            const st = STATUS[q.status] ?? { label: q.status, color: "var(--c-text-3)" }
             const expired = isExpired(q)
             return (
-              <div key={q.id} style={{ background: "#0D0D0D", border: "1px solid #1F1F1F", borderRadius: 12, padding: "14px 16px" }}>
+              <div key={q.id} style={{ background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "14px 16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{q.customerName || "Cliente"}</span>
-                  {q.plate && <span style={{ fontSize: 11, fontWeight: 600, color: "#A1A1AA", background: "#1A1A1A", borderRadius: 5, padding: "1px 7px" }}>{q.plate}</span>}
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{q.customerName || "Cliente"}</span>
+                  {q.plate && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-2)", background: "var(--c-border)", borderRadius: 5, padding: "1px 7px" }}>{q.plate}</span>}
                   <span style={{ fontSize: 11, fontWeight: 600, color: st.color, background: `${st.color}1A`, border: `1px solid ${st.color}33`, borderRadius: 6, padding: "1px 8px" }}>{st.label}</span>
                   {expired && <span style={{ fontSize: 11, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, padding: "1px 8px" }}>vencido</span>}
-                  <span style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: "#fff" }}>{fmt(q.totalPrice)}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: "var(--c-text)" }}>{fmt(q.totalPrice)}</span>
                 </div>
-                <p style={{ fontSize: 12, color: "#71717A", margin: "6px 0 0" }}>
+                <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0" }}>
                   {(q.items ?? []).map((i) => i.name).join(" · ")}
                   {q.validUntil && ` · válido até ${new Date(q.validUntil).toLocaleDateString("pt-BR")}`}
                 </p>
@@ -214,26 +214,26 @@ export default function OrcamentosPage() {
       {/* Modal criar */}
       {modal && (
         <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 22, maxHeight: "90vh", overflowY: "auto" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#fff", margin: "0 0 16px" }}>Novo orçamento</h2>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, maxHeight: "90vh", overflowY: "auto" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>Novo orçamento</h2>
 
             {/* Cliente do CRM */}
             {fCustomerId ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 12px", marginBottom: 10, borderRadius: 10, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                <span style={{ fontSize: 13, color: "#fff" }}>👤 {fName}{fPlate ? ` · ${fPlate}` : ""}</span>
-                <button onClick={clearCustomer} style={{ background: "none", border: "none", color: "#71717A", cursor: "pointer" }}><X size={16} /></button>
+                <span style={{ fontSize: 13, color: "var(--c-text)" }}>👤 {fName}{fPlate ? ` · ${fPlate}` : ""}</span>
+                <button onClick={clearCustomer} style={{ background: "none", border: "none", color: "var(--c-text-3)", cursor: "pointer" }}><X size={16} /></button>
               </div>
             ) : (
               <div style={{ position: "relative", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, ...inp }}>
-                  <Search size={14} color="#52525B" />
-                  <input value={custQuery} onChange={(e) => { setCustQuery(e.target.value); setShowCust(true) }} onFocus={() => setShowCust(true)} placeholder="Buscar cliente cadastrado…" style={{ flex: 1, background: "transparent", border: "none", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+                  <Search size={14} color="var(--c-text-4)" />
+                  <input value={custQuery} onChange={(e) => { setCustQuery(e.target.value); setShowCust(true) }} onFocus={() => setShowCust(true)} placeholder="Buscar cliente cadastrado…" style={{ flex: 1, background: "transparent", border: "none", color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
                 </div>
                 {showCust && custResults.length > 0 && (
-                  <div style={{ position: "absolute", top: 44, left: 0, right: 0, background: "#161616", border: "1px solid #2A2A2A", borderRadius: 10, zIndex: 10, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 44, left: 0, right: 0, background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)", borderRadius: 10, zIndex: 10, overflow: "hidden" }}>
                     {custResults.map((c) => (
-                      <button key={c.id} onClick={() => pickCustomer(c)} style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1F1F1F", color: "#fff", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                        {c.name} <span style={{ color: "#71717A", fontSize: 11 }}>· {c.phone}{c.vehicles[0] ? ` · ${c.vehicles[0].plate}` : ""}</span>
+                      <button key={c.id} onClick={() => pickCustomer(c)} style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", background: "transparent", border: "none", borderBottom: "1px solid var(--c-border)", color: "var(--c-text)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                        {c.name} <span style={{ color: "var(--c-text-3)", fontSize: 11 }}>· {c.phone}{c.vehicles[0] ? ` · ${c.vehicles[0].plate}` : ""}</span>
                       </button>
                     ))}
                   </div>
@@ -250,15 +250,15 @@ export default function OrcamentosPage() {
 
             {/* Itens */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 0" }}>
-              <p style={{ fontSize: 12, color: "#A1A1AA", margin: 0 }}>Itens</p>
+              <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: 0 }}>Itens</p>
               {services.length > 0 && (
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowCatalog((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "#0066FF", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}><Tag size={12} /> Adicionar do catálogo</button>
                   {showCatalog && (
-                    <div style={{ position: "absolute", top: 26, right: 0, width: 240, maxHeight: 220, overflowY: "auto", background: "#161616", border: "1px solid #2A2A2A", borderRadius: 10, zIndex: 10 }}>
+                    <div style={{ position: "absolute", top: 26, right: 0, width: 240, maxHeight: 220, overflowY: "auto", background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)", borderRadius: 10, zIndex: 10 }}>
                       {services.map((s) => (
-                        <button key={s.id} onClick={() => addCatalogItem(s)} style={{ display: "flex", justifyContent: "space-between", width: "100%", padding: "9px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1F1F1F", color: "#fff", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                          <span>{s.name}</span><span style={{ color: "#71717A" }}>{fmt(s.price)}</span>
+                        <button key={s.id} onClick={() => addCatalogItem(s)} style={{ display: "flex", justifyContent: "space-between", width: "100%", padding: "9px 12px", background: "transparent", border: "none", borderBottom: "1px solid var(--c-border)", color: "var(--c-text)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                          <span>{s.name}</span><span style={{ color: "var(--c-text-3)" }}>{fmt(s.price)}</span>
                         </button>
                       ))}
                     </div>
@@ -278,10 +278,10 @@ export default function OrcamentosPage() {
             <textarea value={fNotes} onChange={(e) => setFNotes(e.target.value)} placeholder="Observações (opcional)" rows={2} style={{ ...inp, width: "100%", height: "auto", padding: "8px 12px", resize: "vertical", marginBottom: 12 }} />
             {fErr && <p style={{ color: "#F87171", fontSize: 12, margin: "0 0 10px" }}>{fErr}</p>}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>Total: {fmt(total)}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "var(--c-text)" }}>Total: {fmt(total)}</span>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
-                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "#1A1A1A" : "#0066FF", color: saving ? "#52525B" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
+                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "var(--c-text)", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
               </div>
             </div>
           </div>

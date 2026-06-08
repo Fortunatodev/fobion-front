@@ -10,7 +10,7 @@
  * ─────
  *  size   → sm | md | lg | xl  (font-size preset)
  *  as     → HTML tag: "h1" | "div" | "span" | "p"  (default "h1")
- *  color  → text colour override (default "#FFFFFF")
+ *  color  → text colour override (default "var(--c-text)")
  *  style  → extra CSSProperties merged onto the root element
  *
  * Usage
@@ -48,7 +48,7 @@ const DOT_COLOR = "#0066FF"
 export default function ForbionLogo({
   size = "md",
   as: Tag = "h1",
-  color = "#FFFFFF",
+  color = "var(--c-text)",
   style,
 }: ForbionLogoProps) {
   const fontSize = SIZE_MAP[size]

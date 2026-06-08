@@ -53,30 +53,30 @@ export default function PasswordCard({ isMobile = false }: { isMobile?: boolean 
   }
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", height: 42, background: "#0A0A0A", border: "1px solid #1F1F1F",
-    borderRadius: 10, padding: "0 14px", color: "#fff", fontSize: 14, fontFamily: "inherit",
+    width: "100%", height: 42, background: "var(--c-bg)", border: "1px solid var(--c-border)",
+    borderRadius: 10, padding: "0 14px", color: "var(--c-text)", fontSize: 14, fontFamily: "inherit",
     boxSizing: "border-box", marginBottom: 4,
   }
 
   return (
     <div style={{
-      backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F",
+      backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
       borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px", marginBottom: 24,
     }}>
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <div>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>Senha</p>
-          <p style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>
+          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>Senha</p>
+          <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2 }}>
             Defina ou altere sua senha de acesso
           </p>
         </div>
         <button
           onClick={() => { setOpen(o => !o); reset() }}
           style={{
-            height: 32, padding: "0 14px", borderRadius: 8, border: "1px solid #1F1F1F",
-            backgroundColor: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 500,
+            height: 32, padding: "0 14px", borderRadius: 8, border: "1px solid var(--c-border)",
+            backgroundColor: "transparent", color: "var(--c-text-2)", fontSize: 12, fontWeight: 500,
             cursor: "pointer", fontFamily: "inherit",
           }}
         >
@@ -86,16 +86,16 @@ export default function PasswordCard({ isMobile = false }: { isMobile?: boolean 
 
       {open && (
         <div style={{ marginTop: 16 }}>
-          <label style={{ display: "block", color: "#71717A", fontSize: 12, marginBottom: 6 }}>
-            Senha atual <span style={{ color: "#52525B" }}>(deixe em branco se você entra com o Google)</span>
+          <label style={{ display: "block", color: "var(--c-text-3)", fontSize: 12, marginBottom: 6 }}>
+            Senha atual <span style={{ color: "var(--c-text-4)" }}>(deixe em branco se você entra com o Google)</span>
           </label>
           <input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" style={inputStyle} />
 
-          <label style={{ display: "block", color: "#71717A", fontSize: 12, margin: "12px 0 6px" }}>Nova senha</label>
+          <label style={{ display: "block", color: "var(--c-text-3)", fontSize: 12, margin: "12px 0 6px" }}>Nova senha</label>
           <input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="••••••••" style={inputStyle} />
           {tooShort && <p style={{ color: "#F59E0B", fontSize: 12, margin: "2px 0 0" }}>Mínimo de 8 caracteres.</p>}
 
-          <label style={{ display: "block", color: "#71717A", fontSize: 12, margin: "12px 0 6px" }}>Confirmar nova senha</label>
+          <label style={{ display: "block", color: "var(--c-text-3)", fontSize: 12, margin: "12px 0 6px" }}>Confirmar nova senha</label>
           <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="••••••••" style={inputStyle} />
           {mismatch && <p style={{ color: "#F59E0B", fontSize: 12, margin: "2px 0 0" }}>As senhas não conferem.</p>}
 
@@ -108,8 +108,8 @@ export default function PasswordCard({ isMobile = false }: { isMobile?: boolean 
             disabled={!canSubmit}
             style={{
               marginTop: 16, height: 40, padding: "0 18px", borderRadius: 10, border: "none",
-              background: canSubmit ? "#0066FF" : "#1A1A1A",
-              color: canSubmit ? "#fff" : "#3F3F46",
+              background: canSubmit ? "#0066FF" : "var(--c-border)",
+              color: canSubmit ? "var(--c-text)" : "var(--c-text-4)",
               fontSize: 14, fontWeight: 600, cursor: canSubmit ? "pointer" : "not-allowed",
               fontFamily: "inherit",
             }}

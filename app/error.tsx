@@ -18,7 +18,7 @@ export default function Error({
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#0A0A0A",
+        backgroundColor: "var(--c-bg)",
         color: "#E4E4E7",
         display: "flex",
         alignItems: "center",
@@ -28,15 +28,15 @@ export default function Error({
       }}
     >
       <div style={{ maxWidth: 480, textAlign: "center" }}>
-        <h2 style={{ fontSize: 22, marginBottom: 12, color: "#FAFAFA" }}>
+        <h2 style={{ fontSize: 22, marginBottom: 12, color: "var(--c-text)" }}>
           Algo deu errado
         </h2>
-        <p style={{ color: "#A1A1AA", fontSize: 14, lineHeight: 1.6 }}>
+        <p style={{ color: "var(--c-text-2)", fontSize: 14, lineHeight: 1.6 }}>
           Tivemos um problema ao carregar essa página. Tente novamente em alguns segundos.
           Se persistir, recarregue a página.
         </p>
         {error.digest && (
-          <p style={{ color: "#52525B", fontSize: 12, marginTop: 12 }}>
+          <p style={{ color: "var(--c-text-4)", fontSize: 12, marginTop: 12 }}>
             Código: {error.digest}
           </p>
         )}
@@ -46,9 +46,9 @@ export default function Error({
             style={{
               padding: "10px 20px",
               borderRadius: 8,
-              border: "1px solid #2A2A2A",
+              border: "1px solid var(--c-border-2)",
               background: "#0066FF",
-              color: "#FFFFFF",
+              color: "var(--c-text)",
               cursor: "pointer",
               fontSize: 14,
             }}
@@ -60,9 +60,9 @@ export default function Error({
             style={{
               padding: "10px 20px",
               borderRadius: 8,
-              border: "1px solid #2A2A2A",
+              border: "1px solid var(--c-border-2)",
               background: "none",
-              color: "#A1A1AA",
+              color: "var(--c-text-2)",
               cursor: "pointer",
               fontSize: 14,
             }}

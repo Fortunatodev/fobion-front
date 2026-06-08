@@ -28,7 +28,7 @@ export default function Switch({
           "relative inline-flex w-11 h-6 rounded-full transition-colors duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          checked ? "bg-primary" : "bg-[#2F2F2F]"
+          checked ? "bg-primary" : "bg-[var(--c-border-2)]"
         )}
       >
         <RadixSwitch.Thumb

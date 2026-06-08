@@ -10,8 +10,8 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "spin 0.7s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "spin 0.7s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     }>
@@ -62,29 +62,29 @@ function ResetContent() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", height: 48, background: "#0A0A0A", border: "1px solid #1F1F1F",
-    borderRadius: 12, padding: "0 16px", color: "#fff", fontSize: 15, fontFamily: "inherit",
+    width: "100%", height: 48, background: "var(--c-bg)", border: "1px solid var(--c-border)",
+    borderRadius: 12, padding: "0 16px", color: "var(--c-text)", fontSize: 15, fontFamily: "inherit",
     boxSizing: "border-box",
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ minHeight: "100vh", background: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
           <ForbionLogo />
         </div>
 
         {done ? (
-          <div style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 32, textAlign: "center" }}>
+          <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-            <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Senha redefinida!</h1>
-            <p style={{ color: "#A1A1AA", fontSize: 14, margin: 0 }}>Redirecionando para o login...</p>
+            <h1 style={{ color: "var(--c-text)", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Senha redefinida!</h1>
+            <p style={{ color: "var(--c-text-2)", fontSize: 14, margin: 0 }}>Redirecionando para o login...</p>
           </div>
         ) : !token ? (
-          <div style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 32, textAlign: "center" }}>
+          <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-            <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Link inválido</h1>
-            <p style={{ color: "#A1A1AA", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
+            <h1 style={{ color: "var(--c-text)", fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>Link inválido</h1>
+            <p style={{ color: "var(--c-text-2)", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
               Este link de redefinição está incompleto ou expirou. Solicite um novo.
             </p>
             <Link href="/auth/forgot-password" style={{ color: "#0066FF", fontSize: 14, textDecoration: "none" }}>
@@ -92,11 +92,11 @@ function ResetContent() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 16, padding: 32 }}>
-            <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>Criar nova senha</h1>
-            <p style={{ color: "#71717A", fontSize: 14, margin: "0 0 24px" }}>Escolha uma senha de pelo menos 8 caracteres.</p>
+          <form onSubmit={handleSubmit} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 32 }}>
+            <h1 style={{ color: "var(--c-text)", fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>Criar nova senha</h1>
+            <p style={{ color: "var(--c-text-3)", fontSize: 14, margin: "0 0 24px" }}>Escolha uma senha de pelo menos 8 caracteres.</p>
 
-            <label style={{ display: "block", color: "#A1A1AA", fontSize: 13, marginBottom: 8 }}>Nova senha</label>
+            <label style={{ display: "block", color: "var(--c-text-2)", fontSize: 13, marginBottom: 8 }}>Nova senha</label>
             <div style={{ position: "relative", marginBottom: 6 }}>
               <input
                 type={showPass ? "text" : "password"}
@@ -109,7 +109,7 @@ function ResetContent() {
               <button
                 type="button"
                 onClick={() => setShowPass(v => !v)}
-                style={{ position: "absolute", right: 14, top: 15, background: "none", border: "none", color: "#71717A", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
+                style={{ position: "absolute", right: 14, top: 15, background: "none", border: "none", color: "var(--c-text-3)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
               >
                 {showPass ? "ocultar" : "ver"}
               </button>
@@ -117,7 +117,7 @@ function ResetContent() {
             {tooShort && <p style={{ color: "#F59E0B", fontSize: 12, margin: "0 0 14px" }}>Mínimo de 8 caracteres.</p>}
             {!tooShort && <div style={{ height: 14 }} />}
 
-            <label style={{ display: "block", color: "#A1A1AA", fontSize: 13, marginBottom: 8 }}>Confirmar senha</label>
+            <label style={{ display: "block", color: "var(--c-text-2)", fontSize: 13, marginBottom: 8 }}>Confirmar senha</label>
             <input
               type={showPass ? "text" : "password"}
               value={confirm}
@@ -135,9 +135,9 @@ function ResetContent() {
               disabled={loading || !canSubmit}
               style={{
                 width: "100%", height: 48,
-                background: (loading || !canSubmit) ? "#1A1A1A" : "#0066FF",
+                background: (loading || !canSubmit) ? "var(--c-border)" : "#0066FF",
                 border: "none", borderRadius: 12, fontSize: 15, fontWeight: 600,
-                color: (loading || !canSubmit) ? "#3F3F46" : "#fff",
+                color: (loading || !canSubmit) ? "var(--c-text-4)" : "var(--c-text)",
                 cursor: (loading || !canSubmit) ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
@@ -146,7 +146,7 @@ function ResetContent() {
             </button>
 
             <div style={{ textAlign: "center", marginTop: 16 }}>
-              <Link href="/auth/login" style={{ color: "#71717A", fontSize: 13, textDecoration: "none" }}>← Voltar para o login</Link>
+              <Link href="/auth/login" style={{ color: "var(--c-text-3)", fontSize: 13, textDecoration: "none" }}>← Voltar para o login</Link>
             </div>
           </form>
         )}

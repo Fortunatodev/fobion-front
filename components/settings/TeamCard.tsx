@@ -49,16 +49,16 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
     } finally { setSaving(false) }
   }
 
-  const inp: React.CSSProperties = { width: "100%", height: 40, padding: "0 12px", background: "#0A0A0A", border: "1px solid #1F1F1F", borderRadius: 10, color: "#fff", fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }
+  const inp: React.CSSProperties = { width: "100%", height: 40, padding: "0 12px", background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 10, color: "var(--c-text)", fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }
 
   return (
-    <div style={{ backgroundColor: "#0A0A0A", border: "1px solid #1F1F1F", borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px", marginBottom: 24 }}>
+    <div style={{ backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px", marginBottom: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", margin: 0 }}>Equipe & acessos</p>
-          <p style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>Crie logins pros funcionários acessarem o sistema</p>
+          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>Equipe & acessos</p>
+          <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2 }}>Crie logins pros funcionários acessarem o sistema</p>
         </div>
-        <button onClick={() => { setOpen((o) => !o); setMsg(null) }} style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "1px solid #1F1F1F", background: "transparent", color: "#A1A1AA", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={() => { setOpen((o) => !o); setMsg(null) }} style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text-2)", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
           {open ? "Fechar" : "+ Novo acesso"}
         </button>
       </div>
@@ -66,11 +66,11 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
       {users && users.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
           {users.map((u) => {
-            const r = ROLE_LABEL[u.role] ?? { label: u.role, color: "#71717A" }
+            const r = ROLE_LABEL[u.role] ?? { label: u.role, color: "var(--c-text-3)" }
             return (
               <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                <span style={{ color: "#fff", fontWeight: 500 }}>{u.name}</span>
-                <span style={{ color: "#71717A" }}>{u.email}</span>
+                <span style={{ color: "var(--c-text)", fontWeight: 500 }}>{u.name}</span>
+                <span style={{ color: "var(--c-text-3)" }}>{u.email}</span>
                 <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: r.color, background: `${r.color}1A`, border: `1px solid ${r.color}33`, borderRadius: 6, padding: "1px 8px" }}>{r.label}</span>
               </div>
             )
@@ -88,7 +88,7 @@ export default function TeamCard({ isMobile = false }: { isMobile?: boolean }) {
             <option value="ADMIN">Admin (acesso total)</option>
           </select>
           {msg && <p style={{ color: msg.kind === "ok" ? "#10B981" : "#F87171", fontSize: 13, margin: "0 0 8px" }}>{msg.text}</p>}
-          <button onClick={create} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, border: "none", background: saving ? "#1A1A1A" : "#0066FF", color: saving ? "#52525B" : "#fff", fontSize: 14, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+          <button onClick={create} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, border: "none", background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "var(--c-text)", fontSize: 14, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
             {saving ? "Criando…" : "Criar acesso"}
           </button>
         </div>

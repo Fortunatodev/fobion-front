@@ -54,15 +54,15 @@ export default function PatioPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <LayoutGrid size={22} color="#0066FF" />
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Pátio</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Pátio</h1>
         </div>
-        <button onClick={fetchData} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, background: "transparent", border: "1px solid #1F1F1F", color: "#A1A1AA", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={fetchData} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <RefreshCw size={14} /> Atualizar
         </button>
       </div>
-      <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 24px" }}>Fila operacional de hoje. Mova os carros conforme avançam.</p>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Mova os carros conforme avançam.</p>
 
-      {loading && <p style={{ color: "#71717A", fontSize: 14 }}>Carregando…</p>}
+      {loading && <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Carregando…</p>}
       {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
 
       {!loading && !error && (
@@ -70,27 +70,27 @@ export default function PatioPage() {
           {COLUMNS.map((col) => {
             const cards = schedules.filter(col.match).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
             return (
-              <div key={col.key} style={{ background: "#0A0A0A", border: "1px solid #1F1F1F", borderRadius: 14, padding: 12, minHeight: 200 }}>
+              <div key={col.key} style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 12, minHeight: 200 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "0 4px" }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{col.title}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: "#71717A", fontWeight: 600 }}>{cards.length}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{col.title}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", fontWeight: 600 }}>{cards.length}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {cards.length === 0 && <p style={{ fontSize: 12, color: "#52525B", textAlign: "center", padding: "20px 0" }}>—</p>}
+                  {cards.length === 0 && <p style={{ fontSize: 12, color: "var(--c-text-4)", textAlign: "center", padding: "20px 0" }}>—</p>}
                   {cards.map((s) => (
-                    <div key={s.id} style={{ background: "#111", border: "1px solid #1F1F1F", borderRadius: 10, padding: "10px 12px" }}>
+                    <div key={s.id} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                        <Clock size={12} color="#71717A" />
-                        <span style={{ fontSize: 12, color: "#A1A1AA", fontWeight: 600 }}>{hhmm(s.scheduledAt)}</span>
+                        <Clock size={12} color="var(--c-text-3)" />
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 600 }}>{hhmm(s.scheduledAt)}</span>
                         <span style={{ marginLeft: "auto", fontSize: 12, color: "#10B981", fontWeight: 700 }}>{fmt(s.totalPrice)}</span>
                       </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>{s.customer?.name ?? "Cliente"}</p>
-                      <p style={{ fontSize: 12, color: "#71717A", margin: "1px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{s.customer?.name ?? "Cliente"}</p>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "1px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
                         <Car size={11} /> {[s.vehicle?.plate, s.vehicle?.model].filter(Boolean).join(" · ") || "veículo"}
                       </p>
                       {s.scheduleServices && s.scheduleServices.length > 0 && (
-                        <p style={{ fontSize: 11, color: "#52525B", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x.service?.name).filter(Boolean).join(", ")}</p>
+                        <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x.service?.name).filter(Boolean).join(", ")}</p>
                       )}
                       {col.next && (
                         <button
@@ -101,7 +101,7 @@ export default function PatioPage() {
                           {moving === s.id ? "..." : <>{col.cta} <ChevronRight size={13} /></>}
                         </button>
                       )}
-                      <Link href={`/dashboard/vistoria/${s.id}`} style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid #1F1F1F", color: "#71717A", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}>
+                      <Link href={`/dashboard/vistoria/${s.id}`} style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}>
                         <ShieldCheck size={12} /> Vistoria
                       </Link>
                     </div>

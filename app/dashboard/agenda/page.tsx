@@ -132,7 +132,7 @@ function CalSkeleton() {
     <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
       {Array.from({ length: 42 }).map((_, i) => (
         <div key={i} style={{
-          height: 36, borderRadius: 8, backgroundColor: "#111",
+          height: 36, borderRadius: 8, backgroundColor: "var(--c-surface)",
           animation: `skeletonPulse 1.4s ease ${(i % 7) * 0.06}s infinite`,
         }} />
       ))}
@@ -143,7 +143,7 @@ function CalSkeleton() {
 // ── StatusBadge ───────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const meta = STATUS_META[status] ?? { label: status, color: "#71717A", icon: null }
+  const meta = STATUS_META[status] ?? { label: status, color: "var(--c-text-3)", icon: null }
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
@@ -161,9 +161,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: "1px solid #111" }}>
-      <span style={{ fontSize: 13, color: "#71717A" }}>{label}</span>
-      <span style={{ fontSize: 13, color: "#E5E7EB", fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: "1px solid var(--c-surface)" }}>
+      <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>{label}</span>
+      <span style={{ fontSize: 13, color: "var(--c-text-2)", fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{value}</span>
     </div>
   )
 }
@@ -184,7 +184,7 @@ function ActionBtn({
         flex: 1, height: 36, borderRadius: 9, fontSize: 12, fontWeight: 600,
         background: outline ? "transparent" : color,
         border: outline ? `1px solid ${color}` : "none",
-        color: outline ? color : "#fff",
+        color: outline ? color : "var(--c-text)",
         cursor: loading || disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
         fontFamily: "inherit",
@@ -240,17 +240,17 @@ function DetailModal({
       }} />
       <div style={{
         position: "relative", zIndex: 1,
-        backgroundColor: "#111", border: "1px solid #1F1F1F",
+        backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
         borderRadius: 20, padding: 24, width: "100%", maxWidth: 420,
         maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
           <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
               {schedule.customer.name}
             </p>
-            <p style={{ fontSize: 12, color: "#52525B", margin: "3px 0 0" }}>
+            <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0" }}>
               {/* ✅ Usar formatScheduleTime em vez de formatTime */}
               {formatScheduleTime(schedule.scheduledAt)}
             </p>
@@ -266,9 +266,9 @@ function DetailModal({
             <Row label="Veículo"     value={`${schedule.vehicle.brand} ${schedule.vehicle.model} · ${schedule.vehicle.plate}`} />
             <Row label="Profissional" value={schedule.employee?.name ?? "Proprietário"} />
             {schedule.notes && <Row label="Obs" value={schedule.notes} />}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", borderTop: "1px solid #1A1A1A", marginTop: 4 }}>
-              <span style={{ fontSize: 13, color: "#71717A" }}>Total</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{formatCurrency(schedule.totalPrice)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", borderTop: "1px solid var(--c-border)", marginTop: 4 }}>
+              <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>Total</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{formatCurrency(schedule.totalPrice)}</span>
             </div>
 
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -290,7 +290,7 @@ function DetailModal({
 
         {phase === "close" && (
           <>
-            <p style={{ fontSize: 13, color: "#E5E7EB", marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-2)", marginBottom: 12 }}>
               Selecione a forma de pagamento:
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
@@ -301,8 +301,8 @@ function DetailModal({
                   style={{
                     height: 40, borderRadius: 9, fontSize: 12, fontWeight: 500,
                     background: closingWith === m.value ? "rgba(16,185,129,0.12)" : "transparent",
-                    border: closingWith === m.value ? "1px solid #10B981" : "1px solid #252525",
-                    color: closingWith === m.value ? "#10B981" : "#71717A",
+                    border: closingWith === m.value ? "1px solid #10B981" : "1px solid var(--c-border-2)",
+                    color: closingWith === m.value ? "#10B981" : "var(--c-text-3)",
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
@@ -311,7 +311,7 @@ function DetailModal({
               ))}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <ActionBtn label="← Voltar" color="#52525B" onClick={() => setPhase("view")} loading={false} outline />
+              <ActionBtn label="← Voltar" color="var(--c-text-4)" onClick={() => setPhase("view")} loading={false} outline />
               <ActionBtn label="Confirmar pagamento" color="#10B981" onClick={doClose} loading={updating} disabled={!closingWith} />
             </div>
           </>
@@ -324,7 +324,7 @@ function DetailModal({
 // ── ScheduleCard ──────────────────────────────────────────────────────────────
 
 function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
-  const color    = STATUS_META[s.status]?.color ?? "#71717A"
+  const color    = STATUS_META[s.status]?.color ?? "var(--c-text-3)"
   const services = s.scheduleServices.map(ss => ss.service.name).join(", ")
   const [hov, setHov] = useState(false)
 
@@ -334,10 +334,10 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        backgroundColor: hov ? "#121212" : "#0A0A0A",
-        borderTop: `1px solid ${hov ? "#222" : "#161616"}`,
-        borderRight: `1px solid ${hov ? "#222" : "#161616"}`,
-        borderBottom: `1px solid ${hov ? "#222" : "#161616"}`,
+        backgroundColor: hov ? "var(--c-surface)" : "var(--c-bg)",
+        borderTop: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
+        borderRight: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
+        borderBottom: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
         borderLeft: `3px solid ${color}`,
         borderRadius: 12, padding: "12px 14px",
         cursor: "pointer", transition: "all 0.15s",
@@ -345,20 +345,20 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {s.customer.name}
           </p>
-          <p style={{ fontSize: 11, color: "#52525B", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {services}
           </p>
           {s.employee && (
-            <p style={{ fontSize: 10, color: "#3F3F46", margin: "2px 0 0" }}>
+            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0" }}>
               {s.employee.name}
             </p>
           )}
         </div>
         <div style={{ flexShrink: 0, textAlign: "right" }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
             {/* ✅ Usar formatScheduleTime */}
             {formatScheduleTime(s.scheduledAt)}
           </p>
@@ -382,7 +382,7 @@ function NewAgBtn({ onClick }: { onClick: () => void }) {
         display: "flex", alignItems: "center", gap: 6,
         height: 38, padding: "0 16px", borderRadius: 10,
         background: hov ? "#0052CC" : "#0066FF",
-        border: "none", color: "#fff", fontSize: 13, fontWeight: 600,
+        border: "none", color: "var(--c-text)", fontSize: 13, fontWeight: 600,
         cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s",
       }}
     >
@@ -473,9 +473,9 @@ export default function AgendaPage() {
     return {
       height: 30, padding: "0 12px", borderRadius: 8, fontSize: 12,
       fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit",
-      border: active ? "1px solid rgba(0,102,255,0.4)" : "1px solid #1F1F1F",
+      border: active ? "1px solid rgba(0,102,255,0.4)" : "1px solid var(--c-border)",
       background: active ? "rgba(0,102,255,0.1)" : "transparent",
-      color: active ? "#3B82F6" : "#71717A",
+      color: active ? "#3B82F6" : "var(--c-text-3)",
       transition: "all 0.15s",
     }
   }
@@ -486,11 +486,11 @@ export default function AgendaPage() {
         @keyframes fadeAg       { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes skeletonPulse{ 0%,100%{opacity:0.4} 50%{opacity:0.9} }
         @keyframes spin         { to{transform:rotate(360deg)} }
-        .ag-card:hover  { background:#121212!important; border-color:#222!important; }
-        .ag-day:hover   { background:#161616!important; }
+        .ag-card:hover  { background:var(--c-surface)!important; border-color:var(--c-border-2)!important; }
+        .ag-day:hover   { background:var(--c-surface-2)!important; }
         .ag-empty-create:hover { background:rgba(0,102,255,0.14)!important; }
         .day-list::-webkit-scrollbar      { width:4px; }
-        .day-list::-webkit-scrollbar-thumb{ background:#252525; border-radius:2px; }
+        .day-list::-webkit-scrollbar-thumb{ background:var(--c-border-2); border-radius:2px; }
         * { box-sizing:border-box; }
       `}</style>
 
@@ -504,8 +504,8 @@ export default function AgendaPage() {
         {/* ── HEADER ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "flex-start", flexWrap: "wrap", gap: isMobile ? 12 : 16, marginBottom: 20, flexDirection: isMobile ? "column" : "row" }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>Agenda</h1>
-            <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>Visualize e gerencie seus agendamentos</p>
+            <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Agenda</h1>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>Visualize e gerencie seus agendamentos</p>
           </div>
           <NewAgBtn onClick={() => router.push("/dashboard/agendamentos")} />
         </div>
@@ -515,7 +515,7 @@ export default function AgendaPage() {
           <div ref={filterRef} style={{
             display: "flex", gap: 6, flexWrap: "wrap",
             marginBottom: 20, padding: "10px 14px",
-            backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 12,
+            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12,
           }}>
             <button style={empBtnStyle(selectedEmp === "all")}   onClick={() => setSelectedEmp("all")}>Todos</button>
             <button style={empBtnStyle(selectedEmp === "owner")} onClick={() => setSelectedEmp("owner")}>
@@ -540,27 +540,27 @@ export default function AgendaPage() {
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 20, alignItems: "start" }}>
 
           {/* ── CALENDÁRIO ── */}
-          <div style={{ backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 20, overflow: "hidden" }}>
+          <div style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, overflow: "hidden" }}>
 
             {/* Header do mês */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 12px" }}>
               <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))}
-                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#161616", border: "1px solid #1F1F1F", color: "#A1A1AA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronLeft size={16} />
               </button>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 {formatMonthYear(currentMonth)}
               </p>
               <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))}
-                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#161616", border: "1px solid #1F1F1F", color: "#A1A1AA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronRight size={16} />
               </button>
             </div>
 
             {/* Cabeçalho dias da semana */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid #1A1A1A" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid var(--c-border)" }}>
               {WEEKDAYS.map(d => (
-                <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#3F3F46", letterSpacing: "0.5px", padding: "10px 0" }}>
+                <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--c-text-4)", letterSpacing: "0.5px", padding: "10px 0" }}>
                   {d}
                 </div>
               ))}
@@ -584,9 +584,9 @@ export default function AgendaPage() {
                       onMouseLeave={() => setHoveredDay(null)}
                       style={{
                         minHeight: isMobile ? 48 : 72, padding: isMobile ? "6px 3px 3px" : "8px 6px 6px",
-                        borderBottom: "1px solid #111",
-                        borderRight: (i + 1) % 7 === 0 ? "none" : "1px solid #111",
-                        backgroundColor: isSel ? "#161616" : isHov ? "#131313" : "transparent",
+                        borderBottom: "1px solid var(--c-surface)",
+                        borderRight: (i + 1) % 7 === 0 ? "none" : "1px solid var(--c-surface)",
+                        backgroundColor: isSel ? "var(--c-surface-2)" : isHov ? "#131313" : "transparent",
                         cursor: day.isCurrentMonth ? "pointer" : "default",
                         transition: "background 0.12s",
                       }}
@@ -595,7 +595,7 @@ export default function AgendaPage() {
                         width: 26, height: 26, borderRadius: "50%",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 12, fontWeight: day.isToday || isSel ? 700 : 400,
-                        color: !day.isCurrentMonth ? "#1F1F1F" : day.isToday && !isSel ? "#fff" : day.isToday ? "#fff" : isSel ? "#0066FF" : "#A1A1AA",
+                        color: !day.isCurrentMonth ? "var(--c-border)" : day.isToday && !isSel ? "var(--c-text)" : day.isToday ? "var(--c-text)" : isSel ? "#0066FF" : "var(--c-text-2)",
                         backgroundColor: day.isToday && !isSel ? "#0066FF" : isSel ? "rgba(0,102,255,0.1)" : "transparent",
                         marginBottom: 4, flexShrink: 0,
                       }}>
@@ -605,7 +605,7 @@ export default function AgendaPage() {
                       {day.isCurrentMonth && day.schedules.length > 0 && !isMobile && day.schedules.length <= 2 && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           {day.schedules.map(s => {
-                            const c = STATUS_META[s.status]?.color ?? "#71717A"
+                            const c = STATUS_META[s.status]?.color ?? "var(--c-text-3)"
                             return (
                               <div key={s.id} style={{
                                 backgroundColor: `${c}14`, border: `1px solid ${c}30`,
@@ -638,11 +638,11 @@ export default function AgendaPage() {
                           {day.schedules.slice(0, 3).map((s, idx) => (
                             <div key={idx} style={{
                               width: 5, height: 5, borderRadius: "50%",
-                              backgroundColor: STATUS_META[s.status]?.color ?? "#71717A",
+                              backgroundColor: STATUS_META[s.status]?.color ?? "var(--c-text-3)",
                             }} />
                           ))}
                           {day.schedules.length > 3 && (
-                            <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: "#52525B" }} />
+                            <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: "var(--c-text-4)" }} />
                           )}
                         </div>
                       )}
@@ -654,13 +654,13 @@ export default function AgendaPage() {
           </div>
 
           {/* ── PAINEL DO DIA ── */}
-          <div style={{ backgroundColor: "#111", border: "1px solid #1F1F1F", borderRadius: 20, padding: isMobile ? 16 : 20, position: isMobile ? "relative" : "sticky", top: isMobile ? undefined : 24 }}>
+          <div style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, padding: isMobile ? 16 : 20, position: isMobile ? "relative" : "sticky", top: isMobile ? undefined : 24 }}>
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
                 {formatDayHeader(selectedDate)}
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-                <p style={{ fontSize: 12, color: "#71717A", margin: 0 }}>
+                <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
                   {loadingDay ? "Carregando..." : `${daySchedules.length} agendamento${daySchedules.length !== 1 ? "s" : ""}`}
                 </p>
                 {selectedDate === todayStr() && (
@@ -675,9 +675,9 @@ export default function AgendaPage() {
             {loadingDay && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[1, 2, 3].map(i => (
-                  <div key={i} style={{ backgroundColor: "#161616", borderRadius: 12, padding: "14px 16px", animation: `skeletonPulse 1.4s ease ${i * 0.1}s infinite` }}>
-                    <div style={{ height: 12, width: "60%", backgroundColor: "#1F1F1F", borderRadius: 4 }} />
-                    <div style={{ height: 10, width: "40%", backgroundColor: "#1A1A1A", borderRadius: 4, marginTop: 8 }} />
+                  <div key={i} style={{ backgroundColor: "var(--c-surface-2)", borderRadius: 12, padding: "14px 16px", animation: `skeletonPulse 1.4s ease ${i * 0.1}s infinite` }}>
+                    <div style={{ height: 12, width: "60%", backgroundColor: "var(--c-border)", borderRadius: 4 }} />
+                    <div style={{ height: 10, width: "40%", backgroundColor: "var(--c-border)", borderRadius: 4, marginTop: 8 }} />
                   </div>
                 ))}
               </div>
@@ -686,11 +686,11 @@ export default function AgendaPage() {
             {/* Empty */}
             {!loadingDay && daySchedules.length === 0 && (
               <div style={{ textAlign: "center", padding: "32px 0" }}>
-                <Calendar size={36} color="#1F1F1F" style={{ display: "block", margin: "0 auto" }} />
-                <p style={{ fontSize: 13, color: "#52525B", marginTop: 12, marginBottom: 4 }}>
+                <Calendar size={36} color="var(--c-border)" style={{ display: "block", margin: "0 auto" }} />
+                <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 12, marginBottom: 4 }}>
                   Sem agendamentos
                 </p>
-                <p style={{ fontSize: 12, color: "#3F3F46", margin: 0 }}>neste dia</p>
+                <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>neste dia</p>
                 <button
                   className="ag-empty-create"
                   onClick={() => router.push("/dashboard/agendamentos")}
@@ -724,20 +724,20 @@ export default function AgendaPage() {
             )}
 
             {/* Footer */}
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #161616" }}>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-surface-2)" }}>
               <button
                 onClick={() => router.push("/dashboard/agendamentos")}
                 style={{
                   width: "100%", height: 34, borderRadius: 9,
                   backgroundColor: "transparent",
-                  border: "1px solid #1F1F1F", color: "#52525B",
+                  border: "1px solid var(--c-border)", color: "var(--c-text-4)",
                   fontSize: 12, fontWeight: 500, cursor: "pointer",
                   fontFamily: "inherit",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#2A2A2A" }}
-                onMouseLeave={e => { e.currentTarget.style.color = "#52525B"; e.currentTarget.style.borderColor = "#1F1F1F" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--c-text)"; e.currentTarget.style.borderColor = "var(--c-border-2)" }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--c-text-4)"; e.currentTarget.style.borderColor = "var(--c-border)" }}
               >
                 Ver todos <ArrowRight size={12} />
               </button>

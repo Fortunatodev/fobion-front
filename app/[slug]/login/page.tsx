@@ -10,9 +10,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 export default function CustomerLoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", backgroundColor: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter',-apple-system,sans-serif" }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
       </div>
     }>
       <CustomerLoginContent />
@@ -68,12 +68,12 @@ function CustomerLoginContent() {
 
   if (!checked) return (
     <div style={{
-      minHeight: "100vh", backgroundColor: "#0A0A0A",
+      minHeight: "100vh", backgroundColor: "var(--c-bg)",
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: "'Inter',-apple-system,sans-serif",
     }}>
       <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #1F1F1F", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
     </div>
   )
 
@@ -88,7 +88,7 @@ function CustomerLoginContent() {
       `}</style>
 
       <div style={{
-        minHeight: "100vh", backgroundColor: "#0A0A0A",
+        minHeight: "100vh", backgroundColor: "var(--c-bg)",
         overflow: "hidden", position: "relative",
         fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif",
       }}>
@@ -115,10 +115,10 @@ function CustomerLoginContent() {
               <ForbionLogo size="xl" />
             </div>
 
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", textAlign: "center", letterSpacing: "-0.5px", margin: 0 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", textAlign: "center", letterSpacing: "-0.5px", margin: 0 }}>
               Bem-vindo!
             </h1>
-            <p style={{ fontSize: 14, color: "#71717A", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
               {businessName ? `Entrar na sua conta da loja ${businessName}` : "Entrar na sua conta"}
             </p>
 
@@ -142,7 +142,7 @@ function CustomerLoginContent() {
                 marginTop: 28, width: "100%", height: 48,
                 borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
                 backgroundColor: "rgba(255,255,255,0.05)",
-                color: "#fff", fontSize: 15, fontWeight: 600,
+                color: "var(--c-text)", fontSize: 15, fontWeight: 600,
                 cursor: loading ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 gap: 10, transition: "all 0.2s ease",
@@ -152,7 +152,7 @@ function CustomerLoginContent() {
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)" }}
             >
               {loading ? (
-                <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", animation: "btnSpin 0.7s linear infinite" }} />
+                <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "var(--c-text)", animation: "btnSpin 0.7s linear infinite" }} />
               ) : (
                 <svg width="18" height="18" viewBox="0 0 18 18">
                   <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
@@ -164,7 +164,7 @@ function CustomerLoginContent() {
               {loading ? "Redirecionando..." : "Continuar com Google"}
             </button>
 
-            <p style={{ fontSize: 12, color: "#3F3F46", textAlign: "center", marginTop: 20, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--c-text-4)", textAlign: "center", marginTop: 20, lineHeight: 1.6 }}>
               Ao entrar, você concorda com os termos de uso do estabelecimento.
             </p>
           </div>

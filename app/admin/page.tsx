@@ -166,7 +166,7 @@ function PlanBadge({ plan, isTrial }: { plan: PlanType; isTrial?: boolean }) {
   const colors: Record<string, { color: string; bg: string; border: string }> = {
     PRO:   { color: "#F59E0B", bg: "rgba(245,158,11,0.10)", border: "rgba(245,158,11,0.25)" },
     BASIC: { color: "#0066FF", bg: "rgba(0,102,255,0.08)",  border: "rgba(0,102,255,0.20)" },
-    FREE:  { color: "#71717A", bg: "rgba(161,161,170,0.06)", border: "rgba(161,161,170,0.12)" },
+    FREE:  { color: "var(--c-text-3)", bg: "rgba(161,161,170,0.06)", border: "rgba(161,161,170,0.12)" },
   }
   const c = colors[plan] ?? colors.FREE
 
@@ -212,13 +212,13 @@ function StatusDot({ biz }: { biz: BusinessItem }) {
 }
 
 function ExpiryText({ iso }: { iso: string | null }) {
-  if (!iso) return <span style={{ color: "#3F3F46", fontSize: 12 }}>Sem data</span>
+  if (!iso) return <span style={{ color: "var(--c-text-4)", fontSize: 12 }}>Sem data</span>
   const days = daysUntil(iso)!
   const expired = days < 0
   return (
     <span style={{
       fontSize: 12, fontWeight: 500,
-      color: expired ? "#EF4444" : days <= 7 ? "#F59E0B" : "#A1A1AA",
+      color: expired ? "#EF4444" : days <= 7 ? "#F59E0B" : "var(--c-text-2)",
     }}>
       {formatDate(iso)}
     </span>
@@ -230,7 +230,7 @@ function MetricCard({ label, value, color, icon }: {
 }) {
   return (
     <div style={{
-      background: "#111113",
+      background: "var(--c-surface)",
       border: "1px solid rgba(255,255,255,0.06)",
       borderRadius: 14, padding: "18px 20px",
       flex: "1 1 150px", minWidth: 140,
@@ -238,7 +238,7 @@ function MetricCard({ label, value, color, icon }: {
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <span style={{ fontSize: 14 }}>{icon}</span>
         <p style={{
-          fontSize: 11, color: "#52525B", margin: 0,
+          fontSize: 11, color: "var(--c-text-4)", margin: 0,
           textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600,
         }}>{label}</p>
       </div>
@@ -261,17 +261,17 @@ function BusinessCard({ biz, onEdit, onToggle, toggling, onDelete, deleting }: {
 }) {
   return (
     <div style={{
-      background: "#111113",
+      background: "var(--c-surface)",
       border: "1px solid rgba(255,255,255,0.06)",
       borderRadius: 14, padding: 18,
     }}>
       {/* Top row: name + status */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: "#FAFAFA", fontSize: 15, fontWeight: 700, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <p style={{ color: "var(--c-text)", fontSize: 15, fontWeight: 700, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {biz.name}
           </p>
-          <p style={{ color: "#52525B", fontSize: 12, margin: "2px 0 0" }}>{biz.email}</p>
+          <p style={{ color: "var(--c-text-4)", fontSize: 12, margin: "2px 0 0" }}>{biz.email}</p>
         </div>
         <StatusDot biz={biz} />
       </div>
@@ -279,27 +279,27 @@ function BusinessCard({ biz, onEdit, onToggle, toggling, onDelete, deleting }: {
       {/* Info grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", marginBottom: 14 }}>
         <div>
-          <p style={{ fontSize: 10, color: "#52525B", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dono</p>
-          <p style={{ fontSize: 13, color: "#A1A1AA", margin: "2px 0 0" }}>{biz.owner?.name ?? "—"}</p>
+          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dono</p>
+          <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: "2px 0 0" }}>{biz.owner?.name ?? "—"}</p>
         </div>
         <div>
-          <p style={{ fontSize: 10, color: "#52525B", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Plano</p>
+          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Plano</p>
           <div style={{ marginTop: 4 }}><PlanBadge plan={biz.plan} isTrial={biz.isTrial} /></div>
         </div>
         <div>
-          <p style={{ fontSize: 10, color: "#52525B", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vence em</p>
+          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vence em</p>
           <div style={{ marginTop: 2 }}><ExpiryText iso={biz.planExpiresAt} /></div>
         </div>
         <div>
-          <p style={{ fontSize: 10, color: "#52525B", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Slug</p>
-          <code style={{ fontSize: 11, color: "#71717A", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: 3, marginTop: 2, display: "inline-block" }}>
+          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Slug</p>
+          <code style={{ fontSize: 11, color: "var(--c-text-3)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: 3, marginTop: 2, display: "inline-block" }}>
             {biz.slug}
           </code>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 14, fontSize: 12, color: "#52525B" }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 14, fontSize: 12, color: "var(--c-text-4)" }}>
         <span>{biz._count.customers} clientes</span>
         <span>·</span>
         <span>{biz._count.schedules} agend.</span>
@@ -353,13 +353,13 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [error, setError] = useState("")
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "10px 14px", background: "#09090B",
+    width: "100%", padding: "10px 14px", background: "var(--c-bg)",
     border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
-    color: "#FAFAFA", fontSize: 14, outline: "none", boxSizing: "border-box",
+    color: "var(--c-text)", fontSize: 14, outline: "none", boxSizing: "border-box",
     fontFamily: "inherit",
   }
   const labelStyle: React.CSSProperties = {
-    color: "#A1A1AA", fontSize: 12, fontWeight: 500, marginBottom: 4, display: "block",
+    color: "var(--c-text-2)", fontSize: 12, fontWeight: 500, marginBottom: 4, display: "block",
   }
 
   async function handleCreate() {
@@ -399,7 +399,7 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         borderRadius: 16, padding: "28px 28px 24px", width: 500, maxWidth: "100%",
         maxHeight: "90vh", overflowY: "auto",
       }}>
-        <h2 style={{ color: "#FAFAFA", fontSize: 18, fontWeight: 700, marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
+        <h2 style={{ color: "var(--c-text)", fontSize: 18, fontWeight: 700, marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{
             width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
             background: "rgba(0,102,255,0.1)", fontSize: 14,
@@ -427,10 +427,10 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
           {/* Plan section */}
           <div style={{
-            background: "#111113", borderRadius: 10, padding: 16,
+            background: "var(--c-surface)", borderRadius: 10, padding: 16,
             border: "1px solid rgba(255,255,255,0.06)",
           }}>
-            <p style={{ color: "#FAFAFA", fontSize: 13, fontWeight: 600, margin: "0 0 12px" }}>Plano</p>
+            <p style={{ color: "var(--c-text)", fontSize: 13, fontWeight: 600, margin: "0 0 12px" }}>Plano</p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 120 }}>
                 <label style={labelStyle}>Tipo</label>
@@ -463,14 +463,14 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                   position: "absolute", top: 2,
                   left: isTrial ? 20 : 2,
                   width: 18, height: 18, borderRadius: "50%",
-                  background: "#fff", transition: "left 0.2s",
+                  background: "var(--c-text)", transition: "left 0.2s",
                 }} />
               </button>
-              <span style={{ fontSize: 13, color: isTrial ? "#8B5CF6" : "#71717A", fontWeight: 500 }}>
+              <span style={{ fontSize: 13, color: isTrial ? "#8B5CF6" : "var(--c-text-3)", fontWeight: 500 }}>
                 Trial {isTrial ? "ativo" : "desativado"}
               </span>
             </div>
-            <p style={{ fontSize: 11, color: "#52525B", margin: "6px 0 0" }}>
+            <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "6px 0 0" }}>
               {isTrial
                 ? "Sem data de vencimento → trial de 7 dias automático."
                 : "Plano pago — defina a data de vencimento acima."}
@@ -484,7 +484,7 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           <button onClick={onClose} style={{
             padding: "10px 20px", background: "transparent",
             border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
-            color: "#A1A1AA", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+            color: "var(--c-text-2)", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
           }}>Cancelar</button>
           <button onClick={handleCreate} disabled={creating} style={{
             padding: "10px 24px", background: "#0066FF", color: "white",
@@ -544,22 +544,22 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
             background: "rgba(16,185,129,0.1)", fontSize: 18,
           }}>✅</div>
           <div>
-            <h2 style={{ color: "#FAFAFA", fontSize: 17, fontWeight: 700, margin: 0 }}>Loja criada com sucesso!</h2>
-            <p style={{ color: "#52525B", fontSize: 12, margin: 0 }}>{data.business.name}</p>
+            <h2 style={{ color: "var(--c-text)", fontSize: 17, fontWeight: 700, margin: 0 }}>Loja criada com sucesso!</h2>
+            <p style={{ color: "var(--c-text-4)", fontSize: 12, margin: 0 }}>{data.business.name}</p>
           </div>
         </div>
 
         <div style={{
-          background: "#09090B", borderRadius: 10, padding: 18,
+          background: "var(--c-bg)", borderRadius: 10, padding: 18,
           border: "1px solid rgba(255,255,255,0.06)", marginBottom: 18,
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
-              <span style={{ color: "#52525B", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Loja</span>
+              <span style={{ color: "var(--c-text-4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Loja</span>
               <p style={{ color: "#0066FF", fontSize: 14, margin: "2px 0 0", wordBreak: "break-all" }}>{data.access.storeUrl}</p>
             </div>
             <div>
-              <span style={{ color: "#52525B", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Plano</span>
+              <span style={{ color: "var(--c-text-4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Plano</span>
               <p style={{ margin: "4px 0 0" }}><PlanBadge plan={data.business.plan as PlanType} /></p>
             </div>
           </div>
@@ -570,10 +570,10 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
           border: "1px solid rgba(16,185,129,0.12)", marginBottom: 20,
         }}>
           <p style={{ color: "#10B981", fontSize: 13, fontWeight: 600, marginBottom: 10 }}>📲 Como acessar</p>
-          <ol style={{ color: "#A1A1AA", fontSize: 13, margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
+          <ol style={{ color: "var(--c-text-2)", fontSize: 13, margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
             <li>Acesse <span style={{ color: "#0066FF" }}>{data.access.loginUrl}</span></li>
             <li>Clique em &quot;Entrar com Google&quot;</li>
-            <li>Use o email: <strong style={{ color: "#FAFAFA" }}>{data.access.email}</strong></li>
+            <li>Use o email: <strong style={{ color: "var(--c-text)" }}>{data.access.email}</strong></li>
           </ol>
         </div>
 
@@ -581,7 +581,7 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
           <button onClick={onClose} style={{
             padding: "10px 20px", background: "transparent",
             border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
-            color: "#A1A1AA", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+            color: "var(--c-text-2)", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
           }}>Fechar</button>
           <button onClick={handleCopy} className="admin-btn" style={{
             padding: "10px 20px",
@@ -612,20 +612,20 @@ function EditModal({ biz, onClose, onSaved }: {
   const [error, setError] = useState("")
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "10px 14px", background: "#09090B",
+    width: "100%", padding: "10px 14px", background: "var(--c-bg)",
     border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
-    color: "#FAFAFA", fontSize: 14, outline: "none", boxSizing: "border-box",
+    color: "var(--c-text)", fontSize: 14, outline: "none", boxSizing: "border-box",
     fontFamily: "inherit",
   }
   const labelStyle: React.CSSProperties = {
-    color: "#A1A1AA", fontSize: 12, fontWeight: 500, marginBottom: 4, display: "block",
+    color: "var(--c-text-2)", fontSize: 12, fontWeight: 500, marginBottom: 4, display: "block",
   }
 
   // Compute status preview
   const days = daysUntil(expiry ? expiry + "T23:59:59Z" : null)
   const isExpired = days !== null && days < 0
   const statusPreview = !expiry
-    ? { text: "Sem data de vencimento", color: "#52525B" }
+    ? { text: "Sem data de vencimento", color: "var(--c-text-4)" }
     : isExpired
       ? { text: `Expirado há ${Math.abs(days!)} dias`, color: "#EF4444" }
       : days! <= 7
@@ -670,9 +670,9 @@ function EditModal({ biz, onClose, onSaved }: {
             background: "rgba(0,102,255,0.1)", fontSize: 16,
           }}>✏️</div>
           <div>
-            <h2 style={{ color: "#FAFAFA", fontSize: 17, fontWeight: 700, margin: 0 }}>Editar loja</h2>
-            <p style={{ color: "#52525B", fontSize: 12, margin: 0 }}>
-              {biz.name} · <code style={{ fontSize: 11, color: "#3F3F46" }}>{biz.slug}</code>
+            <h2 style={{ color: "var(--c-text)", fontSize: 17, fontWeight: 700, margin: 0 }}>Editar loja</h2>
+            <p style={{ color: "var(--c-text-4)", fontSize: 12, margin: 0 }}>
+              {biz.name} · <code style={{ fontSize: 11, color: "var(--c-text-4)" }}>{biz.slug}</code>
             </p>
           </div>
         </div>
@@ -696,10 +696,10 @@ function EditModal({ biz, onClose, onSaved }: {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Plan section */}
           <div style={{
-            background: "#111113", borderRadius: 10, padding: 16,
+            background: "var(--c-surface)", borderRadius: 10, padding: 16,
             border: "1px solid rgba(255,255,255,0.06)",
           }}>
-            <p style={{ color: "#FAFAFA", fontSize: 13, fontWeight: 600, margin: "0 0 12px" }}>Plano & Validade</p>
+            <p style={{ color: "var(--c-text)", fontSize: 13, fontWeight: 600, margin: "0 0 12px" }}>Plano & Validade</p>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 120 }}>
@@ -715,7 +715,7 @@ function EditModal({ biz, onClose, onSaved }: {
                 {expiry && (
                   <button onClick={() => setExpiry("")} style={{
                     marginTop: 4, background: "none", border: "none",
-                    color: "#71717A", fontSize: 11, cursor: "pointer", padding: 0,
+                    color: "var(--c-text-3)", fontSize: 11, cursor: "pointer", padding: 0,
                     fontFamily: "inherit",
                   }}>✕ Limpar data</button>
                 )}
@@ -737,10 +737,10 @@ function EditModal({ biz, onClose, onSaved }: {
                   position: "absolute", top: 2,
                   left: isTrial ? 20 : 2,
                   width: 18, height: 18, borderRadius: "50%",
-                  background: "#fff", transition: "left 0.2s",
+                  background: "var(--c-text)", transition: "left 0.2s",
                 }} />
               </button>
-              <span style={{ fontSize: 13, color: isTrial ? "#8B5CF6" : "#71717A", fontWeight: 500 }}>
+              <span style={{ fontSize: 13, color: isTrial ? "#8B5CF6" : "var(--c-text-3)", fontWeight: 500 }}>
                 {isTrial ? "Período de teste (Trial)" : "Plano pago"}
               </span>
             </div>
@@ -755,7 +755,7 @@ function EditModal({ biz, onClose, onSaved }: {
                 cursor: "pointer", fontFamily: "inherit",
                 background: active ? "rgba(16,185,129,0.08)" : "transparent",
                 border: `1px solid ${active ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.1)"}`,
-                color: active ? "#10B981" : "#71717A",
+                color: active ? "#10B981" : "var(--c-text-3)",
                 transition: "all 0.15s",
               }}>✅ Ativa</button>
               <button onClick={() => setActive(false)} style={{
@@ -763,7 +763,7 @@ function EditModal({ biz, onClose, onSaved }: {
                 cursor: "pointer", fontFamily: "inherit",
                 background: !active ? "rgba(239,68,68,0.08)" : "transparent",
                 border: `1px solid ${!active ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.1)"}`,
-                color: !active ? "#EF4444" : "#71717A",
+                color: !active ? "#EF4444" : "var(--c-text-3)",
                 transition: "all 0.15s",
               }}>🚫 Inativa</button>
             </div>
@@ -776,7 +776,7 @@ function EditModal({ biz, onClose, onSaved }: {
           <button onClick={onClose} style={{
             padding: "10px 20px", background: "transparent",
             border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
-            color: "#A1A1AA", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+            color: "var(--c-text-2)", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
           }}>Cancelar</button>
           <button onClick={handleSave} disabled={saving} className="admin-btn" style={{
             padding: "10px 24px", background: "#0066FF", color: "white",
@@ -932,7 +932,7 @@ function AdminPageContent() {
       cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
       border: `1px solid ${active ? "rgba(0,102,255,0.3)" : "rgba(255,255,255,0.08)"}`,
       background: active ? "rgba(0,102,255,0.08)" : "transparent",
-      color: active ? "#0066FF" : "#71717A",
+      color: active ? "#0066FF" : "var(--c-text-3)",
     }
   }
 
@@ -944,12 +944,12 @@ function AdminPageContent() {
       <div style={{ marginBottom: 24, animation: "fadeUp 0.3s ease" }}>
         <h1 style={{
           fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px",
-          background: "linear-gradient(135deg, #FAFAFA 60%, #71717A)",
+          background: "linear-gradient(135deg, var(--c-text) 60%, var(--c-text-3))",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
         }}>
           Painel Admin
         </h1>
-        <p style={{ color: "#52525B", fontSize: 13, marginTop: 4 }}>
+        <p style={{ color: "var(--c-text-4)", fontSize: 13, marginTop: 4 }}>
           Gestão de estéticas, planos e validade.
         </p>
       </div>
@@ -961,7 +961,7 @@ function AdminPageContent() {
         gap: 12, marginBottom: 24,
         animation: "fadeUp 0.3s ease 0.05s both",
       }}>
-        <MetricCard label="Total"     value={total}         color="#FAFAFA"  icon="📊" />
+        <MetricCard label="Total"     value={total}         color="var(--c-text)"  icon="📊" />
         <MetricCard label="Ativos"    value={activeCount}   color="#10B981"  icon="✅" />
         <MetricCard label="PRO"       value={proCount}      color="#F59E0B"  icon="✦" />
         <MetricCard label="Trial"     value={trialCount}    color="#8B5CF6"  icon="🧪" />
@@ -980,7 +980,7 @@ function AdminPageContent() {
         <div style={{ position: "relative", flex: "1 1 260px", minWidth: 200 }}>
           <span style={{
             position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
-            color: "#52525B", fontSize: 14, pointerEvents: "none",
+            color: "var(--c-text-4)", fontSize: 14, pointerEvents: "none",
           }}>🔍</span>
           <input
             ref={searchRef}
@@ -989,8 +989,8 @@ function AdminPageContent() {
             placeholder="Buscar estética, email, slug... (⌘K)"
             style={{
               width: "100%", height: 40, paddingLeft: 36, paddingRight: 14,
-              background: "#111113", border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 10, color: "#FAFAFA", fontSize: 13, outline: "none",
+              background: "var(--c-surface)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10, color: "var(--c-text)", fontSize: 13, outline: "none",
               fontFamily: "inherit", boxSizing: "border-box",
               transition: "border-color 0.15s",
             }}
@@ -999,7 +999,7 @@ function AdminPageContent() {
           />
         </div>
 
-        <p style={{ color: "#3F3F46", fontSize: 12, margin: 0, whiteSpace: "nowrap" }}>
+        <p style={{ color: "var(--c-text-4)", fontSize: 12, margin: 0, whiteSpace: "nowrap" }}>
           {filtered.length}/{total}
         </p>
 
@@ -1019,7 +1019,7 @@ function AdminPageContent() {
         <Link
           href="/admin/usuarios/novo"
           style={{
-            padding: "9px 18px", background: "transparent", color: "#FAFAFA",
+            padding: "9px 18px", background: "transparent", color: "var(--c-text)",
             border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontWeight: 600, fontSize: 13,
             cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
             fontFamily: "inherit", whiteSpace: "nowrap", textDecoration: "none",
@@ -1079,7 +1079,7 @@ function AdminPageContent() {
       {!loading && (
         <div className="admin-desktop-table" style={{ animation: "fadeUp 0.3s ease 0.15s both" }}>
           <div style={{
-            background: "#111113",
+            background: "var(--c-surface)",
             border: "1px solid rgba(255,255,255,0.06)",
             borderRadius: 14, overflow: "hidden",
           }}>
@@ -1089,7 +1089,7 @@ function AdminPageContent() {
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     {["Estética", "Dono", "Plano", "Status", "Vence em", "Dados", "Criada", "Ações"].map(h => (
                       <th key={h} style={{
-                        padding: "12px 16px", color: "#3F3F46", fontSize: 10,
+                        padding: "12px 16px", color: "var(--c-text-4)", fontSize: 10,
                         fontWeight: 600, textTransform: "uppercase", textAlign: "left",
                         letterSpacing: "0.06em", whiteSpace: "nowrap",
                       }}>{h}</th>
@@ -1099,7 +1099,7 @@ function AdminPageContent() {
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ padding: 48, textAlign: "center", color: "#3F3F46", fontSize: 14 }}>
+                      <td colSpan={8} style={{ padding: 48, textAlign: "center", color: "var(--c-text-4)", fontSize: 14 }}>
                         {debouncedSearch ? `Nenhuma loja para "${debouncedSearch}"` : "Nenhuma loja cadastrada."}
                       </td>
                     </tr>
@@ -1108,17 +1108,17 @@ function AdminPageContent() {
                       borderBottom: "1px solid rgba(255,255,255,0.03)",
                     }}>
                       <td style={{ padding: "14px 16px" }}>
-                        <p style={{ color: "#FAFAFA", fontSize: 14, fontWeight: 600, margin: 0 }}>{b.name}</p>
-                        <code style={{ color: "#3F3F46", fontSize: 11 }}>{b.slug}</code>
+                        <p style={{ color: "var(--c-text)", fontSize: 14, fontWeight: 600, margin: 0 }}>{b.name}</p>
+                        <code style={{ color: "var(--c-text-4)", fontSize: 11 }}>{b.slug}</code>
                       </td>
                       <td style={{ padding: "14px 16px" }}>
                         {b.owner ? (
                           <div>
-                            <p style={{ color: "#A1A1AA", fontSize: 13, margin: 0 }}>{b.owner.name ?? "—"}</p>
-                            <p style={{ color: "#3F3F46", fontSize: 11, margin: "1px 0 0" }}>{b.owner.email}</p>
+                            <p style={{ color: "var(--c-text-2)", fontSize: 13, margin: 0 }}>{b.owner.name ?? "—"}</p>
+                            <p style={{ color: "var(--c-text-4)", fontSize: 11, margin: "1px 0 0" }}>{b.owner.email}</p>
                           </div>
                         ) : (
-                          <span style={{ color: "#3F3F46", fontSize: 12 }}>—</span>
+                          <span style={{ color: "var(--c-text-4)", fontSize: 12 }}>—</span>
                         )}
                       </td>
                       <td style={{ padding: "14px 16px" }}>
@@ -1131,11 +1131,11 @@ function AdminPageContent() {
                         <ExpiryText iso={b.planExpiresAt} />
                       </td>
                       <td style={{ padding: "14px 16px" }}>
-                        <span style={{ color: "#52525B", fontSize: 12 }}>
+                        <span style={{ color: "var(--c-text-4)", fontSize: 12 }}>
                           {b._count.customers}c · {b._count.schedules}a · {b._count.users}u
                         </span>
                       </td>
-                      <td style={{ padding: "14px 16px", color: "#3F3F46", fontSize: 12, whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "14px 16px", color: "var(--c-text-4)", fontSize: 12, whiteSpace: "nowrap" }}>
                         {formatDate(b.createdAt)}
                       </td>
                       <td style={{ padding: "14px 16px" }}>
@@ -1196,8 +1196,8 @@ function AdminPageContent() {
         }}>
           {filtered.length === 0 ? (
             <div style={{
-              padding: 48, textAlign: "center", color: "#3F3F46", fontSize: 14,
-              background: "#111113", borderRadius: 14,
+              padding: 48, textAlign: "center", color: "var(--c-text-4)", fontSize: 14,
+              background: "var(--c-surface)", borderRadius: 14,
               border: "1px solid rgba(255,255,255,0.06)",
             }}>
               {debouncedSearch ? `Nenhuma loja para "${debouncedSearch}"` : "Nenhuma loja cadastrada."}

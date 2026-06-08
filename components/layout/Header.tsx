@@ -46,7 +46,7 @@ export default function Header() {
           style={{
             background: "none", border: "none",
             cursor: "pointer", padding: 8,
-            borderRadius: 8, color: "#A1A1AA",
+            borderRadius: 8, color: "var(--c-text-2)",
             display: "flex",
           }}
         >
@@ -97,15 +97,15 @@ export default function Header() {
             position: "fixed",
             left: 0, top: 0, bottom: 0,
             width: 280, zIndex: 70,
-            backgroundColor: "#111111",
-            borderRight: "1px solid #1F1F1F",
+            backgroundColor: "var(--c-surface)",
+            borderRight: "1px solid var(--c-border)",
             display: "flex", flexDirection: "column",
           }}
         >
           {/* Drawer header */}
           <div style={{
             height: 64, padding: "0 16px",
-            borderBottom: "1px solid #1F1F1F",
+            borderBottom: "1px solid var(--c-border)",
             display: "flex", alignItems: "center",
             justifyContent: "space-between", flexShrink: 0,
           }}>
@@ -116,7 +116,7 @@ export default function Header() {
                 background: "rgba(255,255,255,0.05)",
                 border: "none", cursor: "pointer",
                 padding: 6, borderRadius: 8,
-                color: "#A1A1AA", display: "flex",
+                color: "var(--c-text-2)", display: "flex",
               }}
             >
               <X size={18} />
@@ -129,7 +129,7 @@ export default function Header() {
               <div key={gi}>
                 {group.label && (
                   <div style={{
-                    fontSize: 10, fontWeight: 600, color: "#3F3F46",
+                    fontSize: 10, fontWeight: 600, color: "var(--c-text-4)",
                     textTransform: "uppercase", letterSpacing: "1px",
                     paddingLeft: 12, marginBottom: 6,
                     marginTop: gi === 0 ? 0 : 20,
@@ -152,10 +152,10 @@ export default function Header() {
                         border: active ? "1px solid rgba(0,102,255,0.2)" : "1px solid transparent",
                       }}
                     >
-                      <Icon size={16} color={active ? "#0066FF" : "#71717A"} />
+                      <Icon size={16} color={active ? "#0066FF" : "var(--c-text-3)"} />
                       <span style={{
                         fontSize: 14, fontWeight: active ? 500 : 400,
-                        color: active ? "#0066FF" : "#A1A1AA",
+                        color: active ? "#0066FF" : "var(--c-text-2)",
                       }}>
                         {item.label}
                       </span>

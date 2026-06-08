@@ -55,11 +55,11 @@ export default function ConfirmDialog({
             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
               <AlertTriangle size={18} className="text-red-400" />
             </div>
-            <p className="text-sm text-[#A1A1AA]">{description}</p>
+            <p className="text-sm text-[var(--c-text-2)]">{description}</p>
           </div>
         )}
         {variant === "default" && (
-          <p className="text-sm text-[#A1A1AA]">{description}</p>
+          <p className="text-sm text-[var(--c-text-2)]">{description}</p>
         )}
       </div>
     </Modal>
