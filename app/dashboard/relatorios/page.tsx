@@ -8,7 +8,7 @@ import {
   DollarSign, CheckCircle, XCircle, AlertCircle, Crown,
   Zap, Target, Star, ArrowUpRight, ArrowDownRight,
   Activity, Repeat, ShieldCheck, Lightbulb, Clock,
-  CreditCard, Banknote, QrCode,
+  CreditCard, Banknote, QrCode, Download,
 } from "lucide-react"
 import {
   ResponsiveContainer, AreaChart as RArea, Area,
@@ -532,6 +532,35 @@ function PainelDeSaude() {
 
   useEffect(() => { fetchData(period) }, [period, fetchData])
 
+  // Export CSV (gap nº1 vs CERA): faturamento + agendamentos por dia do período,
+  // com linha de total. Excel-friendly (BOM + ; + decimal vírgula).
+  function exportCSV() {
+    if (!data) return
+    const agByDate = new Map(data.agendamentosPorData.map((a) => [a.date, a.count]))
+    const header = ["Data", "Faturamento (R$)", "Agendamentos"]
+    const rows = data.faturamentoPorDia.map((d) => [
+      d.date,
+      (d.total / 100).toFixed(2).replace(".", ","),
+      String(agByDate.get(d.date) ?? 0),
+    ])
+    rows.push([
+      "Total",
+      (data.faturamentoTotal / 100).toFixed(2).replace(".", ","),
+      String(data.totalAgendamentos),
+    ])
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
+      .join("\r\n")
+    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    const stamp = new Date().toISOString().slice(0, 10)
+    a.download = `forbion-faturamento-${period}-${stamp}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const maxSvcCnt = data ? Math.max(...data.servicosMaisPopulares.map(s => s.count), 1) : 1
   const maxAgDia  = data ? Math.max(...data.agendamentosPorDia.map(d => d.count), 1) : 1
   const spark7Ag = data?.agendamentosPorData?.slice(-7).map(d => d.count) ?? []
@@ -606,11 +635,16 @@ function PainelDeSaude() {
               </Link>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
-            {PERIODS.map(opt => {
-              const active = period === opt.value
-              return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
-            })}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={exportCSV} disabled={!data} title="Baixar relatório do período em CSV (Excel)" style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: data ? "var(--c-text-2)" : "var(--c-text-4)", fontSize: 12, fontWeight: 600, cursor: data ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+              <Download size={14} /> Baixar CSV
+            </button>
+            <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
+              {PERIODS.map(opt => {
+                const active = period === opt.value
+                return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
+              })}
+            </div>
           </div>
         </div>
 
