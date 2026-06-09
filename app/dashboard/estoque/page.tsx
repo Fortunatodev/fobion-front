@@ -64,7 +64,7 @@ export default function EstoquePage() {
   }
 
   async function save() {
-    if (!f.name.trim()) { setFErr("Nome é obrigatório."); return }
+    if (!f.name.trim()) { setFErr("Nome é obrigatório."); toast.error("Preencha o nome do produto."); return }
     setSaving(true); setFErr("")
     const payload = {
       name: f.name.trim(), sku: f.sku.trim() || null,
@@ -79,22 +79,33 @@ export default function EstoquePage() {
         await apiPost("/products", { ...payload, stockQty: f.qty ? Math.round(Number(f.qty)) : 0 })
       }
       setModal(false); setF(EMPTY_FORM); setEditingId(null); fetchData()
-    } catch { setFErr("Erro ao salvar.") } finally { setSaving(false) }
+      toast.success(editingId ? "Produto atualizado." : `"${payload.name}" cadastrado no estoque.`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar."
+      setFErr(msg); toast.error(msg)
+    } finally { setSaving(false) }
   }
 
   async function quickAdjust(id: string, delta: number) {
     setBusy(id)
-    try { await apiPut(`/products/${id}/stock`, { delta }); fetchData() } catch { /* */ } finally { setBusy(null) }
+    try { await apiPut(`/products/${id}/stock`, { delta }); fetchData() }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao ajustar estoque.") }
+    finally { setBusy(null) }
   }
 
   async function doAdjust() {
     if (!adjFor) return
     const n = Math.round(Number(adjQty))
-    if (!n || n <= 0) return
+    if (!n || n <= 0) { toast.error("Informe uma quantidade maior que zero."); return }
     const delta = adjDir === "in" ? n : -n
-    setBusy(adjFor.id)
-    try { await apiPut(`/products/${adjFor.id}/stock`, { delta }); setAdjFor(null); setAdjQty(""); fetchData() }
-    catch { /* */ } finally { setBusy(null) }
+    const target = adjFor
+    setBusy(target.id)
+    try {
+      await apiPut(`/products/${target.id}/stock`, { delta }); setAdjFor(null); setAdjQty(""); fetchData()
+      toast.success(`${adjDir === "in" ? "Entrada" : "Saída"} de ${n} em "${target.name}".`)
+    }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao ajustar estoque.") }
+    finally { setBusy(null) }
   }
 
   async function confirmRemove() {

@@ -144,21 +144,32 @@ function EmployeesContent() {
   function closeModal() { setShowModal(null); setSelected(null); setFormError(null) }
 
   async function handleSave() {
-    if (!formName.trim() || !formEmail.trim()) {
-      setFormError("Nome e e-mail são obrigatórios."); return
+    if (!formName.trim()) {
+      setFormError("Nome e e-mail são obrigatórios.")
+      toast.error("Preencha o nome do funcionário.")
+      return
     }
+    if (!formEmail.trim()) {
+      setFormError("Nome e e-mail são obrigatórios.")
+      toast.error("Preencha o e-mail do funcionário.")
+      return
+    }
+    const isCreate = showModal === "create"
     setActionLoading("save")
     setFormError(null)
     try {
-      if (showModal === "create") {
+      if (isCreate) {
         await apiPost("/employees", { name: formName.trim(), email: formEmail.trim() })
       } else if (selected) {
         await apiPut(`/employees/${selected.id}`, { name: formName.trim(), email: formEmail.trim() })
       }
       closeModal()
       await fetchEmployees()
-    } catch (e: unknown) {
-      setFormError(e instanceof Error ? e.message : "Erro ao salvar.")
+      toast.success(isCreate ? "Funcionário adicionado." : "Funcionário atualizado.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
     }

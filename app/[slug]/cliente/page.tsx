@@ -202,8 +202,14 @@ function ClientAreaContent() {
 
   // ── Save profile ──────────────────────────────────────────────────────────
   const handleSaveProfile = async () => {
-    if (!editName.trim() || !editPhone.trim()) {
+    if (!editName.trim()) {
       setSaveMsg({ type: "err", text: "Nome e telefone são obrigatórios." })
+      toast.error("Preencha seu nome para salvar.")
+      return
+    }
+    if (!editPhone.trim()) {
+      setSaveMsg({ type: "err", text: "Nome e telefone são obrigatórios." })
+      toast.error("Preencha seu telefone para salvar.")
       return
     }
     setSaving(true)
@@ -215,9 +221,12 @@ function ClientAreaContent() {
       })
       setProfile((prev) => prev ? { ...prev, name: data.customer.name, phone: data.customer.phone } : prev)
       setSaveMsg({ type: "ok", text: "Perfil atualizado!" })
+      toast.success("Perfil atualizado!")
       setEditing(false)
     } catch (e: unknown) {
-      setSaveMsg({ type: "err", text: e instanceof Error ? e.message : "Erro ao salvar." })
+      const msg = e instanceof Error ? e.message : "Erro ao salvar."
+      setSaveMsg({ type: "err", text: msg })
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

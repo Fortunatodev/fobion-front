@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react"
+import { toast } from "sonner"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
 import type { BusinessPlan } from "@/types"
@@ -517,11 +518,13 @@ function ConfiguracoesContent() {
     if (cal === "success") {
       setCalendarConnected(true)
       setSuccess("Google Calendar conectado com sucesso!")
+      toast.success("Google Calendar conectado com sucesso!")
       setTimeout(() => setSuccess(null), 4000)
       setActiveTab("conta")
       router.replace("/dashboard/configuracoes")
     } else if (cal === "error") {
       setError("Erro ao conectar Google Calendar. Tente novamente.")
+      toast.error("Erro ao conectar Google Calendar. Tente novamente.")
       setActiveTab("conta")
       router.replace("/dashboard/configuracoes")
     }
@@ -541,8 +544,10 @@ function ConfiguracoesContent() {
       await apiDelete("/auth/google/calendar/disconnect")
       setCalendarConnected(false)
       showSuccess("Google Calendar desconectado.")
-    } catch {
-      setError("Erro ao desconectar Google Calendar.")
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "Erro ao desconectar Google Calendar."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setCalendarLoading(false)
     }
@@ -550,13 +555,19 @@ function ConfiguracoesContent() {
 
   function showSuccess(msg: string) {
     setSuccess(msg)
+    toast.success(msg)
     setTimeout(() => setSuccess(null), 4000)
   }
 
   // ── Save negócio ───────────────────────────────────────────────────────────
   async function handleSaveNegocio() {
     if (!formName.trim() || !formPhone.trim()) {
-      setError("Nome e telefone são obrigatórios."); return
+      const faltando = !formName.trim()
+        ? (!formPhone.trim() ? "o nome e o telefone" : "o nome do estabelecimento")
+        : "o telefone"
+      setError("Nome e telefone são obrigatórios.")
+      toast.error(`Preencha ${faltando} para salvar.`)
+      return
     }
     setSaving(true); setError(null); setSuccess(null)
     try {
@@ -569,8 +580,10 @@ function ConfiguracoesContent() {
         cnpj:        formCnpj.trim(),
       })
       showSuccess("Alterações salvas com sucesso!")
-    } catch {
-      setError("Erro ao salvar. Tente novamente.")
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "Erro ao salvar. Tente novamente."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -582,8 +595,10 @@ function ConfiguracoesContent() {
     try {
       await apiPut("/auth/business/hours", { hours })
       showSuccess("Horários salvos com sucesso!")
-    } catch {
-      setError("Erro ao salvar horários.")
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "Erro ao salvar horários."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -602,6 +617,7 @@ function ConfiguracoesContent() {
 
     if (file.size > 2 * 1024 * 1024) {
       setError("Imagem muito grande. Máximo 2MB.")
+      toast.error("Imagem muito grande. Escolha um arquivo de até 2MB.")
       return
     }
 
@@ -629,8 +645,10 @@ function ConfiguracoesContent() {
       setOwnerAvatarUrl(url)
       await apiPut("/auth/business", { ownerAvatarUrl: url })
       showSuccess("Foto de perfil atualizada!")
-    } catch {
-      setError("Erro ao enviar a foto. Tente novamente.")
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "Erro ao enviar a foto. Tente novamente."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setUploadingAvatar(false)
       if (avatarInputRef.current) avatarInputRef.current.value = ""
@@ -644,8 +662,10 @@ function ConfiguracoesContent() {
       await apiPut("/auth/business", { themeColor: color })
       setColorSaved(true)
       setTimeout(() => setColorSaved(false), 2000)
-    } catch {
-      setError("Erro ao salvar a cor.")
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "Erro ao salvar a cor."
+      setError(msg)
+      toast.error(msg)
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import { isCustomerAuthenticated } from "@/lib/customer-auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
@@ -41,10 +42,15 @@ function CustomerLoginContent() {
 
     // Mensagens de erro vindas do callback
     const error = searchParams.get("error")
-    if (error === "session_expired")       setErrorMsg("Sua sessão expirou. Faça login novamente.")
-    if (error === "auth_failed")            setErrorMsg("Erro na autenticação. Tente novamente.")
-    if (error === "customer_auth_failed")   setErrorMsg("Falha ao autenticar com o Google. Tente novamente.")
-    if (error === "server_error")           setErrorMsg("Erro interno. Tente novamente em instantes.")
+    let callbackError: string | null = null
+    if (error === "session_expired")       callbackError = "Sua sessão expirou. Faça login novamente."
+    if (error === "auth_failed")            callbackError = "Erro na autenticação. Tente novamente."
+    if (error === "customer_auth_failed")   callbackError = "Falha ao autenticar com o Google. Tente novamente."
+    if (error === "server_error")           callbackError = "Erro interno. Tente novamente em instantes."
+    if (callbackError) {
+      setErrorMsg(callbackError)
+      toast.error(callbackError)
+    }
 
     setChecked(true)
 
@@ -58,12 +64,24 @@ function CustomerLoginContent() {
   }, []) // ← DEPENDÊNCIAS VAZIAS — roda só uma vez na montagem
 
   function handleGoogleLogin() {
+    if (!slug) {
+      setErrorMsg("Não foi possível identificar a loja. Verifique o link de acesso.")
+      toast.error("Não foi possível identificar a loja. Verifique o link de acesso.")
+      return
+    }
     setLoading(true)
-    const redirect = searchParams.get("redirect") ?? ""
-    if (redirect) localStorage.setItem("forbion_login_redirect", redirect)
-    // Garante que API_URL está correto antes de redirecionar
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-    window.location.href = `${apiUrl}/api/auth/google/customer?slug=${slug}`
+    try {
+      const redirect = searchParams.get("redirect") ?? ""
+      if (redirect) localStorage.setItem("forbion_login_redirect", redirect)
+      // Garante que API_URL está correto antes de redirecionar
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+      window.location.href = `${apiUrl}/api/auth/google/customer?slug=${slug}`
+    } catch (e) {
+      setLoading(false)
+      const msg = e instanceof Error ? e.message : "Não foi possível iniciar o login. Tente novamente."
+      setErrorMsg(msg)
+      toast.error(msg)
+    }
   }
 
   if (!checked) return (

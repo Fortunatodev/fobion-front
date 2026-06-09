@@ -265,8 +265,11 @@ function AssinantesContent() {
     try {
       await apiPut(`/customer-plans/subscriptions/${id}/activate`, {})
       await fetchData()
-    } catch {
-      setError("Erro ao ativar assinatura.")
+      toast.success("Assinatura ativada.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao ativar assinatura."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
     }
@@ -280,9 +283,10 @@ function AssinantesContent() {
       await apiPut(`/customer-plans/subscriptions/${id}/cancel`, {})
       await fetchData()
       toast.success("Assinatura cancelada.")
-    } catch {
-      setError("Erro ao cancelar assinatura.")
-      toast.error("Erro ao cancelar assinatura.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao cancelar assinatura."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
       setCancelTarget(null)
@@ -290,8 +294,15 @@ function AssinantesContent() {
   }
 
   async function handleCreateSubscription() {
-    if (!formCustomerId || !formPlanId) {
-      setFormError("Selecione o cliente e o plano."); return
+    if (!formCustomerId) {
+      setFormError("Selecione o cliente e o plano.")
+      toast.error("Selecione o cliente.")
+      return
+    }
+    if (!formPlanId) {
+      setFormError("Selecione o cliente e o plano.")
+      toast.error("Selecione o plano.")
+      return
     }
     setActionLoading("create")
     try {
@@ -301,8 +312,11 @@ function AssinantesContent() {
       })
       setShowModal(false); setFormCustomerId(""); setFormPlanId(""); setFormError(null)
       await fetchData()
-    } catch {
-      setFormError("Erro ao criar assinatura.")
+      toast.success("Assinatura criada.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao criar assinatura."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
     }

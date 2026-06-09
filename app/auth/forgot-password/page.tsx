@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
@@ -14,7 +15,10 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) return
+    if (!email.trim()) {
+      toast.error("Preencha o e-mail para receber o link de redefinição")
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -25,8 +29,11 @@ export default function ForgotPasswordPage() {
         body:    JSON.stringify({ email: email.trim() }),
       })
       setSent(true)
-    } catch {
-      setError("Não foi possível conectar ao servidor. Tente novamente.")
+      toast.success("Link de redefinição enviado. Verifique seu e-mail.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Não foi possível conectar ao servidor. Tente novamente."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

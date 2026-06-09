@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
@@ -38,6 +39,18 @@ function ResetContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!token) {
+      toast.error("Link inválido ou expirado. Solicite um novo.")
+      return
+    }
+    if (password.length < 8) {
+      toast.error("A senha precisa ter pelo menos 8 caracteres.")
+      return
+    }
+    if (password !== confirm) {
+      toast.error("As senhas não conferem.")
+      return
+    }
     if (!canSubmit) return
     setLoading(true)
     setError(null)
@@ -49,13 +62,18 @@ function ResetContent() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error || "Não foi possível redefinir a senha.")
+        const msg = data.error || "Não foi possível redefinir a senha."
+        setError(msg)
+        toast.error(msg)
         return
       }
       setDone(true)
+      toast.success("Senha redefinida com sucesso!")
       setTimeout(() => router.replace("/auth/login?reset=success"), 1800)
-    } catch {
-      setError("Não foi possível conectar ao servidor. Tente novamente.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Não foi possível conectar ao servidor. Tente novamente."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

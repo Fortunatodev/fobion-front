@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useReducer } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle } from "lucide-react"
+import { toast } from "sonner"
 import type { PublicBusiness, PlanServiceRule } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
 
@@ -350,10 +351,14 @@ function AgendarContent() {
   // ── handleSubmit ──────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!customerName.trim()) {
-      setSubmitError("Nome é obrigatório."); return
+      setSubmitError("Nome é obrigatório.")
+      toast.error("Preencha seu nome completo para continuar.")
+      return
     }
     if (!vehicleModel.trim()) {
-      setSubmitError("Modelo do veículo é obrigatório."); return
+      setSubmitError("Modelo do veículo é obrigatório.")
+      toast.error("Preencha o modelo do veículo (ex: Corolla).")
+      return
     }
 
     setSubmitting(true)
@@ -429,6 +434,7 @@ function AgendarContent() {
         // Conflito de horário — recarregar slots imediatamente
         if (res.status === 409 || err.code === "SCHEDULE_CONFLICT") {
           setSubmitError("⚠️ Este horário foi reservado agora. Escolha outro horário.")
+          toast.error("Ops! Esse horário acabou de ser reservado. Escolha outro que liberamos pra você.")
           setSelectedSlot("")
           // ← refresh imediato para o slot ocupado sumir
           await fetchSlots(selectedDate)
@@ -449,6 +455,7 @@ function AgendarContent() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro ao agendar. Tente novamente."
       setSubmitError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }

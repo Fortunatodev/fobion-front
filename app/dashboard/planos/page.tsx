@@ -459,24 +459,25 @@ function PlanosContent() {
     })
   }
 
-  function validateForm(): boolean {
-    if (!formName.trim()) { setFormError("Nome obrigatório."); return false }
+  // Retorna a mensagem de erro (pra exibir inline E em toast) ou null se válido.
+  function validateForm(): string | null {
+    if (!formName.trim()) return "Preencha o nome do plano."
     const price = parseFloat(formPrice)
-    if (isNaN(price) || price <= 0) { setFormError("Preço inválido."); return false }
+    if (isNaN(price) || price <= 0) return "Preencha um preço válido (maior que zero)."
     const discount = parseInt(formDiscount)
     if (isNaN(discount) || discount < 0 || discount > 100) {
-      setFormError("Desconto deve ser entre 0 e 100."); return false
+      return "Desconto global deve ser entre 0 e 100."
     }
     // Validar regras de serviço
     for (const [, rule] of serviceRules) {
       if (rule.discountType === "PERCENTAGE" && (rule.discountValue === null || rule.discountValue < 0 || rule.discountValue > 100)) {
-        setFormError("Desconto percentual deve ser entre 0 e 100."); return false
+        return "Desconto percentual do serviço deve ser entre 0 e 100."
       }
       if (rule.discountType === "FIXED" && (rule.discountValue === null || rule.discountValue < 0)) {
-        setFormError("Valor fixo de desconto inválido."); return false
+        return "Preencha um valor fixo de desconto válido para o serviço."
       }
     }
-    return true
+    return null
   }
 
   function buildPayload() {
@@ -492,26 +493,45 @@ function PlanosContent() {
   }
 
   async function handleCreate() {
-    if (!validateForm()) return
+    const validationError = validateForm()
+    if (validationError) {
+      setFormError(validationError)
+      toast.error(validationError)
+      return
+    }
+    const name = formName.trim()
     setActionLoading("create")
     try {
       await apiPost("/customer-plans", buildPayload())
       closeModal(); await fetchPlans()
-    } catch {
-      setFormError("Erro ao criar plano.")
+      toast.success(`Plano "${name}" criado.`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao criar plano."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
     }
   }
 
   async function handleEdit() {
-    if (!selectedPlan || !validateForm()) return
+    if (!selectedPlan) return
+    const validationError = validateForm()
+    if (validationError) {
+      setFormError(validationError)
+      toast.error(validationError)
+      return
+    }
+    const name = formName.trim()
     setActionLoading("edit")
     try {
       await apiPut(`/customer-plans/${selectedPlan.id}`, buildPayload())
       closeModal(); await fetchPlans()
-    } catch {
-      setFormError("Erro ao atualizar plano.")
+      toast.success(`Plano "${name}" atualizado.`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao atualizar plano."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(null)
     }
@@ -534,8 +554,8 @@ function PlanosContent() {
       await apiDelete(`/customer-plans/${plan.id}`)
       await fetchPlans()
       toast.success(`Plano "${plan.name}" desativado.`)
-    } catch {
-      toast.error("Erro ao remover plano.")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao remover plano.")
     } finally {
       setActionLoading(null)
       setConfirmOpen(false)

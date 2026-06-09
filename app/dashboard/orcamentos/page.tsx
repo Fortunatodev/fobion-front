@@ -128,9 +128,14 @@ export default function OrcamentosPage() {
   }
 
   async function handleCreate() {
+    if (!fName.trim()) {
+      setFErr("Informe o nome do cliente."); toast.error("Preencha o nome do cliente."); return
+    }
     const items = fItems.filter((it) => it.name.trim() && Number(it.price) > 0)
       .map((it) => ({ serviceId: it.serviceId ?? null, name: it.name.trim(), price: Math.round(Number(it.price) * 100) }))
-    if (items.length === 0) { setFErr("Adicione ao menos um item com nome e preço."); return }
+    if (items.length === 0) {
+      setFErr("Adicione ao menos um item com nome e preço."); toast.error("Adicione ao menos um item com nome e preço."); return
+    }
     setSaving(true); setFErr("")
     try {
       await apiPost("/quotes", {
@@ -140,11 +145,21 @@ export default function OrcamentosPage() {
         validUntil: fValid ? new Date(fValid).toISOString() : null,
       })
       setModal(false); resetForm(); fetchQuotes()
-    } catch { setFErr("Erro ao salvar.") } finally { setSaving(false) }
+      toast.success("Orçamento criado.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar."
+      setFErr(msg); toast.error(msg)
+    } finally { setSaving(false) }
   }
 
   async function setStatus(id: string, status: string) {
-    try { await apiPut(`/quotes/${id}/status`, { status }); fetchQuotes() } catch { /* noop */ }
+    try {
+      await apiPut(`/quotes/${id}/status`, { status })
+      fetchQuotes()
+      toast.success(`Orçamento ${(STATUS[status]?.label ?? status).toLowerCase()}.`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao atualizar o status.")
+    }
   }
   function sendWhatsApp(q: Quote, markSent = false) {
     const msg = quoteMessage(q)

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import { getToken, removeToken, setToken } from "@/lib/auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
@@ -67,7 +68,16 @@ function LoginContent() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password) return
+    if (!email.trim()) {
+      setError("Preencha o e-mail.")
+      toast.error("Preencha o e-mail")
+      return
+    }
+    if (!password) {
+      setError("Preencha a senha.")
+      toast.error("Preencha a senha")
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -78,13 +88,17 @@ function LoginContent() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Credenciais inválidas.")
+        const msg = data.error || "Credenciais inválidas."
+        setError(msg)
+        toast.error(msg)
         return
       }
       setToken(data.token)
       router.replace("/dashboard")
-    } catch {
+    } catch (e) {
+      const msg = (e as Error).message || "Não foi possível conectar ao servidor. Tente novamente."
       setError("Não foi possível conectar ao servidor. Tente novamente.")
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

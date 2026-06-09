@@ -180,9 +180,9 @@ export default function ServicosPage() {
 
   // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
-    if (!formPrice || isNaN(Number(formPrice))) { setFormError("Preço inválido."); return }
-    if (!formDuration || isNaN(Number(formDuration))) { setFormError("Duração inválida."); return }
+    if (!formName.trim()) { setFormError("Nome é obrigatório."); toast.error("Preencha o nome do serviço."); return }
+    if (!formPrice || isNaN(Number(formPrice))) { setFormError("Preço inválido."); toast.error("Preencha um preço válido (R$)."); return }
+    if (!formDuration || isNaN(Number(formDuration))) { setFormError("Duração inválida."); toast.error("Preencha uma duração válida (minutos)."); return }
 
     setSaving(true)
     setFormError(null)
@@ -193,6 +193,7 @@ export default function ServicosPage() {
         const pct = Number(formCommissionPct)
         if (isNaN(pct) || pct < 0 || pct > 100) {
           setFormError("Repasse deve estar entre 0 e 100.")
+          toast.error("Repasse ao funcionário deve estar entre 0 e 100%.")
           setSaving(false)
           return
         }
@@ -224,14 +225,18 @@ export default function ServicosPage() {
         const res = await apiPost<{ service: Service }>("/services", body)
         setServices(prev => [res.service, ...prev])
         showSuccess("Serviço criado com sucesso!")
+        toast.success("Serviço criado com sucesso!")
       } else if (selected) {
         const res = await apiPut<{ service: Service }>(`/services/${selected.id}`, body)
         setServices(prev => prev.map(s => s.id === selected.id ? res.service : s))
         showSuccess("Serviço atualizado com sucesso!")
+        toast.success("Serviço atualizado com sucesso!")
       }
       closeModal()
-    } catch {
-      setFormError("Erro ao salvar serviço. Tente novamente.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar serviço. Tente novamente."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

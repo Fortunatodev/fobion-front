@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { getToken } from "@/lib/auth"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
@@ -28,7 +29,15 @@ export default function PasswordCard({ isMobile = false }: { isMobile?: boolean 
   const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setMsg(null) }
 
   const handleSubmit = async () => {
-    if (!canSubmit) return
+    if (loading) return
+    if (next.length < 8) {
+      toast.error("A nova senha precisa ter no mínimo 8 caracteres.")
+      return
+    }
+    if (next !== confirm) {
+      toast.error("As senhas não conferem. Confirme a nova senha igual.")
+      return
+    }
     setLoading(true)
     setMsg(null)
     try {
@@ -39,14 +48,19 @@ export default function PasswordCard({ isMobile = false }: { isMobile?: boolean 
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setMsg({ kind: "err", text: data.error || "Não foi possível alterar a senha." })
+        const text = data.error || "Não foi possível alterar a senha."
+        setMsg({ kind: "err", text })
+        toast.error(text)
         return
       }
       setMsg({ kind: "ok", text: "Senha alterada com sucesso." })
+      toast.success("Senha alterada com sucesso.")
       setCurrent(""); setNext(""); setConfirm("")
       setTimeout(() => { setOpen(false); setMsg(null) }, 1500)
-    } catch {
-      setMsg({ kind: "err", text: "Não foi possível conectar ao servidor." })
+    } catch (e) {
+      const text = (e as Error).message || "Não foi possível conectar ao servidor."
+      setMsg({ kind: "err", text })
+      toast.error(text)
     } finally {
       setLoading(false)
     }

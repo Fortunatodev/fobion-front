@@ -7,6 +7,7 @@ import {
   ChevronRight, Edit3, X, AlertCircle, Calendar,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
+import { toast } from "sonner"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -120,8 +121,10 @@ export default function ClientesPage() {
       const res = await apiGet<{ customers: Customer[] }>("/customers")
       setCustomers(res.customers ?? [])
       setError(null)
-    } catch {
-      setError("Erro ao carregar clientes. Verifique sua conexão.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao carregar clientes. Verifique sua conexão."
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -148,7 +151,7 @@ export default function ClientesPage() {
 
   async function handleCreateCustomer() {
     // Apenas nome é obrigatório no fluxo manual. Telefone e e-mail são opcionais.
-    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
+    if (!formName.trim()) { setFormError("Nome é obrigatório."); toast.error("Preencha o nome do cliente"); return }
     setActionLoading(true)
     try {
       await apiPost("/customers", {
@@ -156,11 +159,14 @@ export default function ClientesPage() {
         phone: formPhone.trim() || undefined,
         email: formEmail.trim() || undefined,
       })
+      toast.success("Cliente criado")
       closeModal()
       await fetchCustomers()
-    } catch (e: unknown) {
+    } catch (e) {
       // Mostra a mensagem retornada pelo backend (já tratada pelo axios interceptor)
-      setFormError(e instanceof Error ? e.message : "Erro ao criar cliente. Verifique os dados.")
+      const msg = e instanceof Error ? e.message : "Erro ao criar cliente. Verifique os dados."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(false)
     }
@@ -168,7 +174,7 @@ export default function ClientesPage() {
 
   async function handleEditCustomer() {
     if (!selectedCustomer) return
-    if (!formName.trim()) { setFormError("Nome é obrigatório."); return }
+    if (!formName.trim()) { setFormError("Nome é obrigatório."); toast.error("Preencha o nome do cliente"); return }
     setActionLoading(true)
     try {
       await apiPut(`/customers/${selectedCustomer.id}`, {
@@ -176,10 +182,13 @@ export default function ClientesPage() {
         phone: formPhone.trim() || undefined,
         email: formEmail.trim() || undefined,
       })
+      toast.success("Cliente atualizado")
       closeModal()
       await fetchCustomers()
-    } catch (e: unknown) {
-      setFormError(e instanceof Error ? e.message : "Erro ao atualizar cliente.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao atualizar cliente."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(false)
     }
@@ -187,8 +196,13 @@ export default function ClientesPage() {
 
   async function handleAddVehicle() {
     if (!selectedCustomer) return
-    if (!vehiclePlate.trim() || !vehicleBrand.trim() || !vehicleModel.trim() || !vehicleColor.trim()) {
-      setFormError("Preencha todos os campos do veículo."); return
+    const missing =
+      !vehiclePlate.trim() ? "a placa" :
+      !vehicleBrand.trim() ? "a marca" :
+      !vehicleModel.trim() ? "o modelo" :
+      !vehicleColor.trim() ? "a cor" : null
+    if (missing) {
+      setFormError("Preencha todos os campos do veículo."); toast.error(`Preencha ${missing} do veículo`); return
     }
     setActionLoading(true)
     try {
@@ -199,10 +213,13 @@ export default function ClientesPage() {
         color: vehicleColor.trim(),
         type:  vehicleType,
       })
+      toast.success("Veículo adicionado")
       closeModal()
       await fetchCustomers()
-    } catch {
-      setFormError("Erro ao adicionar veículo.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao adicionar veículo."
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setActionLoading(false)
     }
