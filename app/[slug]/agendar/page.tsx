@@ -187,6 +187,8 @@ function AgendarContent() {
   const [vehicleType,   setVehicleType]   = useState("CAR")
   const [submitting,    setSubmitting]    = useState(false)
   const [submitError,   setSubmitError]   = useState<string | null>(null)
+  const [requiresApproval,  setRequiresApproval]  = useState(false)
+  const [confirmWhatsappUrl, setConfirmWhatsappUrl] = useState<string | null>(null)
   const [isMobile,      setIsMobile]      = useState(false)
   const [isLoggedIn,    setIsLoggedIn]    = useState(false)
   const [activeSub,     setActiveSub]     = useState<{ planName: string; discountPercent: number; planServices: PlanServiceRule[] } | null>(null)
@@ -444,7 +446,19 @@ function AgendarContent() {
         throw new Error(err.error || err.message || "Erro ao agendar.")
       }
 
-      // ✅ SUCESSO — salvar horário para tela de confirmação, limpar slot e recarregar
+      // ✅ SUCESSO — ler corpo da resposta: { schedule, requiresApproval, confirmWhatsappUrl }
+      const body: {
+        requiresApproval?: boolean
+        confirmWhatsappUrl?: string | null
+      } = await res.json().catch(() => ({}))
+      setRequiresApproval(body.requiresApproval === true)
+      setConfirmWhatsappUrl(body.confirmWhatsappUrl ?? null)
+      toast.success(
+        body.requiresApproval === true
+          ? "Pedido enviado! A loja vai confirmar seu horário."
+          : "Agendamento confirmado! Te esperamos."
+      )
+      // salvar horário para tela de confirmação, limpar slot e recarregar
       setConfirmedSlot(selectedSlot)
       setSelectedSlot("")
       // Recarrega para o slot reservado sumir da tela
@@ -1053,10 +1067,12 @@ function AgendarContent() {
                     <CheckCircle2 size={30} color="var(--c-text)" />
                   </div>
                   <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: "0 0 6px" }}>
-                    Agendamento confirmado
+                    {requiresApproval ? "Pedido enviado!" : "Agendamento confirmado"}
                   </h2>
                   <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: 0 }}>
-                    Tudo certo! Aqui está o resumo do seu agendamento.
+                    {requiresApproval
+                      ? `A ${business!.name} vai confirmar seu horário em breve. Você será avisado assim que for aprovado.`
+                      : "Tudo certo! Aqui está o resumo do seu agendamento."}
                   </p>
                 </div>
 
@@ -1096,12 +1112,22 @@ function AgendarContent() {
                     O QUE ACONTECE AGORA
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {requiresApproval && (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Clock size={13} color={theme} />
+                        </div>
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>A {business!.name} vai analisar seu pedido e confirmar o horário</span>
+                      </div>
+                    )}
                     {customerEmail && (
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Clock size={13} color={theme} />
                         </div>
-                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Você receberá uma confirmação por e-mail</span>
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>
+                          {requiresApproval ? "Você receberá um e-mail assim que o horário for confirmado" : "Você receberá uma confirmação por e-mail"}
+                        </span>
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1120,6 +1146,28 @@ function AgendarContent() {
                     )}
                   </div>
                 </div>
+
+                {/* Botão DESTAQUE — confirmar horário pelo WhatsApp */}
+                {confirmWhatsappUrl && (
+                  <button
+                    onClick={() => window.open(confirmWhatsappUrl, "_blank", "noopener,noreferrer")}
+                    style={{
+                      width: "100%", height: 50, borderRadius: 14, fontSize: 15, fontWeight: 700,
+                      background: "linear-gradient(135deg, #25D366, #128C7E)",
+                      border: "none", color: "#FFFFFF", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      fontFamily: "inherit", marginBottom: 8,
+                      boxShadow: "0 4px 24px rgba(37,211,102,0.3)",
+                    }}
+                  >
+                    <MessageCircle size={17} /> Confirmar pelo WhatsApp
+                  </button>
+                )}
+                {confirmWhatsappUrl && (
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", textAlign: "center", margin: "0 0 16px", lineHeight: 1.4 }}>
+                    Fale com a {business!.name} pelo WhatsApp pra confirmar seu horário.
+                  </p>
+                )}
 
                 {/* Botão WhatsApp — tirar dúvida */}
                 {ownerPhone && (

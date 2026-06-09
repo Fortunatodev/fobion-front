@@ -41,8 +41,14 @@ interface BusinessConfig {
   slug: string
   ownerAvatarUrl: string | null
   themeColor: string | null
+  slotMinutes?: number | null
+  requireApproval?: boolean | null
+  whatsapp?: string | null
   hours: BusinessHour[]
 }
+
+type SlotMinutes = 5 | 10 | 15 | 20 | 30 | 60
+const SLOT_OPTIONS: SlotMinutes[] = [5, 10, 15, 20, 30, 60]
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -446,6 +452,9 @@ function ConfiguracoesContent() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [themeColor,      setThemeColor]      = useState("#0066FF")
   const [colorSaved,      setColorSaved]      = useState(false)
+  const [slotMinutes,     setSlotMinutes]     = useState<SlotMinutes>(30)
+  const [requireApproval, setRequireApproval] = useState(false)
+  const [formWhatsapp,    setFormWhatsapp]    = useState("")
   const [hours,           setHours]           = useState<BusinessHour[]>([])
   const [calendarConnected, setCalendarConnected] = useState(false)
   const [calendarLoading,   setCalendarLoading]   = useState(false)
@@ -475,6 +484,10 @@ function ConfiguracoesContent() {
       setFormCnpj(biz.cnpj ?? "")
       setOwnerAvatarUrl(biz.ownerAvatarUrl ?? null)
       setThemeColor(biz.themeColor ?? "#0066FF")
+      const slot = biz.slotMinutes ?? 30
+      setSlotMinutes((SLOT_OPTIONS.includes(slot as SlotMinutes) ? slot : 30) as SlotMinutes)
+      setRequireApproval(biz.requireApproval ?? false)
+      setFormWhatsapp(biz.whatsapp ?? "")
 
       const filled: BusinessHour[] = Array.from({ length: 7 }, (_, i) => {
         const found = biz.hours?.find((h) => h.dayOfWeek === i)
@@ -572,12 +585,15 @@ function ConfiguracoesContent() {
     setSaving(true); setError(null); setSuccess(null)
     try {
       await apiPut("/auth/business", {
-        name:        formName.trim(),
-        phone:       formPhone.trim(),
-        email:       formEmail.trim() || undefined,
-        address:     formAddress.trim() || undefined,
-        description: formDescription.trim() || undefined,
-        cnpj:        formCnpj.trim(),
+        name:           formName.trim(),
+        phone:          formPhone.trim(),
+        email:          formEmail.trim() || undefined,
+        address:        formAddress.trim() || undefined,
+        description:    formDescription.trim() || undefined,
+        cnpj:           formCnpj.trim(),
+        slotMinutes,
+        requireApproval,
+        whatsapp:       formWhatsapp.replace(/\D/g, ""),
       })
       showSuccess("Alterações salvas com sucesso!")
     } catch (e) {
@@ -881,6 +897,77 @@ function ConfiguracoesContent() {
                       <span style={{ fontSize: 12, color: themeColor }}>Enviando...</span>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── SEÇÃO: AGENDA E AGENDAMENTO ── */}
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid var(--c-border)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>
+                Agenda e agendamento
+              </h3>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {/* Intervalo da agenda */}
+                <div>
+                  <FieldLabel>Intervalo da agenda</FieldLabel>
+                  <select
+                    value={slotMinutes}
+                    onChange={(e) => setSlotMinutes(Number(e.target.value) as SlotMinutes)}
+                    style={{
+                      width: "100%", height: 42, padding: "0 14px",
+                      backgroundColor: "var(--c-bg)",
+                      border: "1px solid var(--c-border-2)",
+                      borderRadius: 10, fontSize: 14, color: "var(--c-text)",
+                      outline: "none", fontFamily: "inherit",
+                      boxSizing: "border-box" as const, cursor: "pointer",
+                    }}
+                  >
+                    {SLOT_OPTIONS.map((m) => (
+                      <option key={m} value={m}>{m} min</option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0" }}>
+                    De quanto em quanto tempo os horários aparecem pro cliente.
+                  </p>
+                </div>
+
+                {/* Exigir aprovação */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
+                      Exigir minha aprovação
+                    </p>
+                    <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0" }}>
+                      Agendamentos da loja pública entram como Solicitação e você confirma.
+                    </p>
+                  </div>
+                  <div
+                    onClick={() => setRequireApproval((v) => !v)}
+                    role="switch"
+                    aria-checked={requireApproval}
+                    style={{
+                      width: 40, height: 22, borderRadius: 100, marginTop: 2,
+                      backgroundColor: requireApproval ? themeColor : "var(--c-border-2)",
+                      cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
+                    }}
+                  >
+                    <div style={{
+                      position: "absolute", top: 3,
+                      left: requireApproval ? 21 : 3,
+                      width: 16, height: 16, borderRadius: "50%",
+                      backgroundColor: "var(--c-text)", transition: "left 0.2s",
+                    }} />
+                  </div>
+                </div>
+
+                {/* WhatsApp da loja */}
+                <div>
+                  <FieldLabel>WhatsApp da loja</FieldLabel>
+                  <TextInput value={formWhatsapp} onChange={setFormWhatsapp} placeholder="55 47 99999-9999" type="tel" />
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0" }}>
+                    Usado pro cliente confirmar o agendamento no seu WhatsApp.
+                  </p>
                 </div>
               </div>
             </div>

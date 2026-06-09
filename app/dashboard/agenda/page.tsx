@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ChevronLeft, ChevronRight, Plus, Calendar,
   AlertCircle, User, Clock, CheckCircle2, XCircle,
-  Loader2, ArrowRight, RefreshCw,
+  Loader2, ArrowRight, RefreshCw, Bell,
 } from "lucide-react"
 import { apiGet, apiPut } from "@/lib/api"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
@@ -44,7 +44,8 @@ interface DayData {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  PENDING:     { label: "Pendente",     color: "#F59E0B", icon: <Clock    size={10} /> },
+  REQUESTED:   { label: "Solicitado",   color: "#F59E0B", icon: <Bell     size={10} /> },
+  PENDING:     { label: "Pendente",     color: "#FBBF24", icon: <Clock    size={10} /> },
   CONFIRMED:   { label: "Confirmado",   color: "#3B82F6", icon: <CheckCircle2 size={10} /> },
   IN_PROGRESS: { label: "Em andamento", color: "#8B5CF6", icon: <Loader2  size={10} /> },
   DONE:        { label: "Concluído",    color: "#10B981", icon: <CheckCircle2 size={10} /> },
@@ -227,6 +228,8 @@ function DetailModal({
     try {
       const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/status`, { status })
       onStatusChange(res.schedule)
+      if (schedule.status === "REQUESTED" && status === "CONFIRMED") toast.success("Solicitação aprovada.")
+      else if (schedule.status === "REQUESTED" && status === "CANCELLED") toast.success("Solicitação recusada.")
     } catch { toast.error("Não consegui atualizar o status. Tente de novo.") } finally { setUpdating(false) }
   }
 
@@ -282,7 +285,26 @@ function DetailModal({
               <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{formatCurrency(schedule.totalPrice)}</span>
             </div>
 
+            {schedule.status === "REQUESTED" && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8, marginTop: 16,
+                padding: "10px 12px", borderRadius: 10,
+                backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
+              }}>
+                <Bell size={14} color="#F59E0B" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: "var(--c-text-2)" }}>
+                  Solicitação da loja pública aguardando sua aprovação.
+                </span>
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              {schedule.status === "REQUESTED" && (
+                <>
+                  <ActionBtn label="Aprovar" color="#10B981" onClick={() => doStatus("CONFIRMED")} loading={updating} />
+                  <ActionBtn label="Recusar" color="#EF4444" onClick={() => doStatus("CANCELLED")} loading={updating} outline />
+                </>
+              )}
               {schedule.status === "PENDING" && (
                 <ActionBtn label="Confirmar" color="#3B82F6" onClick={() => doStatus("CONFIRMED")} loading={updating} />
               )}
@@ -292,7 +314,7 @@ function DetailModal({
               {schedule.status === "IN_PROGRESS" && (
                 <ActionBtn label="Finalizar" color="#10B981" onClick={() => setPhase("close")} loading={false} />
               )}
-              {schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
+              {schedule.status !== "REQUESTED" && schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
                 <ActionBtn label={confirmCancel ? "Confirmar cancelamento?" : "Cancelar"} color="#EF4444" onClick={() => (confirmCancel ? doStatus("CANCELLED") : setConfirmCancel(true))} loading={updating} outline />
               )}
             </div>
@@ -337,6 +359,7 @@ function DetailModal({
 function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
   const color    = STATUS_META[s.status]?.color ?? "var(--c-text-3)"
   const services = s.scheduleServices.map(ss => ss.service.name).join(", ")
+  const isRequested = s.status === "REQUESTED"
   const [hov, setHov] = useState(false)
 
   return (
@@ -345,10 +368,10 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        backgroundColor: hov ? "var(--c-surface)" : "var(--c-bg)",
-        borderTop: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
-        borderRight: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
-        borderBottom: `1px solid ${hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
+        backgroundColor: isRequested ? "rgba(245,158,11,0.07)" : hov ? "var(--c-surface)" : "var(--c-bg)",
+        borderTop: `1px solid ${isRequested ? "rgba(245,158,11,0.3)" : hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
+        borderRight: `1px solid ${isRequested ? "rgba(245,158,11,0.3)" : hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
+        borderBottom: `1px solid ${isRequested ? "rgba(245,158,11,0.3)" : hov ? "var(--c-border-2)" : "var(--c-surface-2)"}`,
         borderLeft: `3px solid ${color}`,
         borderRadius: 12, padding: "12px 14px",
         cursor: "pointer", transition: "all 0.15s",
@@ -356,6 +379,16 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
+          {isRequested && (
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 3,
+              fontSize: 9, fontWeight: 700, color: "#F59E0B",
+              backgroundColor: "rgba(245,158,11,0.16)", border: "1px solid rgba(245,158,11,0.3)",
+              borderRadius: 5, padding: "1px 6px", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.4px",
+            }}>
+              <Bell size={9} /> Solicitação
+            </span>
+          )}
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {s.customer.name}
           </p>
@@ -483,6 +516,9 @@ export default function AgendaPage() {
   }
 
   const calDays = buildCalendarDays(currentMonth, schedules, selectedDate)
+
+  const requestedCount = daySchedules.filter(s => s.status === "REQUESTED").length
+  const confirmedCount = daySchedules.filter(s => s.status === "CONFIRMED").length
 
   function empBtnStyle(active: boolean): React.CSSProperties {
     return {
@@ -687,6 +723,18 @@ export default function AgendaPage() {
                   </span>
                 )}
               </div>
+              {!loadingDay && daySchedules.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  {requestedCount > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 6, padding: "2px 8px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Bell size={10} /> {requestedCount} solicitaç{requestedCount !== 1 ? "ões" : "ão"}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 6, padding: "2px 8px" }}>
+                    {confirmedCount} confirmado{confirmedCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Skeleton day */}
@@ -734,7 +782,13 @@ export default function AgendaPage() {
                 maxHeight: "calc(100vh - 380px)", overflowY: "auto", paddingRight: 2,
               }}>
                 {[...daySchedules]
-                  .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+                  .sort((a, b) => {
+                    // Solicitações primeiro (precisam de ação do dono), depois por horário
+                    const ra = a.status === "REQUESTED" ? 0 : 1
+                    const rb = b.status === "REQUESTED" ? 0 : 1
+                    if (ra !== rb) return ra - rb
+                    return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+                  })
                   .map(s => (
                     <ScheduleCard key={s.id} s={s} onClick={() => setModalSchedule(s)} />
                   ))}
