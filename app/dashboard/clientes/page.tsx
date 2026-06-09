@@ -281,7 +281,7 @@ export default function ClientesPage() {
             >
               Clientes
             </h1>
-            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>
+            <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
               {loading ? "Carregando..." : `${customers.length} cliente${customers.length !== 1 ? "s" : ""} cadastrado${customers.length !== 1 ? "s" : ""}`}
             </p>
           </div>
@@ -475,13 +475,14 @@ export default function ClientesPage() {
                       {(customer._count?.schedules ?? 0) > 0 && (
                         <span
                           style={{
-                            fontSize:        10,
-                            fontWeight:      600,
-                            color:           "#0066FF",
-                            backgroundColor: "rgba(0,102,255,0.1)",
-                            border:          "1px solid rgba(0,102,255,0.2)",
-                            borderRadius:    99,
-                            padding:         "1px 6px",
+                            fontSize:           10,
+                            fontWeight:         600,
+                            color:              "#0066FF",
+                            backgroundColor:    "rgba(0,102,255,0.1)",
+                            border:             "1px solid rgba(0,102,255,0.2)",
+                            borderRadius:       99,
+                            padding:            "1px 6px",
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {customer._count?.schedules} OS
@@ -500,7 +501,7 @@ export default function ClientesPage() {
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <Phone size={11} color="var(--c-text-4)" />
-                        <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{customer.phone || "—"}</span>
+                        <span style={{ fontSize: 12, color: "var(--c-text-3)", fontVariantNumeric: "tabular-nums" }}>{customer.phone || "—"}</span>
                       </span>
 
                       {/* V2-B3: falar com o cliente no WhatsApp em 1 toque */}
@@ -536,7 +537,7 @@ export default function ClientesPage() {
 
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <Calendar size={11} color="var(--c-text-4)" />
-                        <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
+                        <span style={{ fontSize: 12, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>
                           desde {formatDate(customer.createdAt)}
                         </span>
                       </span>
@@ -572,16 +573,17 @@ export default function ClientesPage() {
                           <span
                             key={v.id}
                             style={{
-                              fontSize:        11,
-                              fontWeight:      500,
-                              color:           "var(--c-text-2)",
-                              backgroundColor: "var(--c-surface-2)",
-                              border:          "1px solid var(--c-border)",
-                              borderRadius:    6,
-                              padding:         "3px 8px",
-                              display:         "flex",
-                              alignItems:      "center",
-                              gap:             5,
+                              fontSize:           11,
+                              fontWeight:         500,
+                              color:              "var(--c-text-2)",
+                              backgroundColor:    "var(--c-surface-2)",
+                              border:             "1px solid var(--c-border)",
+                              borderRadius:       6,
+                              padding:            "3px 8px",
+                              display:            "flex",
+                              alignItems:         "center",
+                              gap:                5,
+                              fontVariantNumeric: "tabular-nums",
                             }}
                           >
                             <Car size={10} color="var(--c-text-4)" />
@@ -591,12 +593,13 @@ export default function ClientesPage() {
                         {extraVehicles > 0 && (
                           <span
                             style={{
-                              fontSize:        11,
-                              color:           "var(--c-text-4)",
-                              backgroundColor: "var(--c-surface-2)",
-                              border:          "1px solid var(--c-border)",
-                              borderRadius:    6,
-                              padding:         "3px 6px",
+                              fontSize:           11,
+                              color:              "var(--c-text-4)",
+                              backgroundColor:    "var(--c-surface-2)",
+                              border:             "1px solid var(--c-border)",
+                              borderRadius:       6,
+                              padding:            "3px 6px",
+                              fontVariantNumeric: "tabular-nums",
                             }}
                           >
                             +{extraVehicles}
@@ -992,11 +995,11 @@ function StatBadge({
         padding:         "6px 12px",
         display:         "flex",
         gap:             6,
-        alignItems:      "center",
+        alignItems:      "baseline",
         whiteSpace:      "nowrap",
       }}
     >
-      <span>{value}</span>
+      <span style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</span>
       <span style={{ fontWeight: 400, opacity: 0.8 }}>{label}</span>
     </div>
   )

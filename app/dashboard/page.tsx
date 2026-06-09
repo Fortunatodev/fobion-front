@@ -112,7 +112,7 @@ function MetricCard({
                 <Crown size={13} /> Desbloquear no PRO
               </span>
             ) : (
-              <span style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.5px" }}>
+              <span style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>
                 {display}
               </span>
             )}
@@ -169,7 +169,7 @@ function MiniMetric({ icon, iconColor, label, rawValue, isCurrency, sub, delay }
         </div>
         <span style={{ fontSize: 10, fontWeight: 500, color: "var(--c-text-3)" }}>{label}</span>
       </div>
-      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0, letterSpacing: "-0.3px" }}>
+      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0, letterSpacing: "-0.3px", fontVariantNumeric: "tabular-nums" }}>
         {display}
       </p>
       {sub && <div style={{ marginTop: 4 }}>{sub}</div>}
@@ -189,7 +189,7 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
           sub={
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
               <TrendingUp size={10} color={growthColor} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: growthColor }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: growthColor, fontVariantNumeric: "tabular-nums" }}>
                 {summary.revenueGrowth >= 0 ? "+" : ""}{summary.revenueGrowth}%
               </span>
             </div>
@@ -228,7 +228,7 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
           </div>
           <span style={{ fontSize: 11, color: "var(--c-text-2)", flex: 1 }}>
             Mais popular: <strong style={{ color: "var(--c-text)", fontWeight: 600 }}>{summary.topService.name}</strong>
-            <span style={{ color: "var(--c-text-4)" }}> ({summary.topService.count}x)</span>
+            <span style={{ color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}> ({summary.topService.count}x)</span>
           </span>
         </div>
       )}
@@ -482,7 +482,7 @@ export default function DashboardPage() {
                   >
                     <div style={{ width: 3, height: 36, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
                     <div style={{ flexShrink: 0, minWidth: 48 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
                         {formatTime(s.scheduledAt)}
                       </p>
                       <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "1px 0 0" }}>hoje</p>
@@ -504,7 +504,7 @@ export default function DashboardPage() {
                       }}>
                         {st.label}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                         {formatCurrency(s.totalPrice)}
                       </span>
                     </div>
@@ -630,6 +630,7 @@ export default function DashboardPage() {
               backgroundColor: "rgba(0,102,255,0.08)",
               border: "1px solid rgba(0,102,255,0.15)",
               borderRadius: 99, padding: "3px 10px",
+              fontVariantNumeric: "tabular-nums",
             }}>
               {todaySchedules.length} agendamento{todaySchedules.length !== 1 ? "s" : ""}
             </span>
@@ -702,7 +703,7 @@ export default function DashboardPage() {
                         onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? "transparent" : "var(--c-surface-2)" }}
                       >
                         <td style={{ padding: "11px 12px", whiteSpace: "nowrap" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-2)" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums" }}>
                             <Clock size={11} />
                             {formatTime(s.scheduledAt)}
                           </div>
@@ -710,13 +711,13 @@ export default function DashboardPage() {
                         <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 500, color: "var(--c-text)" }}>
                           {s.customer.name}
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-3)", fontFamily: "monospace" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-3)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
                           {s.vehicle.plate}
                         </td>
                         <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-2)" }}>
                           {serviceName}
                         </td>
-                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 600, color: "var(--c-text)", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "11px 12px", fontSize: 13, fontWeight: 600, color: "var(--c-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                           {formatCurrency(s.totalPrice)}
                         </td>
                         <td style={{ padding: "11px 12px" }}>
@@ -753,7 +754,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                         <Clock size={12} color="var(--c-text-4)" />
                         {formatTime(s.scheduledAt)}
                       </div>
@@ -771,9 +772,9 @@ export default function DashboardPage() {
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
-                        {serviceName} · <span style={{ fontFamily: "monospace" }}>{s.vehicle.plate}</span>
+                        {serviceName} · <span style={{ fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span>
                       </p>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                         {formatCurrency(s.totalPrice)}
                       </span>
                     </div>

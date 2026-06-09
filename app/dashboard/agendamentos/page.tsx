@@ -293,7 +293,7 @@ function CustomerSearch({ onSelect }: {
                 <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {c.name}
                 </p>
-                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0" }}>
+                <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
                   {c.phone}{c.vehicles.length > 0 ? ` · ${c.vehicles.length} veículo${c.vehicles.length !== 1 ? "s" : ""}` : ""}
                 </p>
               </div>
@@ -745,12 +745,12 @@ function NovoAgendamentoModal({
                               <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: sel ? 600 : 400 }}>
                                 {svc.name}
                               </span>
-                              <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>
+                              <span style={{ fontSize: 11, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>
                                 {svc.durationMinutes}min
                               </span>
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600 }}>
+                          <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                             {formatCurrency(svc.price)}
                           </span>
                         </button>
@@ -768,7 +768,7 @@ function NovoAgendamentoModal({
                     <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
                       {selectedServices.length} serviço{selectedServices.length !== 1 ? "s" : ""} selecionado{selectedServices.length !== 1 ? "s" : ""}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text)" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                       {formatCurrency(totalPrice)}
                     </span>
                   </div>
@@ -852,7 +852,7 @@ function NovoAgendamentoModal({
                       >
                         <ChevronLeft size={13} />
                       </button>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                         {MONTHS_PT[calMon]} {calYear}
                       </span>
                       <button
@@ -901,6 +901,7 @@ function NovoAgendamentoModal({
                               color: past ? "var(--c-text-4)" : sel ? "var(--c-text)" : tod ? "#0066FF" : "var(--c-text-2)",
                               cursor: past ? "not-allowed" : "pointer",
                               fontFamily: "inherit",
+                              fontVariantNumeric: "tabular-nums",
                               transition: "all 0.12s",
                               flexShrink: 0,
                             }}
@@ -968,6 +969,7 @@ function NovoAgendamentoModal({
                                 cursor:      disabled ? "not-allowed" : "pointer",
                                 pointerEvents: disabled ? "none" : "auto",
                                 fontFamily: "inherit",
+                                fontVariantNumeric: "tabular-nums",
                                 transition: "all 0.15s ease",
                               }}
                             >
@@ -999,7 +1001,7 @@ function NovoAgendamentoModal({
                   <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
                     {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0066FF" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0066FF", fontVariantNumeric: "tabular-nums" }}>
                     {selectedSlot}
                   </span>
                 </div>
@@ -1029,7 +1031,7 @@ function NovoAgendamentoModal({
                       <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {customerName}
                       </p>
-                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0" }}>{customerPhone}</p>
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{customerPhone}</p>
                     </div>
                     <button onClick={handleClearCustomer} style={{
                       flexShrink: 0, width: 28, height: 28,
@@ -1176,10 +1178,10 @@ function NovoAgendamentoModal({
                 <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "0 0 8px", letterSpacing: "0.04em" }}>RESUMO</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                    <span style={{ color: "var(--c-text-3)" }}>
+                    <span style={{ color: "var(--c-text-3)", fontVariantNumeric: "tabular-nums" }}>
                       {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às {selectedSlot}
                     </span>
-                    <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
+                    <span style={{ color: "#10B981", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(totalPrice)}</span>
                   </div>
                   <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0 }}>
                     {services.filter((s) => selectedServices.includes(s.id)).map((s) => s.name).join(", ") || "—"}
@@ -1230,7 +1232,7 @@ function NovoAgendamentoModal({
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                   <span style={{ color: "var(--c-text-2)", fontWeight: 500 }}>{customerName || "Cliente"}</span>
-                  <span style={{ color: "#10B981", fontWeight: 700 }}>{formatCurrency(totalPrice)}</span>
+                  <span style={{ color: "#10B981", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(totalPrice)}</span>
                 </div>
                 <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "4px 0 0" }}>
                   {services.filter(s => selectedServices.includes(s.id)).map(s => s.name).join(", ")}
@@ -1619,7 +1621,7 @@ export default function AgendamentosPage() {
               <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", margin: 0, textTransform: "capitalize", letterSpacing: "0.05em" }}>
                 {dateInfo.weekday}
               </p>
-              <p style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.3px" }}>
+              <p style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.3px", fontVariantNumeric: "tabular-nums" }}>
                 {dateInfo.day} de{" "}
                 <span style={{ textTransform: "capitalize" }}>{dateInfo.month}</span>{" "}
                 <span style={{ color: "var(--c-text-4)", fontWeight: 500 }}>{dateInfo.year}</span>
@@ -1706,7 +1708,7 @@ export default function AgendamentosPage() {
               <span style={{ fontSize: 10, color: "var(--c-text-4)", fontWeight: 500, letterSpacing: "0.04em" }}>
                 {c.label.toUpperCase()}
               </span>
-              <span style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: c.color, letterSpacing: "-0.5px", lineHeight: 1 }}>
+              <span style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: c.color, letterSpacing: "-0.5px", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                 {c.value}
               </span>
             </div>
@@ -1806,10 +1808,10 @@ export default function AgendamentosPage() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <div style={{ flexShrink: 0, textAlign: "center", minWidth: 44 }}>
-                            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
+                            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>
                               {formatTime(s.scheduledAt)}
                             </p>
-                            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "1px 0 0" }}>
+                            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "1px 0 0", fontVariantNumeric: "tabular-nums" }}>
                               {formatShortDate(s.scheduledAt)}
                             </p>
                           </div>
@@ -1824,7 +1826,7 @@ export default function AgendamentosPage() {
                             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                               <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
                               <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
-                                {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500 }}>{s.vehicle.plate}</span>
+                                {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span>
                               </span>
                             </div>
                             <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1834,8 +1836,8 @@ export default function AgendamentosPage() {
                         </div>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", backgroundColor: "var(--c-elevated)", borderRadius: 10 }}>
                           <div>
-                            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
-                            {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "1px 0 0" }}>-{formatCurrency(s.discountApplied)}</p>}
+                            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(s.totalPrice)}</p>
+                            {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "1px 0 0", fontVariantNumeric: "tabular-nums" }}>-{formatCurrency(s.discountApplied)}</p>}
                             {s.paymentStatus === "PAID" ? (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 5, padding: "2px 6px", marginTop: 3 }}>
                                 <CheckCircle2 size={9} /> Pago · {getPaymentMethodLabel(s.paymentMethod)}
@@ -1861,8 +1863,8 @@ export default function AgendamentosPage() {
                     ) : (
                       <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                         <div style={{ width: 52, flexShrink: 0, textAlign: "right" }}>
-                          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>{formatTime(s.scheduledAt)}</p>
-                          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0" }}>{formatShortDate(s.scheduledAt)}</p>
+                          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>{formatTime(s.scheduledAt)}</p>
+                          <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{formatShortDate(s.scheduledAt)}</p>
                         </div>
                         <div style={{ width: 3, height: 44, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1872,13 +1874,13 @@ export default function AgendamentosPage() {
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
                             <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>{[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500 }}>{s.vehicle.plate}</span></span>
+                            <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>{[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span></span>
                           </div>
                           <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{serviceNames || "—"}</p>
                         </div>
                         <div style={{ flexShrink: 0, textAlign: "right" }}>
-                          <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{formatCurrency(s.totalPrice)}</p>
-                          {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "2px 0 0" }}>-{formatCurrency(s.discountApplied)}</p>}
+                          <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(s.totalPrice)}</p>
+                          {s.discountApplied > 0 && <p style={{ fontSize: 11, color: "#10B981", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>-{formatCurrency(s.discountApplied)}</p>}
                           {s.paymentStatus === "PAID" ? (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: "#10B981", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 6, padding: "2px 7px", marginTop: 4 }}><CheckCircle2 size={10} /> Pago · {getPaymentMethodLabel(s.paymentMethod)}</span>
                           ) : s.status !== "CANCELLED" ? (
@@ -1946,12 +1948,12 @@ export default function AgendamentosPage() {
               <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "4px 0 0" }}>{selectedSchedule.scheduleServices.map((ss) => ss.service.name).join(", ") || "—"}</p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
                 <span style={{ fontSize: 13, color: "var(--c-text-4)" }}>Total a cobrar</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)" }}>{formatCurrency(selectedSchedule.totalPrice)}</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{formatCurrency(selectedSchedule.totalPrice)}</span>
               </div>
               {selectedSchedule.discountApplied > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
                   <span style={{ fontSize: 12, color: "#10B981" }}>Desconto assinante</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#10B981" }}>-{formatCurrency(selectedSchedule.discountApplied)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#10B981", fontVariantNumeric: "tabular-nums" }}>-{formatCurrency(selectedSchedule.discountApplied)}</span>
                 </div>
               )}
             </div>

@@ -195,7 +195,7 @@ function SummaryCard({
             fontSize: 11, fontWeight: 600, lineHeight: 1,
             color: trend > 0 ? "#10B981" : "#EF4444",
             backgroundColor: trend > 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-            borderRadius: 6, padding: "3px 7px",
+            borderRadius: 6, padding: "3px 7px", fontVariantNumeric: "tabular-nums",
           }}>
             {trend > 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
             {Math.abs(trend)}%
@@ -205,10 +205,10 @@ function SummaryCard({
       <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", margin: 0, textTransform: "uppercase", letterSpacing: "0.6px" }}>
         {label}
       </p>
-      <p style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+      <p style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: "2px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
         {displayValue}
       </p>
-      {sub && <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "6px 0 0" }}>{sub}</p>}
+      {sub && <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "6px 0 0", fontVariantNumeric: "tabular-nums" }}>{sub}</p>}
     </Card>
   )
 }
@@ -228,7 +228,7 @@ function ChartTooltip({ active, payload, label, formatValue, isCurrency }: {
       boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
     }}>
       <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: 0 }}>{label ? fmtFull(label) : ""}</p>
-      <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: "3px 0 0" }}>
+      <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: "3px 0 0", fontVariantNumeric: "tabular-nums" }}>
         {formatValue ? formatValue(val) : isCurrency ? fmt(val) : val}
       </p>
     </div>
@@ -388,7 +388,7 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
             ) : null)}
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)" }}>{total}</span>
+            <span style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{total}</span>
             <span style={{ fontSize: 10, color: "var(--c-text-4)", marginTop: -2 }}>total</span>
           </div>
         </div>
@@ -397,7 +397,7 @@ function DonutChart({ data, total, isMobile }: { data: StatusCount[]; total: num
             <div key={sl.status} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: sl.color, flexShrink: 0 }} />
               <span style={{ fontSize: 13, color: "var(--c-text-2)", flex: 1 }}>{sl.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", minWidth: 24, textAlign: "right" }}>{sl.count}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", minWidth: 24, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{sl.count}</span>
             </div>
           ))}
         </div>
@@ -426,7 +426,7 @@ function HeatMap({ data, isMobile }: { data: HeatmapCell[]; isMobile: boolean })
         <div style={{ display: "grid", gridTemplateColumns: `36px repeat(${hours.length}, 1fr)`, gap: 2, minWidth: isMobile ? 500 : "auto" }}>
           <div />
           {hours.map(h => (
-            <div key={h} style={{ fontSize: 9, color: "var(--c-text-4)", textAlign: "center", paddingBottom: 2 }}>{`${h}h`}</div>
+            <div key={h} style={{ fontSize: 9, color: "var(--c-text-4)", textAlign: "center", paddingBottom: 2, fontVariantNumeric: "tabular-nums" }}>{`${h}h`}</div>
           ))}
           {[0, 1, 2, 3, 4, 5, 6].map(day => (
             <div key={day} style={{ display: "contents" }}>
@@ -665,19 +665,22 @@ function PainelDeSaude() {
                     <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Serviços que mais vendem</h3>
                   </div>
                   {data.servicosMaisPopulares.length === 0 ? (
-                    <p style={{ fontSize: 13, color: "var(--c-text-4)", textAlign: "center", padding: "24px 0" }}>Nenhum dado disponivel</p>
+                    <div style={{ textAlign: "center", padding: "28px 0" }}>
+                      <Star size={24} color="var(--c-border)" style={{ margin: "0 auto 8px", display: "block" }} />
+                      <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: 0 }}>Nenhum serviço vendido no período</p>
+                    </div>
                   ) : data.servicosMaisPopulares.map((svc, i) => {
                     const pct = Math.round((svc.count / maxSvcCnt) * 100)
                     return (
                       <div key={svc.id} style={{ marginBottom: i < data.servicosMaisPopulares.length - 1 ? 16 : 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-                            <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: i === 0 ? "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(124,58,237,0.1))" : "rgba(255,255,255,0.03)", border: `1px solid ${i === 0 ? "rgba(0,102,255,0.2)" : "rgba(255,255,255,0.05)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#0066FF" : "var(--c-text-4)" }}>
+                            <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: i === 0 ? "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(124,58,237,0.1))" : "rgba(255,255,255,0.03)", border: `1px solid ${i === 0 ? "rgba(0,102,255,0.2)" : "rgba(255,255,255,0.05)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#0066FF" : "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>
                               {i + 1}
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</p>
-                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0" }}>{svc.count} agendamento{svc.count !== 1 ? "s" : ""} · {fmt(svc.total)}</p>
+                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{svc.count} agendamento{svc.count !== 1 ? "s" : ""} · {fmt(svc.total)}</p>
                             </div>
                           </div>
                         </div>
@@ -704,7 +707,7 @@ function PainelDeSaude() {
                           <div style={{ flex: 1, height: 8, backgroundColor: "var(--c-surface-2)", borderRadius: 4 }}>
                             <div style={{ height: 8, borderRadius: 4, width: `${Math.max(pct, 2)}%`, background: isTop ? "linear-gradient(90deg,#10B981,#0066FF)" : "rgba(0,102,255,0.5)", transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-2)", width: 24, textAlign: "right", flexShrink: 0 }}>{dia.count}</span>
+                          <span style={{ fontSize: 12, fontWeight: isTop ? 700 : 500, color: isTop ? "var(--c-text)" : "var(--c-text-2)", width: 24, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{dia.count}</span>
                         </div>
                       )
                     })}
@@ -723,19 +726,19 @@ function PainelDeSaude() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div style={{ backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Users size={18} color="#0066FF" style={{ margin: "0 auto 6px", display: "block" }} />
-                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalCustomers}</p>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0, fontVariantNumeric: "tabular-nums" }}>{data.totalCustomers}</p>
                         <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Total clientes</p>
                       </div>
                       <div style={{ backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, textAlign: "center" }}>
                         <Crown size={18} color="#F59E0B" style={{ margin: "0 auto 6px", display: "block" }} />
-                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{data.totalActiveSubscribers}</p>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0, fontVariantNumeric: "tabular-nums" }}>{data.totalActiveSubscribers}</p>
                         <p style={{ fontSize: 10, color: "var(--c-text-3)", margin: "2px 0 0" }}>Assinantes ativos</p>
                       </div>
                     </div>
                     <div style={{ marginTop: 14 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontSize: 11, color: "var(--c-text-3)" }}>Conversão para assinante</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: data.insights.subscriberRatio >= 20 ? "#10B981" : "#F59E0B" }}>{data.insights.subscriberRatio}%</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: data.insights.subscriberRatio >= 20 ? "#10B981" : "#F59E0B", fontVariantNumeric: "tabular-nums" }}>{data.insights.subscriberRatio}%</span>
                       </div>
                       <div style={{ width: "100%", height: 5, backgroundColor: "var(--c-surface-2)", borderRadius: 3 }}>
                         <div style={{ height: 5, borderRadius: 3, width: `${Math.min(data.insights.subscriberRatio, 100)}%`, background: data.insights.subscriberRatio >= 20 ? "linear-gradient(90deg,#10B981,#0066FF)" : "linear-gradient(90deg,#F59E0B,#EF4444)", transition: "width 0.6s ease" }} />
@@ -756,7 +759,7 @@ function PainelDeSaude() {
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--c-text-2)" }}>
                                   {PAYMENT_ICONS[m.method]}<span style={{ fontSize: 12 }}>{PAYMENT_LABELS[m.method] ?? m.method}</span>
                                 </div>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)" }}>{fmt(m.total)}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{fmt(m.total)}</span>
                               </div>
                               <div style={{ width: "100%", height: 4, backgroundColor: "var(--c-surface-2)", borderRadius: 2 }}>
                                 <div style={{ height: 4, borderRadius: 2, background: "linear-gradient(90deg,#0066FF,#7C3AED)", width: `${pct}%`, transition: "width 0.6s ease" }} />

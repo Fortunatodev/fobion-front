@@ -445,7 +445,7 @@ export default function RepassesReportPage() {
                                   </span>
                                 )}
                               </p>
-                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0" }}>
+                              <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
                                 {emp.transactionCount} repasse{emp.transactionCount !== 1 ? "s" : ""}
                               </p>
                             </div>
@@ -512,18 +512,19 @@ export default function RepassesReportPage() {
                                       }}>
                                         {tx.service?.name ?? "(serviço removido)"}
                                       </p>
-                                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--c-text-3)" }}>
+                                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--c-text-3)", fontVariantNumeric: "tabular-nums" }}>
                                         {tx.schedule ? fmtDate(tx.schedule.scheduledAt) : fmtDate(tx.createdAt)}
                                       </p>
                                     </div>
                                     {!isMobile && (
-                                      <div style={{ color: "var(--c-text-2)" }}>
+                                      <div style={{ color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums" }}>
                                         {fmt(tx.basePrice)} × {tx.commissionPercent}%
                                       </div>
                                     )}
                                     {!isMobile && (
                                       <div style={{
                                         textAlign: "right", color: "var(--c-text)", fontWeight: 600,
+                                        fontVariantNumeric: "tabular-nums",
                                       }}>
                                         {fmt(tx.commissionAmount)}
                                       </div>
@@ -535,7 +536,7 @@ export default function RepassesReportPage() {
                                     )}
                                     {isMobile && (
                                       <div style={{ textAlign: "right" }}>
-                                        <p style={{ margin: 0, color: "var(--c-text)", fontWeight: 600 }}>
+                                        <p style={{ margin: 0, color: "var(--c-text)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                                           {fmt(tx.commissionAmount)}
                                         </p>
                                         <div style={{ marginTop: 4 }}>
@@ -556,7 +557,7 @@ export default function RepassesReportPage() {
               )}
             </div>
 
-            <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: 0, textAlign: "center" }}>
+            <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: 0, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
               Período: {fmtDate(data.period.startDate)} até {fmtDate(data.period.endDate)}
             </p>
           </>
@@ -592,6 +593,7 @@ function TotalCard({ label, value, icon, color }: {
       <p style={{
         fontSize: 26, fontWeight: 800, color: "var(--c-text)",
         margin: "4px 0 0", letterSpacing: "-0.5px", lineHeight: 1.1,
+        fontVariantNumeric: "tabular-nums",
       }}>{fmt(value)}</p>
     </div>
   )
@@ -607,7 +609,7 @@ function Pill({ label, value, color }: { label: string; value: number; color: st
         fontSize: 9, fontWeight: 600, color: "var(--c-text-3)",
         textTransform: "uppercase", letterSpacing: "0.6px",
       }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
         {fmt(value)}
       </span>
     </div>
