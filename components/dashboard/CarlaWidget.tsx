@@ -41,9 +41,9 @@ export default function CarlaWidget() {
     try {
       const r = await apiPost<{ answer?: string; error?: string }>("/ai/assist", { message: text, history: msgs.slice(-6) })
       setMsgs((m) => [...m, { role: "assistant", content: r.answer ?? "Não consegui responder agora." }])
-    } catch (e: any) {
+    } catch (e) {
       // surfaça o motivo do back (ex.: "IA indisponível (HTTP 401 ...)") pra diagnóstico
-      const detail = e?.response?.data?.error
+      const detail = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
       setMsgs((m) => [...m, { role: "assistant", content: detail ? `⚠️ ${detail}` : "Estou indisponível no momento. Tente de novo." }])
     } finally { setSending(false) }
   }
