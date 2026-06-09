@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search, Plus, User, Car, Phone, Mail,
@@ -29,6 +29,12 @@ interface Customer {
   vehicles: Vehicle[]
   _count?: { schedules: number }
 }
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+// Quantos clientes ficam visíveis por "página" client-side. Renderizar todos de
+// uma vez trava o browser quando o cliente tem muitos cadastros.
+const PAGE_SIZE = 50
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -93,6 +99,7 @@ export default function ClientesPage() {
   const [formError,         setFormError]         = useState<string | null>(null)
   const [hoveredId,         setHoveredId]         = useState<string | null>(null)
   const [isMobile,          setIsMobile]          = useState(false)
+  const [visibleCount,      setVisibleCount]      = useState(PAGE_SIZE)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -227,16 +234,32 @@ export default function ClientesPage() {
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  const filtered = customers.filter((c) => {
-    if (!searchQuery) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      c.name.toLowerCase().includes(q) ||
-      (c.phone ?? "").includes(q) ||
-      (c.email?.toLowerCase().includes(q)) ||
-      c.vehicles.some((v) => v.plate.toLowerCase().includes(q))
-    )
-  })
+  // Lista filtrada — memoizada pra não refiltrar a cada render (hover, modal, etc.)
+  // A ordem é exatamente a mesma de `customers` (filter preserva ordem).
+  const filtered = useMemo(() => {
+    return customers.filter((c) => {
+      if (!searchQuery) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        c.name.toLowerCase().includes(q) ||
+        (c.phone ?? "").includes(q) ||
+        Boolean(c.email?.toLowerCase().includes(q)) ||
+        c.vehicles.some((v) => v.plate.toLowerCase().includes(q))
+      )
+    })
+  }, [customers, searchQuery])
+
+  // Paginação client-side: só renderiza os primeiros `visibleCount` do filtrado.
+  const visibleCustomers = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  )
+  const hasMore = filtered.length > visibleCustomers.length
+
+  // Ao mudar a busca, volta pra primeira "página" (a lista filtrada encolheu/mudou).
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [searchQuery])
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 
@@ -437,7 +460,7 @@ export default function ClientesPage() {
         {/* ── CUSTOMER LIST ────────────────────────────────────────────────── */}
         {!loading && !error && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {filtered.map((customer) => {
+            {visibleCustomers.map((customer) => {
               const hov = hoveredId === customer.id
               const visibleVehicles = customer.vehicles.slice(0, 2)
               const extraVehicles   = customer.vehicles.length - 2
@@ -671,6 +694,32 @@ export default function ClientesPage() {
                 </div>
               )
             })}
+
+            {/* ── LOAD MORE ───────────────────────────────────────────────── */}
+            {hasMore && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <button
+                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                  style={{
+                    height:       40,
+                    padding:      "0 22px",
+                    borderRadius: 12,
+                    fontSize:     13,
+                    fontWeight:   600,
+                    cursor:       "pointer",
+                    background:   "var(--c-surface)",
+                    border:       "1px solid var(--c-border-2)",
+                    color:        "var(--c-text)",
+                    fontFamily:   "inherit",
+                  }}
+                >
+                  Carregar mais
+                </button>
+                <span style={{ fontSize: 12, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>
+                  Mostrando {visibleCustomers.length} de {filtered.length}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
   Calendar, Clock, Search,
   Plus, ChevronLeft, ChevronRight,
@@ -109,6 +109,10 @@ const PAYMENT_METHODS = [
   { value: "DEBIT_CARD",  label: "Débito",   icon: CreditCard },
   { value: "CASH",        label: "Dinheiro", icon: Banknote   },
 ]
+
+// Quantos cards renderizar de início; "Carregar mais" cresce em passos deste tamanho.
+// Não altera os dados buscados nem a ordem — só limita o que vai pro DOM por vez.
+const LIST_PAGE_SIZE = 30
 
 const VEHICLE_TYPES = ["CAR", "MOTORCYCLE", "TRUCK", "SUV"]
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
@@ -1471,6 +1475,7 @@ export default function AgendamentosPage() {
   const [hovCard,          setHovCard]          = useState<string | null>(null)
   const [hovBtn,           setHovBtn]           = useState(false)
   const [isMobile,         setIsMobile]         = useState(false)
+  const [visibleCount,     setVisibleCount]     = useState(LIST_PAGE_SIZE)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -1501,7 +1506,7 @@ export default function AgendamentosPage() {
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  async function handleUpdateStatus(id: string, status: string) {
+  const handleUpdateStatus = useCallback(async (id: string, status: string) => {
     setActionLoading(id)
     try {
       await apiPut(`/schedules/${id}/status`, { status })
@@ -1511,9 +1516,9 @@ export default function AgendamentosPage() {
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [fetchSchedules])
 
-  async function handleCloseSchedule() {
+  const handleCloseSchedule = useCallback(async () => {
     if (!selectedSchedule) return
     setActionLoading(selectedSchedule.id)
     try {
@@ -1526,11 +1531,24 @@ export default function AgendamentosPage() {
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [selectedSchedule, paymentMethod, fetchSchedules])
+
+  // Handlers de card extraídos para useCallback (estáveis entre renders, passados
+  // a filhos dentro do .map da lista). Comportamento idêntico ao inline anterior.
+  const handleOpenClose = useCallback((s: Schedule) => {
+    setSelectedSchedule(s)
+    setShowCloseModal(true)
+  }, [])
+
+  const handleHoverCard = useCallback((id: string | null) => {
+    setHovCard(id)
+  }, [])
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  const filteredSchedules = schedules.filter((s) => {
+  // Filtro de busca: mesma lógica/ordem de antes, só memoizado para não refiltrar
+  // a cada render (ex.: hover de card, abrir modal) quando schedules/query não mudam.
+  const filteredSchedules = useMemo(() => schedules.filter((s) => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
     return (
@@ -1538,19 +1556,38 @@ export default function AgendamentosPage() {
       s.vehicle.plate.toLowerCase().includes(q) ||
       s.scheduleServices.some((ss) => ss.service.name.toLowerCase().includes(q))
     )
-  })
+  }), [schedules, searchQuery])
 
-  const isToday         = selectedDate === new Date().toISOString().split("T")[0]
-  const pendingCount    = schedules.filter((s) => s.status === "PENDING").length
-  const confirmedCount  = schedules.filter((s) => s.status === "CONFIRMED").length
-  const inProgressCount = schedules.filter((s) => s.status === "IN_PROGRESS").length
-  const totalRevenue    = schedules.filter((s) => s.paymentStatus === "PAID").reduce((a, s) => a + s.totalPrice, 0)
-  const dateInfo        = formatDateHeader(selectedDate)
+  const isToday = selectedDate === new Date().toISOString().split("T")[0]
+
+  // Métricas do topo: uma única passada sobre `schedules` em vez de 4 .filter()
+  // separados. Mesmos valores que antes.
+  const { pendingCount, confirmedCount, inProgressCount, totalRevenue } = useMemo(() => {
+    let pending = 0, confirmed = 0, inProgress = 0, revenue = 0
+    for (const s of schedules) {
+      if (s.status === "PENDING") pending++
+      else if (s.status === "CONFIRMED") confirmed++
+      else if (s.status === "IN_PROGRESS") inProgress++
+      if (s.paymentStatus === "PAID") revenue += s.totalPrice
+    }
+    return { pendingCount: pending, confirmedCount: confirmed, inProgressCount: inProgress, totalRevenue: revenue }
+  }, [schedules])
+
+  const dateInfo = useMemo(() => formatDateHeader(selectedDate), [selectedDate])
+
+  // Fatia renderizada da lista (limite + "carregar mais"). NÃO altera a ordem nem
+  // o conteúdo de filteredSchedules — as métricas continuam usando o total filtrado.
+  const visibleSchedules = useMemo(
+    () => filteredSchedules.slice(0, visibleCount),
+    [filteredSchedules, visibleCount],
+  )
+  const hasMore = filteredSchedules.length > visibleSchedules.length
 
   function changeDate(days: number) {
     const d = new Date(selectedDate + "T12:00:00")
     d.setDate(d.getDate() + days)
     setSelectedDate(d.toISOString().split("T")[0])
+    setVisibleCount(LIST_PAGE_SIZE) // nova lista → volta ao primeiro "lote"
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -1635,7 +1672,7 @@ export default function AgendamentosPage() {
                 borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap",
               }}>Hoje</span>
             ) : (
-              <button onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])} style={{
+              <button onClick={() => { setSelectedDate(new Date().toISOString().split("T")[0]); setVisibleCount(LIST_PAGE_SIZE) }} style={{
                 fontSize: 11, fontWeight: 600, color: "#0066FF",
                 backgroundColor: "rgba(0,102,255,0.08)", border: "1px solid rgba(0,102,255,0.2)",
                 borderRadius: 6, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap",
@@ -1651,7 +1688,7 @@ export default function AgendamentosPage() {
             }} />
             <input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(LIST_PAGE_SIZE) }}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="Buscar cliente, placa ou serviço..."
@@ -1671,7 +1708,7 @@ export default function AgendamentosPage() {
               const active = filterStatus === f.value
               const cfg    = f.value ? getStatusConfig(f.value) : null
               return (
-                <button key={f.value} onClick={() => setFilterStatus(f.value)} style={{
+                <button key={f.value} onClick={() => { setFilterStatus(f.value); setVisibleCount(LIST_PAGE_SIZE) }} style={{
                   fontSize: 12, fontWeight: 500, padding: "5px 12px", borderRadius: 8,
                   cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0,
                   backgroundColor: active ? (cfg ? cfg.bg : "rgba(255,255,255,0.06)") : "transparent",
@@ -1780,7 +1817,7 @@ export default function AgendamentosPage() {
         {/* ── LISTA ── */}
         {!loading && filteredSchedules.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filteredSchedules.map((s) => {
+            {visibleSchedules.map((s) => {
               const st           = getStatusConfig(s.status)
               const serviceNames = s.scheduleServices.map((ss) => ss.service.name).join(", ")
               const isHov        = hovCard === s.id
@@ -1789,8 +1826,8 @@ export default function AgendamentosPage() {
               return (
                 <div
                   key={s.id}
-                  onMouseEnter={() => setHovCard(s.id)}
-                  onMouseLeave={() => setHovCard(null)}
+                  onMouseEnter={() => handleHoverCard(s.id)}
+                  onMouseLeave={() => handleHoverCard(null)}
                   style={{
                     backgroundColor: "var(--c-surface)",
                     border: `1px solid ${isHov ? "var(--c-border-2)" : "var(--c-border)"}`,
@@ -1855,7 +1892,7 @@ export default function AgendamentosPage() {
                         <div style={{ display: "flex", gap: 8 }}>
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
-                          {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
+                          {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={13} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
@@ -1891,7 +1928,7 @@ export default function AgendamentosPage() {
                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
-                          {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => { setSelectedSchedule(s); setShowCloseModal(true) }} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
+                          {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
@@ -1901,6 +1938,23 @@ export default function AgendamentosPage() {
                 </div>
               )
             })}
+
+            {/* ── CARREGAR MAIS ── */}
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount((c) => c + LIST_PAGE_SIZE)}
+                style={{
+                  marginTop: 4, padding: "12px 20px",
+                  backgroundColor: "var(--c-surface)",
+                  border: "1px solid var(--c-border-2)", borderRadius: 12,
+                  color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                Carregar mais ({filteredSchedules.length - visibleSchedules.length} restante{filteredSchedules.length - visibleSchedules.length !== 1 ? "s" : ""})
+              </button>
+            )}
           </div>
         )}
       </div>
