@@ -109,7 +109,7 @@ function MetricCard({
               }} />
             ) : locked ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "5px 10px" }}>
-                <Crown size={13} /> Desbloquear no PRO
+                <Crown size={13} /> Desbloquear no Premium
               </span>
             ) : (
               <span style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>
@@ -581,7 +581,7 @@ export default function DashboardPage() {
                 <BarChart3 size={20} color="#7C3AED" />
               </div>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
-                Relatórios disponíveis no PRO
+                Relatórios disponíveis no Premium
               </h3>
               <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0, maxWidth: 240 }}>
                 Veja faturamento, agendamentos e métricas do seu negócio em tempo real.

@@ -41,7 +41,7 @@ export default function ProFeatureGate({
 
         {/* Title */}
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>
-          Recurso PRO
+          Recurso Premium
         </h2>
 
         {/* Feature name */}
@@ -55,7 +55,7 @@ export default function ProFeatureGate({
             padding: "1px 6px",
           }}>
             <Crown size={12} style={{ display: "inline", verticalAlign: "-1px", marginRight: 3 }} />
-            PRO
+            PREMIUM
           </span>
         </p>
 
@@ -70,7 +70,7 @@ export default function ProFeatureGate({
         {/* CTA */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <a
-            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20PRO%20do%20Forbion"
+            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20Premium%20do%20Forbion"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -82,7 +82,7 @@ export default function ProFeatureGate({
             }}
           >
             <MessageCircle size={16} />
-            Falar com suporte sobre o PRO
+            Falar com suporte sobre o Premium
           </a>
 
           <Link

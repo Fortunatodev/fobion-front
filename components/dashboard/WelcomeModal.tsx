@@ -29,11 +29,11 @@ export default function WelcomeModal({ firstName }: { firstName?: string }) {
   const items = [
     { icon: <ListChecks size={16} />, color: "#0066FF", title: "Configure sua loja", text: "Seus serviços já vêm pré-carregados — ajuste preços e horários." },
     { icon: <Calendar size={16} />, color: "#10B981", title: "Coloque o 1º carro na agenda", text: "Use “Nova comanda” pra registrar um atendimento em segundos." },
-    { icon: <Sparkles size={16} />, color: "#7C3AED", title: "Sua loja online + IA", text: "Divulgue seu link de agendamento; a Carla responde clientes no automático." },
+    { icon: <Sparkles size={16} />, color: "#7C3AED", title: "Sua loja online de agendamento", text: "Divulgue seu link próprio — o cliente agenda sozinho, sem você no WhatsApp." },
   ]
 
   return (
-    <div onClick={close} style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div onClick={close} style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 440, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, padding: 26, position: "relative" }}>
         <button onClick={close} aria-label="Fechar" style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "var(--c-text-4)", cursor: "pointer", display: "flex" }}><X size={18} /></button>
         <div style={{ width: 46, height: 46, borderRadius: 13, background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>

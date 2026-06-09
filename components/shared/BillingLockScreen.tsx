@@ -38,7 +38,7 @@ function formatDate(iso: string): string {
 }
 
 function planLabel(plan: string): string {
-  if (plan === "PRO") return "PRO"
+  if (plan === "PRO") return "Premium"
   if (plan === "BASIC") return "Basic"
   return "Basic"
 }
@@ -214,7 +214,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <Crown size={18} color="#F59E0B" />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>
-              Recomendado: Plano PRO
+              Recomendado: Plano Premium
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -271,7 +271,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
               }}
             >
               <Crown size={18} />
-              {redirecting ? "Abrindo checkout..." : isNoPlan ? "Começar plano PRO" : "Renovar plano PRO"}
+              {redirecting ? "Abrindo checkout..." : isNoPlan ? "Começar plano Premium" : "Renovar plano Premium"}
               <ArrowRight size={16} />
             </button>
           )}
