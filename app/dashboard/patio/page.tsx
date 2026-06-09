@@ -6,6 +6,7 @@ import { apiGet, apiPut } from "@/lib/api"
 import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import PromptModal from "@/components/shared/PromptModal"
+import AutoAnimate from "@/components/shared/AutoAnimate"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
@@ -129,7 +130,7 @@ export default function PatioPage() {
                   <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{col.title}</span>
                   <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", fontWeight: 600 }}>{cards.length}</span>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <AutoAnimate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {cards.length === 0 && <p style={{ fontSize: 12, color: "var(--c-text-4)", textAlign: "center", padding: "20px 0" }}>—</p>}
                   {cards.map((s) => (
                     <div key={s.id} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: "10px 12px" }}>
@@ -159,7 +160,7 @@ export default function PatioPage() {
                       </Link>
                     </div>
                   ))}
-                </div>
+                </AutoAnimate>
               </div>
             )
           })}
