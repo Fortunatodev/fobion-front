@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 type Period = "7d" | "30d" | "90d" | "12m"
 
@@ -85,6 +86,8 @@ export default function RepassesReportPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: "ok" | "err"; msg: string } | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [payTarget, setPayTarget] = useState<EmployeeAgg | null>(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -123,13 +126,15 @@ export default function RepassesReportPage() {
     })
   }
 
-  async function handleMarkPaid(emp: EmployeeAgg) {
+  function handleMarkPaid(emp: EmployeeAgg) {
     if (emp.totalPending <= 0) return
-    const ok = window.confirm(
-      `Marcar ${fmt(emp.totalPending)} como pago para ${emp.employeeName}?\n\n` +
-      `Essa ação registra o pagamento e não pode ser desfeita em massa.`
-    )
-    if (!ok) return
+    setPayTarget(emp)
+    setConfirmOpen(true)
+  }
+
+  async function confirmMarkPaid() {
+    const emp = payTarget
+    if (!emp || emp.totalPending <= 0) { setConfirmOpen(false); return }
 
     setMarkingPaid(emp.employeeId)
     try {
@@ -140,7 +145,7 @@ export default function RepassesReportPage() {
       const transactionIds = (data?.transactions ?? [])
         .filter(t => t.employeeId === emp.employeeId && t.status === "PENDING")
         .map(t => t.id)
-      if (transactionIds.length === 0) { setMarkingPaid(null); return }
+      if (transactionIds.length === 0) { setMarkingPaid(null); setConfirmOpen(false); return }
       const result = await apiPost<{ count: number; totalAmount: number }>(
         `/commissions/employees/${emp.employeeId}/mark-paid`,
         { transactionIds }
@@ -154,6 +159,7 @@ export default function RepassesReportPage() {
       setToast({ kind: "err", msg: e instanceof Error ? e.message : "Erro ao marcar como pago." })
     } finally {
       setMarkingPaid(null)
+      setConfirmOpen(false)
     }
   }
 
@@ -562,6 +568,19 @@ export default function RepassesReportPage() {
             </p>
           </>
         )}
+
+        <ConfirmDialog
+          open={confirmOpen}
+          onClose={() => { if (!markingPaid) { setConfirmOpen(false); setPayTarget(null) } }}
+          onConfirm={confirmMarkPaid}
+          title={payTarget
+            ? `Marcar ${fmt(payTarget.totalPending)} como pago para ${payTarget.employeeName}?`
+            : "Marcar como pago?"}
+          description="Essa ação registra o pagamento e não pode ser desfeita em massa."
+          confirmLabel="Marcar pago"
+          variant="danger"
+          loading={!!markingPaid}
+        />
       </div>
     </>
   )

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -126,14 +127,14 @@ export default function NovoUsuarioPage() {
     ].join("\n")
 
     if (!navigator.clipboard) {
-      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + text)
+      toast.error("Não foi possível copiar automaticamente. Copie as credenciais manualmente.")
       return
     }
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     }).catch(() => {
-      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + text)
+      toast.error("Não foi possível copiar automaticamente. Copie as credenciais manualmente.")
     })
   }
 

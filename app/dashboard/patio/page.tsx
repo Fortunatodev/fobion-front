@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck } from "lucide-react"
+import { toast } from "sonner"
+import PromptModal from "@/components/shared/PromptModal"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
@@ -34,15 +36,20 @@ export default function PatioPage() {
   const [moving, setMoving] = useState<string | null>(null)
   // B20 — capacidade do pátio (vagas/boxes) por dia; config local sem migração
   const [capacity, setCapacity] = useState(10)
+  const [capModalOpen, setCapModalOpen] = useState(false)
   useEffect(() => {
     const v = Number(localStorage.getItem("forbion_patio_capacity"))
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (v > 0) setCapacity(v)
   }, [])
-  function editCapacity() {
-    const v = window.prompt("Quantas vagas/boxes seu pátio comporta por dia?", String(capacity))
-    const n = Number(v)
-    if (n > 0) { setCapacity(n); localStorage.setItem("forbion_patio_capacity", String(n)) }
+  function editCapacity() { setCapModalOpen(true) }
+  function saveCapacity(value: string) {
+    const n = Number(value)
+    if (!(n > 0)) return
+    setCapacity(n)
+    localStorage.setItem("forbion_patio_capacity", String(n))
+    setCapModalOpen(false)
+    toast.success(`Capacidade do pátio definida: ${n} vaga${n > 1 ? "s" : ""}/dia`)
   }
 
   const fetchData = useCallback(() => {
@@ -58,7 +65,7 @@ export default function PatioPage() {
   async function advance(id: string, next: string) {
     setMoving(id)
     try { await apiPut(`/schedules/${id}/status`, { status: next }); fetchData() }
-    catch { /* noop */ } finally { setMoving(null) }
+    catch { toast.error("Não consegui mover o carro. Tente de novo.") } finally { setMoving(null) }
   }
 
   return (
@@ -158,6 +165,20 @@ export default function PatioPage() {
           })}
         </div>
       )}
+
+      <PromptModal
+        open={capModalOpen}
+        onClose={() => setCapModalOpen(false)}
+        onSubmit={saveCapacity}
+        title="Capacidade do pátio"
+        description="Quantas vagas/boxes seu pátio comporta por dia? Usamos pra avisar quando lota."
+        label="Vagas por dia"
+        type="number"
+        min={1}
+        defaultValue={String(capacity)}
+        confirmLabel="Salvar"
+        validate={(v) => (Number(v) > 0 ? null : "Informe um número maior que zero.")}
+      />
     </div>
   )
 }

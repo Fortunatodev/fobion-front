@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 /** V2-B4 — Estoque de produtos. CRUD + ajuste de entrada/saída + alerta de mínimo + KPIs. */
 interface Product {
@@ -34,6 +36,10 @@ export default function EstoquePage() {
   const [adjFor, setAdjFor] = useState<Product | null>(null)
   const [adjDir, setAdjDir] = useState<"in" | "out">("in")
   const [adjQty, setAdjQty] = useState("")
+
+  // confirmação de remoção
+  const [removeTarget, setRemoveTarget] = useState<Product | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   const fetchData = useCallback(() => {
     setLoading(true); setError("")
@@ -91,9 +97,19 @@ export default function EstoquePage() {
     catch { /* */ } finally { setBusy(null) }
   }
 
-  async function remove(p: Product) {
-    if (!confirm(`Remover "${p.name}" do estoque?`)) return
-    try { await apiDelete(`/products/${p.id}`); fetchData() } catch { /* */ }
+  async function confirmRemove() {
+    if (!removeTarget) return
+    setRemoving(true)
+    try {
+      await apiDelete(`/products/${removeTarget.id}`)
+      fetchData()
+      toast.success(`"${removeTarget.name}" removido do estoque.`)
+      setRemoveTarget(null)
+    } catch (e) {
+      toast.error((e as Error).message || "Erro ao remover.")
+    } finally {
+      setRemoving(false)
+    }
   }
 
   // estilos base
@@ -196,7 +212,7 @@ export default function EstoquePage() {
                   <button title="Entrada de 1" onClick={() => quickAdjust(p.id, 1)} disabled={busy === p.id} style={{ ...iconBtn("#10B981", "var(--c-border-2)"), width: 30, height: 30 }}><Plus size={14} /></button>
                   <button title="Ajustar quantidade (lote)" onClick={() => { setAdjFor(p); setAdjDir("in"); setAdjQty("") }} style={iconBtn("#0066FF", "rgba(0,102,255,0.25)")}><ArrowDownUp size={14} /></button>
                   <button title="Editar produto" onClick={() => openEdit(p)} style={iconBtn("var(--c-text-2)", "var(--c-border-2)")}><Pencil size={13} /></button>
-                  <button title="Remover" onClick={() => remove(p)} style={iconBtn("#EF4444", "rgba(239,68,68,0.2)")}><Trash2 size={13} /></button>
+                  <button title="Remover" onClick={() => setRemoveTarget(p)} style={iconBtn("#EF4444", "rgba(239,68,68,0.2)")}><Trash2 size={13} /></button>
                 </div>
               </div>
             )
@@ -252,6 +268,17 @@ export default function EstoquePage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={confirmRemove}
+        title="Remover produto"
+        description={removeTarget ? `Remover "${removeTarget.name}" do estoque?` : ""}
+        confirmLabel="Remover"
+        variant="danger"
+        loading={removing}
+      />
     </div>
   )
 }

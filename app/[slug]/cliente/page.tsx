@@ -13,6 +13,8 @@ import {
   getCustomerToken,
 } from "@/lib/customer-auth"
 import type { PlanServiceRule } from "@/types"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -125,6 +127,10 @@ function ClientAreaContent() {
   const [calLoading,    setCalLoading]    = useState(false)
   const [calMsg,        setCalMsg]        = useState<{ type: "ok" | "err"; text: string } | null>(null)
   const [calBannerDismissed, setCalBannerDismissed] = useState(false)
+  const [calDisconnectOpen, setCalDisconnectOpen] = useState(false)
+
+  // ── Cancelar assinatura (confirm) ────────────────────────────────────────
+  const [cancelTarget, setCancelTarget] = useState<Plan | null>(null)
 
   // ── Auth guard + tab inicial ─────────────────────────────────────────────
   useEffect(() => {
@@ -268,17 +274,16 @@ function ClientAreaContent() {
   }
 
   async function handleDisconnectCalendar() {
-    if (!confirm("Desconectar Google Calendar? Os eventos já criados não serão removidos.")) return
     setCalLoading(true)
     try {
       await customerApiDelete("/customer/calendar/disconnect")
       setCalConnected(false)
-      setCalMsg({ type: "ok", text: "Google Calendar desconectado." })
-      setTimeout(() => setCalMsg(null), 4000)
+      toast.success("Google Calendar desconectado.")
     } catch (e) {
-      setCalMsg({ type: "err", text: e instanceof Error ? e.message : "Erro ao desconectar." })
+      toast.error(e instanceof Error ? e.message : "Erro ao desconectar.")
     } finally {
       setCalLoading(false)
+      setCalDisconnectOpen(false)
     }
   }
 
@@ -495,7 +500,7 @@ function ClientAreaContent() {
                 Seus agendamentos aparecem automaticamente na sua agenda.
               </span>
               <button
-                onClick={handleDisconnectCalendar}
+                onClick={() => setCalDisconnectOpen(true)}
                 disabled={calLoading}
                 style={{
                   fontSize: 12,
@@ -708,15 +713,10 @@ function ClientAreaContent() {
                           if (plan.cactopayPaymentLink) {
                             window.open(plan.cactopayPaymentLink, "_blank")
                           } else {
-                            alert("O link de pagamento ainda não foi configurado pelo estabelecimento.")
+                            toast.error("O link de pagamento ainda não foi configurado pelo estabelecimento.")
                           }
                         }}
-                        onCancel={() => {
-                          if (window.confirm(`Deseja cancelar sua assinatura do plano ${plan.name}?`)) {
-                            const msg = encodeURIComponent(`Olá, gostaria de cancelar minha assinatura do plano ${plan.name}.`)
-                            window.open(`https://wa.me/?text=${msg}`, "_blank")
-                          }
-                        }}
+                        onCancel={() => setCancelTarget(plan)}
                       />
                     ))}
                   </div>
@@ -860,6 +860,36 @@ function ClientAreaContent() {
           )}
 
         </main>
+
+        {/* ── Confirmar desconexão do Google Calendar ── */}
+        <ConfirmDialog
+          open={calDisconnectOpen}
+          onClose={() => setCalDisconnectOpen(false)}
+          onConfirm={handleDisconnectCalendar}
+          title="Desconectar Google Calendar?"
+          description="Os eventos já criados na sua agenda não serão removidos. Você pode reconectar quando quiser."
+          confirmLabel="Desconectar"
+          cancelLabel="Manter conectado"
+          variant="danger"
+          loading={calLoading}
+        />
+
+        {/* ── Confirmar cancelamento de assinatura ── */}
+        <ConfirmDialog
+          open={cancelTarget !== null}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={() => {
+            if (!cancelTarget) return
+            const msg = encodeURIComponent(`Olá, gostaria de cancelar minha assinatura do plano ${cancelTarget.name}.`)
+            window.open(`https://wa.me/?text=${msg}`, "_blank")
+            setCancelTarget(null)
+          }}
+          title="Cancelar sua assinatura?"
+          description={cancelTarget ? `Você vai abrir o WhatsApp para solicitar o cancelamento do plano ${cancelTarget.name}. Sua assinatura continua ativa até confirmarmos o cancelamento.` : ""}
+          confirmLabel="Falar no WhatsApp"
+          cancelLabel="Manter plano"
+          variant="danger"
+        />
       </div>
     </>
   )

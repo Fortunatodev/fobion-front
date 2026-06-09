@@ -7,9 +7,11 @@ import {
   CheckCircle2, XCircle,
   AlertCircle, Clock, Lock,
 } from "lucide-react"
+import { toast } from "sonner"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -222,6 +224,7 @@ function AssinantesContent() {
   const [formPlanId,     setFormPlanId]     = useState("")
   const [hoveredId,      setHoveredId]      = useState<string | null>(null)
   const [isMobile,       setIsMobile]       = useState(false)
+  const [cancelTarget,   setCancelTarget]   = useState<string | null>(null)
 
   // ── Responsividade ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -269,16 +272,20 @@ function AssinantesContent() {
     }
   }
 
-  async function handleCancel(id: string) {
-    if (!window.confirm("Cancelar esta assinatura?")) return
+  async function confirmCancel() {
+    const id = cancelTarget
+    if (!id) return
     setActionLoading(id)
     try {
       await apiPut(`/customer-plans/subscriptions/${id}/cancel`, {})
       await fetchData()
+      toast.success("Assinatura cancelada.")
     } catch {
       setError("Erro ao cancelar assinatura.")
+      toast.error("Erro ao cancelar assinatura.")
     } finally {
       setActionLoading(null)
+      setCancelTarget(null)
     }
   }
 
@@ -658,7 +665,7 @@ function AssinantesContent() {
                           Ativar
                         </button>
                         <button
-                          onClick={() => handleCancel(sub.id)}
+                          onClick={() => setCancelTarget(sub.id)}
                           disabled={busy}
                           style={{
                             width: 34, height: 34, borderRadius: 8,
@@ -674,7 +681,7 @@ function AssinantesContent() {
 
                     {sub.status === "ACTIVE" && (
                       <button
-                        onClick={() => handleCancel(sub.id)}
+                        onClick={() => setCancelTarget(sub.id)}
                         disabled={busy}
                         style={{
                           display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
@@ -847,6 +854,19 @@ function AssinantesContent() {
           </div>
         </>
       )}
+
+      {/* ── CONFIRMAR CANCELAMENTO ────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={cancelTarget !== null}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={confirmCancel}
+        title="Cancelar assinatura"
+        description="Tem certeza que deseja cancelar esta assinatura? O cliente perderá o acesso ao plano."
+        confirmLabel="Cancelar assinatura"
+        cancelLabel="Voltar"
+        variant="danger"
+        loading={cancelTarget !== null && actionLoading === cancelTarget}
+      />
     </>
   )
 }

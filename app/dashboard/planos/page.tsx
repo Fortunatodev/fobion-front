@@ -6,9 +6,11 @@ import {
   Users, Percent, AlertCircle, Link2,
   Package,
 } from "lucide-react"
+import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -364,6 +366,8 @@ function PlanosContent() {
   const [actionLoading,  setActionLoading]  = useState<string | null>(null)
   const [formError,      setFormError]      = useState<string | null>(null)
   const [hoveredId,      setHoveredId]      = useState<string | null>(null)
+  const [confirmOpen,    setConfirmOpen]    = useState(false)
+  const [deleteTarget,   setDeleteTarget]   = useState<CustomerPlan | null>(null)
 
   const [formName,        setFormName]        = useState("")
   const [formDescription, setFormDescription] = useState("")
@@ -513,20 +517,29 @@ function PlanosContent() {
     }
   }
 
-  async function handleDelete(plan: CustomerPlan) {
+  function handleDelete(plan: CustomerPlan) {
     if (plan.activeSubscribersCount > 0) {
-      alert(`Este plano tem ${plan.activeSubscribersCount} assinante(s) ativo(s). Cancele as assinaturas primeiro.`)
+      toast.error(`Este plano tem ${plan.activeSubscribersCount} assinante(s) ativo(s). Cancele as assinaturas primeiro.`)
       return
     }
-    if (!window.confirm(`Desativar "${plan.name}"?`)) return
+    setDeleteTarget(plan)
+    setConfirmOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    const plan = deleteTarget
     setActionLoading(plan.id)
     try {
       await apiDelete(`/customer-plans/${plan.id}`)
       await fetchPlans()
+      toast.success(`Plano "${plan.name}" desativado.`)
     } catch {
-      setError("Erro ao remover plano.")
+      toast.error("Erro ao remover plano.")
     } finally {
       setActionLoading(null)
+      setConfirmOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -948,6 +961,18 @@ function PlanosContent() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null) }}
+        onConfirm={confirmDelete}
+        title="Desativar plano"
+        description={deleteTarget ? `Desativar "${deleteTarget.name}"?` : ""}
+        confirmLabel="Desativar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={deleteTarget ? actionLoading === deleteTarget.id : false}
+      />
     </>
   )
 }

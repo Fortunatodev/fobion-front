@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 /**
  * V2-B3 — Orçamentos. Cliente do CRM + itens do catálogo → proposta → envia no
@@ -50,6 +52,11 @@ export default function OrcamentosPage() {
   const [error, setError] = useState("")
   const [modal, setModal] = useState(false)
   const [services, setServices] = useState<ServiceItem[]>([])
+
+  // exclusão
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // form
   const [fName, setFName] = useState("")
@@ -144,9 +151,19 @@ export default function OrcamentosPage() {
     window.open(`https://api.whatsapp.com/send/?text=${encodeURIComponent(msg)}`, "_blank")
     if (markSent && q.status === "DRAFT") setStatus(q.id, "SENT")
   }
-  async function remove(id: string) {
-    if (!confirm("Excluir este orçamento?")) return
-    try { await apiDelete(`/quotes/${id}`); fetchQuotes() } catch { /* noop */ }
+  function remove(id: string) {
+    setDeleteTarget(id); setConfirmOpen(true)
+  }
+  async function confirmRemove() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await apiDelete(`/quotes/${deleteTarget}`)
+      setConfirmOpen(false); setDeleteTarget(null); fetchQuotes()
+      toast.success("Orçamento excluído.")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir.")
+    } finally { setDeleting(false) }
   }
 
   const inp: React.CSSProperties = { height: 40, padding: "0 12px", background: "var(--c-bg)", border: "1px solid var(--c-border-2)", borderRadius: 10, color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
@@ -336,6 +353,17 @@ export default function OrcamentosPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null) }}
+        onConfirm={confirmRemove}
+        title="Excluir orçamento"
+        description="Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   )
 }

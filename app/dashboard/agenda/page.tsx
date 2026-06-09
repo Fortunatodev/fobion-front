@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { apiGet, apiPut } from "@/lib/api"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
+import { toast } from "sonner"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -226,7 +227,7 @@ function DetailModal({
     try {
       const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/status`, { status })
       onStatusChange(res.schedule)
-    } catch { /* silently */ } finally { setUpdating(false) }
+    } catch { toast.error("Não consegui atualizar o status. Tente de novo.") } finally { setUpdating(false) }
   }
 
   async function doClose() {
@@ -236,7 +237,7 @@ function DetailModal({
       const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/close`, { paymentMethod: closingWith })
       onStatusChange(res.schedule)
       onClose()
-    } catch { /* silently */ } finally { setUpdating(false) }
+    } catch { toast.error("Não consegui fechar a comanda. Tente de novo.") } finally { setUpdating(false) }
   }
 
   return (

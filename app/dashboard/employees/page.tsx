@@ -6,6 +6,8 @@ import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent,
 import Link from "next/link"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -98,6 +100,7 @@ function EmployeesContent() {
   const [hoveredId,     setHoveredId]     = useState<string | null>(null)
   const [formName,      setFormName]      = useState("")
   const [formEmail,     setFormEmail]     = useState("")
+  const [deactivateTarget, setDeactivateTarget] = useState<Employee | null>(null)
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true)
@@ -161,17 +164,24 @@ function EmployeesContent() {
     }
   }
 
-  async function handleDeactivate(id: string) {
+  function handleDeactivate(id: string) {
     const emp = employees.find((e) => e.id === id)
-    if (!window.confirm(`Desativar ${emp?.name ?? "este funcionário"}? Ele deixa de aparecer na agenda e perde o acesso. Você pode reativar depois.`)) return
+    setDeactivateTarget(emp ?? null)
+  }
+
+  async function confirmDeactivate() {
+    if (!deactivateTarget) return
+    const id = deactivateTarget.id
     setActionLoading(id)
     try {
       await apiDelete(`/employees/${id}`)
       await fetchEmployees()
-    } catch {
-      // silencioso
+      toast.success(`${deactivateTarget.name} foi desativado.`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao desativar funcionário.")
     } finally {
       setActionLoading(null)
+      setDeactivateTarget(null)
     }
   }
 
@@ -450,6 +460,18 @@ function EmployeesContent() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={deactivateTarget !== null}
+        onClose={() => setDeactivateTarget(null)}
+        onConfirm={confirmDeactivate}
+        title="Desativar funcionário"
+        description={`Desativar ${deactivateTarget?.name ?? "este funcionário"}? Ele deixa de aparecer na agenda e perde o acesso. Você pode reativar depois.`}
+        confirmLabel="Desativar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={deactivateTarget !== null && actionLoading === deactivateTarget.id}
+      />
     </>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { apiGet, apiPost } from "@/lib/api"
 import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck } from "lucide-react"
+import { toast } from "sonner"
 
 /**
  * V2 — Vistoria de entrada do veículo (diferencial nº1 no detailing: proteção
@@ -58,7 +59,7 @@ export default function VistoriaPage() {
           setLocked(!!ins.isLocked)
         }
       })
-      .catch(() => {})
+      .catch(() => toast.error("Não consegui carregar a vistoria. Recarregue a página."))
       .finally(() => setLoading(false))
   }, [scheduleId])
 

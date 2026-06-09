@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2 } from "lucide-react"
+import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -77,6 +79,8 @@ export default function ServicosPage() {
   const [selected,     setSelected]     = useState<Service | null>(null)
   const [saving,       setSaving]       = useState(false)
   const [deleting,     setDeleting]     = useState<string | null>(null)
+  const [confirmOpen,  setConfirmOpen]  = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
   const [formError,    setFormError]    = useState<string | null>(null)
   const [successMsg,   setSuccessMsg]   = useState<string | null>(null)
   const [isMobile,     setIsMobile]     = useState(false)
@@ -234,17 +238,25 @@ export default function ServicosPage() {
   }
 
   // ── Delete ──────────────────────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    if (!confirm("Desativar este serviço?")) return
+  const handleDelete = (s: Service) => {
+    setDeleteTarget(s)
+    setConfirmOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
     setDeleting(id)
     try {
       await apiDelete(`/services/${id}`)
       setServices(prev => prev.map(s => s.id === id ? { ...s, isActive: false } : s))
       showSuccess("Serviço desativado.")
     } catch {
-      alert("Erro ao desativar serviço.")
+      toast.error("Erro ao desativar serviço.")
     } finally {
       setDeleting(null)
+      setConfirmOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -656,6 +668,19 @@ export default function ServicosPage() {
           </div>
         </div>
       )}
+
+      {/* ══ Confirmação de desativação ══════════════════════════════════════ */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null) }}
+        onConfirm={confirmDelete}
+        title="Desativar serviço"
+        description={deleteTarget ? `Desativar "${deleteTarget.name}"? Ele deixa de aparecer na loja pública.` : "Desativar este serviço?"}
+        confirmLabel="Desativar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={deleting !== null}
+      />
     </>
   )
 }
@@ -667,7 +692,7 @@ function ServiceCard({
 }: {
   service: Service
   onEdit: (s: Service) => void
-  onDelete: (id: string) => void
+  onDelete: (s: Service) => void
   deleting: boolean
 }) {
   const [hovered, setHovered] = useState(false)
@@ -778,7 +803,7 @@ function ServiceCard({
           </button>
 
           <button
-            onClick={() => onDelete(service.id)}
+            onClick={() => onDelete(service)}
             disabled={deleting}
             style={{
               width: 34, height: 34, borderRadius: 10,

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // As chamadas vão para /api/admin/* (Next route handlers).
 // Esse proxy server-side valida o cookie httpOnly `admin-session` e injeta
@@ -527,7 +529,7 @@ function SuccessModal({ data, onClose }: { data: CreateResult; onClose: () => vo
       setCopied(true)
       setTimeout(() => setCopied(false), 3000)
     } catch {
-      alert("Não foi possível copiar automaticamente. Copie manualmente:\n\n" + buildMessage())
+      toast.error("Não foi possível copiar automaticamente. Selecione e copie a mensagem manualmente.")
     }
   }
 
@@ -824,6 +826,10 @@ function AdminPageContent() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  // Delete confirm dialog
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<BusinessItem | null>(null)
+
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Debounce
@@ -887,18 +893,23 @@ function AdminPageContent() {
   }
 
   // Delete business
-  async function handleDelete(biz: BusinessItem) {
-    const confirmed = window.confirm(
-      `Excluir a loja "${biz.name}"?\n\nEssa ação remove a loja e TODOS os dados vinculados (clientes, agendamentos, funcionários, etc.) permanentemente.\n\nEssa ação não pode ser desfeita.`
-    )
-    if (!confirmed) return
+  function handleDelete(biz: BusinessItem) {
+    setDeleteTarget(biz)
+    setConfirmOpen(true)
+  }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    const biz = deleteTarget
     setDeletingId(biz.id)
     try {
       await adminDelete(`/businesses/${biz.id}`)
       setBusinesses(prev => prev.filter(b => b.id !== biz.id))
+      toast.success(`Loja "${biz.name}" excluída.`)
+      setConfirmOpen(false)
+      setDeleteTarget(null)
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erro ao excluir loja.")
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir loja.")
     } finally {
       setDeletingId(null)
     }
@@ -1252,6 +1263,17 @@ function AdminPageContent() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null) }}
+        onConfirm={confirmDelete}
+        title={deleteTarget ? `Excluir "${deleteTarget.name}"?` : "Excluir loja?"}
+        description="Essa ação remove a loja e TODOS os dados vinculados (clientes, agendamentos, funcionários, etc.) permanentemente. Essa ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        variant="danger"
+        loading={deleteTarget ? deletingId === deleteTarget.id : false}
+      />
     </div>
   )
 }

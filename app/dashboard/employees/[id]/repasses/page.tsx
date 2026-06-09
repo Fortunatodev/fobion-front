@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Plus, Trash2, Percent, AlertCircle, CheckCircle2, X } from "lucide-react"
 import { apiGet, apiPost, apiDelete } from "@/lib/api"
+import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 interface Service {
   id: string
@@ -49,6 +51,11 @@ export default function EmployeeRepassesPage() {
   const [formPercent, setFormPercent] = useState("")
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Confirmação de remover exceção
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<CommissionRule | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -111,14 +118,25 @@ export default function EmployeeRepassesPage() {
     }
   }
 
-  async function handleDelete(ruleId: string) {
-    if (!confirm("Remover esta exceção? O funcionário voltará a receber o repasse padrão do serviço.")) return
+  function handleDelete(rule: CommissionRule) {
+    setDeleteTarget(rule)
+    setConfirmOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    const ruleId = deleteTarget.id
+    setDeleting(true)
     try {
       await apiDelete(`/commissions/rules/${ruleId}`)
       setRules(prev => prev.filter(r => r.id !== ruleId))
-      showSuccess("Exceção removida.")
+      toast.success("Exceção removida.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao remover.")
+      toast.error(e instanceof Error ? e.message : "Erro ao remover.")
+    } finally {
+      setDeleting(false)
+      setConfirmOpen(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -238,7 +256,7 @@ export default function EmployeeRepassesPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleDelete(rule.id)}
+                  onClick={() => handleDelete(rule)}
                   style={{ width: 32, height: 32, borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                   aria-label="Remover exceção"
                 >
@@ -320,6 +338,17 @@ export default function EmployeeRepassesPage() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null) }}
+        onConfirm={confirmDelete}
+        title="Remover exceção?"
+        description={`O funcionário voltará a receber o repasse padrão${deleteTarget ? ` do serviço "${deleteTarget.service.name}"` : " do serviço"}.`}
+        confirmLabel="Remover"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   )
 }
