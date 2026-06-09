@@ -1032,7 +1032,9 @@ function ConfiguracoesContent() {
                   border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.2)" : "rgba(0,102,255,0.2)"}`,
                   borderRadius: 6, padding: "2px 8px", display: "inline-block", marginTop: 6,
                 }}>
-                  {config?.plan === "PRO" ? "✦ PRO" : "BASIC"}
+                  {config?.plan === "PRO"
+                    ? `✦ ${config?.tier ? config.tier.charAt(0).toUpperCase() + config.tier.slice(1) : "Pro"}`
+                    : "Essencial"}
                   {config?.isTrial ? " · Trial" : ""}
                 </span>
               </div>
@@ -1183,69 +1185,6 @@ function ConfiguracoesContent() {
               <PricingCards currentTier={config?.tier} />
             </div>
 
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 12px" }}>Comparativo de recursos</p>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
-              {/* BASIC */}
-              <div style={{
-                border: `1px solid ${config?.plan === "BASIC" ? "rgba(0,102,255,0.3)" : "var(--c-border)"}`,
-                borderRadius: 14, padding: "18px 20px",
-                backgroundColor: config?.plan === "BASIC" ? "rgba(0,102,255,0.04)" : "var(--c-bg)",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>BASIC</span>
-                  {config?.plan === "BASIC" && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#0066FF", backgroundColor: "rgba(0,102,255,0.1)", border: "1px solid rgba(0,102,255,0.2)", borderRadius: 6, padding: "2px 8px" }}>
-                      Atual{config?.isTrial ? " · Trial" : ""}
-                    </span>
-                  )}
-                </div>
-                <div style={{ height: 12 }} />
-                {PLAN_FEATURES.map(f => (
-                  <FeatureCell key={f.label} label={f.label} available={f.basic} labelColor="var(--c-text-2)" />
-                ))}
-              </div>
-
-              {/* PRO */}
-              <div style={{
-                border: `1px solid ${config?.plan === "PRO" ? "rgba(245,158,11,0.3)" : "var(--c-border)"}`,
-                borderRadius: 14, padding: "18px 20px",
-                backgroundColor: config?.plan === "PRO" ? "rgba(245,158,11,0.04)" : "var(--c-bg)",
-                position: "relative", overflow: "hidden",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", display: "flex", gap: 6, alignItems: "center" }}>
-                    <Crown size={14} color="#F59E0B" /> PRO
-                  </span>
-                  {config?.plan === "PRO" && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, padding: "2px 8px" }}>
-                      Atual
-                    </span>
-                  )}
-                </div>
-                <div style={{ height: 12 }} />
-                {PLAN_FEATURES.map(f => (
-                  <FeatureCell key={f.label} label={f.label} available={f.pro} labelColor="var(--c-text)" />
-                ))}
-              </div>
-            </div>
-
-            {config?.plan !== "PRO" && (
-              <UpgradeBtn onClick={async () => {
-                // V2-B1 (QW-13): botão de upgrade agora ABRE o checkout real
-                // (antes navegava pra própria página — morto). Busca o link
-                // CactoPay do tenant e redireciona.
-                try {
-                  const res = await apiGet<{ paymentLink?: string | null }>("/billing/payment-link")
-                  if (res?.paymentLink) {
-                    window.location.href = res.paymentLink
-                  } else {
-                    alert("Link de pagamento ainda não configurado. Fale com o suporte.")
-                  }
-                } catch {
-                  alert("Não foi possível abrir o checkout. Tente de novo.")
-                }
-              }} />
-            )}
           </SectionCard>
         )}
       </div>

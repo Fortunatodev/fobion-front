@@ -16,6 +16,7 @@ interface Tier {
   tagline: string
   highlights: string[]
   recommended?: boolean
+  comingSoon?: boolean
   checkoutUrl: string | null
 }
 
@@ -44,9 +45,13 @@ export default function PricingCards({ currentTier }: { currentTier?: string | n
             position: "relative", display: "flex", flexDirection: "column",
             background: "var(--c-surface)", borderRadius: 16, padding: 20,
             border: `1.5px solid ${t.recommended ? "rgba(0,102,255,0.5)" : "var(--c-border)"}`,
+            opacity: t.comingSoon ? 0.72 : 1,
           }}>
             {t.recommended && (
               <span style={{ position: "absolute", top: -10, left: 20, fontSize: 10, fontWeight: 800, color: "var(--c-on-primary)", background: "linear-gradient(135deg,#0066FF,#7C3AED)", borderRadius: 6, padding: "3px 9px", letterSpacing: "0.04em" }}>MAIS ESCOLHIDO</span>
+            )}
+            {t.comingSoon && (
+              <span style={{ position: "absolute", top: -10, left: 20, fontSize: 10, fontWeight: 800, color: "#F59E0B", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 6, padding: "3px 9px", letterSpacing: "0.04em" }}>EM BREVE</span>
             )}
             <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{t.name}</p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "8px 0 2px" }}>
@@ -62,7 +67,11 @@ export default function PricingCards({ currentTier }: { currentTier?: string | n
                 </div>
               ))}
             </div>
-            {isCurrent ? (
+            {t.comingSoon ? (
+              <div style={{ height: 42, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#F59E0B", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                Em breve
+              </div>
+            ) : isCurrent ? (
               <div style={{ height: 42, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#10B981", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
                 <Crown size={14} /> Seu plano atual
               </div>
