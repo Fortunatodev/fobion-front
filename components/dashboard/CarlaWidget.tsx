@@ -14,16 +14,20 @@ interface Msg { role: "user" | "assistant"; content: string }
 export default function CarlaWidget() {
   const [open, setOpen] = useState(false)
   const [configured, setConfigured] = useState<boolean | null>(null)
+  const [allowed, setAllowed] = useState<boolean | null>(null)
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
 
+  // No mount: o back diz se a IA está configurada (chave) e se ESTE negócio tem
+  // acesso (tier Premium). A Carla é diferencial do Premium — pra quem não tem,
+  // o widget nem aparece (allowed=false → render null lá embaixo).
   useEffect(() => {
-    if (open && configured === null) {
-      apiGet<{ configured: boolean }>("/ai/status").then((r) => setConfigured(!!r.configured)).catch(() => setConfigured(false))
-    }
-  }, [open, configured])
+    apiGet<{ configured: boolean; allowed?: boolean }>("/ai/status")
+      .then((r) => { setConfigured(!!r.configured); setAllowed(!!r.allowed) })
+      .catch(() => { setConfigured(false); setAllowed(false) })
+  }, [])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [msgs, open])
 
@@ -41,6 +45,9 @@ export default function CarlaWidget() {
       setMsgs((m) => [...m, { role: "assistant", content: "Estou indisponível no momento. Tente de novo." }])
     } finally { setSending(false) }
   }
+
+  // Sem acesso (não-Premium) ou ainda carregando: não mostra nada (evita flash do botão).
+  if (!allowed) return null
 
   return (
     <>
