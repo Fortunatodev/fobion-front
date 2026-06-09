@@ -43,6 +43,7 @@ export default function Header() {
       >
         <button
           onClick={() => setOpen(true)}
+          aria-label="Abrir menu"
           style={{
             background: "none", border: "none",
             cursor: "pointer", padding: 8,
@@ -112,6 +113,7 @@ export default function Header() {
             <ForbionLogo size="md" as="div" />
             <button
               onClick={() => setOpen(false)}
+              aria-label="Fechar menu"
               style={{
                 background: "var(--c-surface-2)",
                 border: "none", cursor: "pointer",

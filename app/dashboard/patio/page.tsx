@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import PromptModal from "@/components/shared/PromptModal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
@@ -56,6 +56,7 @@ export default function PatioPage() {
   const fetchData = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10)
     setLoading(true)
+    setError("")
     apiGet<{ schedules: Schedule[] }>(`/schedules?date=${today}`)
       .then((r) => setSchedules(r.schedules ?? []))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar."))
@@ -104,7 +105,15 @@ export default function PatioPage() {
           </div>
         </>
       )}
-      {error && <p style={{ color: "#F87171", fontSize: 14 }}>{error}</p>}
+      {!loading && error && (
+        <div style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+          <button onClick={fetchData} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <RefreshCw size={13} /> Tentar novamente
+          </button>
+        </div>
+      )}
 
       {!loading && !error && schedules.length === 0 && (
         <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: "56px 20px", textAlign: "center" }}>

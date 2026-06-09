@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ChevronLeft, ChevronRight, Plus, Calendar,
   AlertCircle, User, Clock, CheckCircle2, XCircle,
-  Loader2, ArrowRight,
+  Loader2, ArrowRight, RefreshCw,
 } from "lucide-react"
 import { apiGet, apiPut } from "@/lib/api"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
@@ -544,10 +544,13 @@ export default function AgendaPage() {
           </div>
         )}
 
-        {error && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", backgroundColor: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+        {!loading && error && (
+          <div style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <AlertCircle size={14} color="#EF4444" />
             <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+            <button onClick={fetchMonth} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              <RefreshCw size={13} /> Tentar novamente
+            </button>
           </div>
         )}
 

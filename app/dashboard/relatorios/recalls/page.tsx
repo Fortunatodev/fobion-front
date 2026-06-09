@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiGet } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
-import { ArrowLeft, ShieldCheck, MessageCircle, Calendar, AlertCircle } from "lucide-react"
+import { ArrowLeft, ShieldCheck, MessageCircle, Calendar, AlertCircle, RefreshCw } from "lucide-react"
 
 /**
  * V2-B3 — Recalls / Garantias (motor de recompra). Lista as garantias PENDENTES
@@ -39,12 +39,17 @@ export default function RecallsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true)
+    setError("")
     apiGet<{ recalls: Recall[] }>("/services/recalls")
       .then((r) => setRecalls(r.recalls ?? []))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar recalls."))
       .finally(() => setLoading(false))
   }, [])
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load() }, [load])
 
   // Gate de tier: espelha relatorios/page.tsx (trata null como não-PRO)
   if (!planStatus || planStatus.plan !== "PRO") {
@@ -79,9 +84,12 @@ export default function RecallsPage() {
         </>
       )}
       {!loading && error && (
-        <div style={{ backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <AlertCircle size={14} color="#EF4444" />
           <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+          <button onClick={load} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <RefreshCw size={13} /> Tentar novamente
+          </button>
         </div>
       )}
 

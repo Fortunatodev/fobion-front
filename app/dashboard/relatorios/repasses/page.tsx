@@ -6,6 +6,7 @@ import {
   AlertCircle, ArrowLeft, Users, ChevronDown, ChevronUp, Receipt,
 } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { apiGet, apiPost } from "@/lib/api"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
@@ -85,7 +86,6 @@ export default function RepassesReportPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
-  const [toast, setToast] = useState<{ kind: "ok" | "err"; msg: string } | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [payTarget, setPayTarget] = useState<EmployeeAgg | null>(null)
 
@@ -110,12 +110,6 @@ export default function RepassesReportPage() {
   }, [])
 
   useEffect(() => { fetchData(period) }, [period, fetchData])
-
-  useEffect(() => {
-    if (!toast) return
-    const t = setTimeout(() => setToast(null), 3500)
-    return () => clearTimeout(t)
-  }, [toast])
 
   function toggleExpand(employeeId: string) {
     setExpanded(prev => {
@@ -150,13 +144,10 @@ export default function RepassesReportPage() {
         `/commissions/employees/${emp.employeeId}/mark-paid`,
         { transactionIds }
       )
-      setToast({
-        kind: "ok",
-        msg: `${result.count} repasse(s) — ${fmt(result.totalAmount)} marcados como pago.`,
-      })
+      toast.success(`${result.count} repasse(s) — ${fmt(result.totalAmount)} marcados como pago.`)
       await fetchData(period)
     } catch (e: unknown) {
-      setToast({ kind: "err", msg: e instanceof Error ? e.message : "Erro ao marcar como pago." })
+      toast.error(e instanceof Error ? e.message : "Erro ao marcar como pago.")
     } finally {
       setMarkingPaid(null)
       setConfirmOpen(false)
@@ -286,25 +277,6 @@ export default function RepassesReportPage() {
             </div>
           </div>
         </div>
-
-        {/* TOAST */}
-        {toast && (
-          <div style={{
-            display: "flex", gap: 8, alignItems: "center",
-            backgroundColor: toast.kind === "ok" ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)",
-            border: `1px solid ${toast.kind === "ok" ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
-            borderRadius: 12, padding: "12px 16px", marginBottom: 16,
-            animation: "slideIn .2s ease",
-          }}>
-            {toast.kind === "ok"
-              ? <CheckCircle size={14} color="#10B981" />
-              : <AlertCircle  size={14} color="#EF4444" />}
-            <span style={{
-              fontSize: 13,
-              color: toast.kind === "ok" ? "#10B981" : "#EF4444",
-            }}>{toast.msg}</span>
-          </div>
-        )}
 
         {/* ERROR */}
         {error && (
