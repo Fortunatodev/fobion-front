@@ -5,12 +5,13 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const sizeMap = {
-  sm: "max-w-[400px]",
-  md: "max-w-[520px]",
-  lg: "max-w-[640px]",
-  xl: "max-w-[800px]",
-  full: "max-w-[95vw]",
+// Largura máxima por tamanho (em px) — usada inline pra garantir aplicação.
+const sizeMaxPx: Record<string, string> = {
+  sm: "440px",
+  md: "520px",
+  lg: "640px",
+  xl: "800px",
+  full: "95vw",
 }
 
 interface ModalProps {
@@ -40,13 +41,22 @@ export default function Modal({
           className={cn(
             "fixed top-1/2 left-1/2 z-50",
             "-translate-x-1/2 -translate-y-1/2",
-            "w-full p-6",
-            "backdrop-blur-[12px] bg-[var(--c-elevated)] border border-[var(--c-border)] rounded-2xl",
-            "max-h-[90vh] overflow-y-auto",
-            "shadow-[0_24px_80px_rgba(0,0,0,0.8)]",
-            "animate-in fade-in zoom-in-95 duration-200",
-            sizeMap[size]
+            "animate-in fade-in zoom-in-95 duration-200"
           )}
+          // Padding/largura via inline (garantido: o p-6 do Tailwind não estava surtindo
+          // efeito aqui — conteúdo ficava colado nas bordas, botão "Salvar" cortado).
+          // Largura responsiva: nunca cola na borda da tela no mobile.
+          style={{
+            width: `min(${sizeMaxPx[size]}, calc(100vw - 32px))`,
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: 24,
+            boxSizing: "border-box",
+            background: "var(--c-elevated)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 16,
+            boxShadow: "0 24px 80px rgba(0,0,0,0.8)",
+          }}
         >
           {/* Header */}
           <div className="flex justify-between items-start mb-5">
@@ -71,9 +81,19 @@ export default function Modal({
           {/* Body */}
           {children}
 
-          {/* Footer */}
+          {/* Footer — flex-wrap + inline pra nunca cortar os botões (web e mobile) */}
           {footer && (
-            <div className="border-t border-[var(--c-border)] mt-5 pt-5 flex justify-end gap-3">
+            <div
+              style={{
+                borderTop: "1px solid var(--c-border)",
+                marginTop: 20,
+                paddingTop: 20,
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+                gap: 12,
+              }}
+            >
               {footer}
             </div>
           )}
