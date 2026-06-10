@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, Component, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import {
   ChevronLeft, ChevronRight, Plus, Calendar,
@@ -20,10 +20,12 @@ interface Schedule {
   totalPrice:   number
   notes?:       string | null
   paymentMethod: string
-  customer:     { id: string; name: string; phone: string }
-  vehicle:      { plate: string; brand: string; model: string; color: string }
-  scheduleServices: { service: { name: string; durationMinutes: number } }[]
-  employee?:    { id: string; name: string; avatarUrl: string | null } | null
+  // Dados reais: campos opcionais de agendamento podem chegar null/ausentes
+  // (placa/marca do veículo, nome do cliente, profissional não atribuído).
+  customer:     { id: string; name: string | null; phone: string | null } | null
+  vehicle:      { plate: string | null; brand: string | null; model: string | null; color: string | null } | null
+  scheduleServices?: ({ service: { name: string | null; durationMinutes: number | null } | null } | null)[] | null
+  employee?:    { id: string; name: string | null; avatarUrl: string | null } | null
 }
 
 interface Employee {
@@ -81,6 +83,58 @@ function formatDayHeader(dateStr: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("pt-BR", {
     weekday: "long", day: "2-digit", month: "long",
   }).replace(/^\w/, c => c.toUpperCase())
+}
+
+// Getters defensivos — em dados reais qualquer relação pode vir null.
+function customerName(s: Schedule): string {
+  return s.customer?.name?.trim() || "Cliente"
+}
+function firstName(s: Schedule): string {
+  return (s.customer?.name?.trim() || "Cliente").split(" ")[0]
+}
+function serviceNamesOf(s: Schedule): string {
+  return (s.scheduleServices ?? [])
+    .map(ss => ss?.service?.name)
+    .filter(Boolean)
+    .join(", ")
+}
+function totalDurationOf(s: Schedule): number {
+  return (s.scheduleServices ?? [])
+    .reduce((a, ss) => a + (ss?.service?.durationMinutes ?? 0), 0)
+}
+function vehicleSummary(s: Schedule): string {
+  const base = [s.vehicle?.brand, s.vehicle?.model].filter(Boolean).join(" ")
+  const plate = s.vehicle?.plate
+  if (base && plate) return `${base} · ${plate}`
+  return base || plate || "—"
+}
+
+// Resiliência por item: um card malformado vira fallback, não derruba a tela.
+class CardErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          backgroundColor: "var(--c-bg)", border: "1px solid var(--c-surface-2)",
+          borderRadius: 12, padding: "12px 14px",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <AlertCircle size={13} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
+            Não foi possível exibir este agendamento.
+          </span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 function buildCalendarDays(
@@ -211,7 +265,7 @@ function DetailModal({
   const [closingWith, setClosingWith] = useState("")
   const [phase,       setPhase]       = useState<"view" | "close">("view")
   const [confirmCancel, setConfirmCancel] = useState(false)
-  const services = schedule.scheduleServices.map(ss => ss.service.name).join(", ")
+  const services = serviceNamesOf(schedule) || "—"
 
   // B05 — ESC fecha + trava o scroll do fundo enquanto o modal está aberto
   useEffect(() => {
@@ -221,7 +275,7 @@ function DetailModal({
     document.body.style.overflow = "hidden"
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow }
   }, [onClose])
-  const totalDur = schedule.scheduleServices.reduce((a, ss) => a + ss.service.durationMinutes, 0)
+  const totalDur = totalDurationOf(schedule)
 
   async function doStatus(status: string) {
     setUpdating(true)
@@ -262,7 +316,7 @@ function DetailModal({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
           <div>
             <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
-              {schedule.customer.name}
+              {customerName(schedule)}
             </p>
             <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0" }}>
               {/* ✅ Usar formatScheduleTime em vez de formatTime */}
@@ -274,10 +328,10 @@ function DetailModal({
 
         {phase === "view" && (
           <>
-            <Row label="Telefone"    value={schedule.customer.phone} />
+            <Row label="Telefone"    value={schedule.customer?.phone ?? "—"} />
             <Row label="Serviço"     value={services} />
             <Row label="Duração"     value={`${totalDur}min`} />
-            <Row label="Veículo"     value={`${schedule.vehicle.brand} ${schedule.vehicle.model} · ${schedule.vehicle.plate}`} />
+            <Row label="Veículo"     value={vehicleSummary(schedule)} />
             <Row label="Profissional" value={schedule.employee?.name ?? "Proprietário"} />
             {schedule.notes && <Row label="Obs" value={schedule.notes} />}
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", borderTop: "1px solid var(--c-border)", marginTop: 4 }}>
@@ -358,7 +412,7 @@ function DetailModal({
 
 function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
   const color    = STATUS_META[s.status]?.color ?? "var(--c-text-3)"
-  const services = s.scheduleServices.map(ss => ss.service.name).join(", ")
+  const services = serviceNamesOf(s)
   const isRequested = s.status === "REQUESTED"
   const [hov, setHov] = useState(false)
 
@@ -390,12 +444,12 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
             </span>
           )}
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {s.customer.name}
+            {customerName(s)}
           </p>
           <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {services}
+            {services || "—"}
           </p>
-          {s.employee && (
+          {s.employee?.name && (
             <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0" }}>
               {s.employee.name}
             </p>
@@ -668,7 +722,7 @@ export default function AgendaPage() {
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                               }}>
                                 {/* ✅ Usar formatScheduleTime */}
-                                {formatScheduleTime(s.scheduledAt)} {s.customer.name.split(" ")[0]}
+                                {formatScheduleTime(s.scheduledAt)} {firstName(s)}
                               </div>
                             )
                           })}
@@ -790,7 +844,9 @@ export default function AgendaPage() {
                     return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
                   })
                   .map(s => (
-                    <ScheduleCard key={s.id} s={s} onClick={() => setModalSchedule(s)} />
+                    <CardErrorBoundary key={s.id}>
+                      <ScheduleCard s={s} onClick={() => setModalSchedule(s)} />
+                    </CardErrorBoundary>
                   ))}
               </div>
             )}
@@ -820,11 +876,13 @@ export default function AgendaPage() {
 
       {/* ── MODAL ── */}
       {modalSchedule && (
-        <DetailModal
-          schedule={modalSchedule}
-          onClose={() => setModalSchedule(null)}
-          onStatusChange={handleStatusChange}
-        />
+        <CardErrorBoundary key={modalSchedule.id}>
+          <DetailModal
+            schedule={modalSchedule}
+            onClose={() => setModalSchedule(null)}
+            onStatusChange={handleStatusChange}
+          />
+        </CardErrorBoundary>
       )}
     </>
   )

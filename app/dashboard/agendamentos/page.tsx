@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from "react"
 import {
   Calendar, Clock, Search,
   Plus, ChevronLeft, ChevronRight,
@@ -28,9 +28,11 @@ interface Schedule {
   notes: string | null
   isSubscriber: boolean
   discountApplied: number
-  customer: { id: string; name: string; phone: string }
-  vehicle: { id: string; plate: string; brand: string; model: string; color: string }
-  scheduleServices: Array<{ service: { id: string; name: string; price: number } }>
+  // Em dados reais, qualquer relação/campo opcional pode vir null/ausente
+  // (placa/marca de veículo são comuns de faltar em estética; profissional é opcional).
+  customer: { id: string; name: string | null; phone: string | null } | null
+  vehicle: { id: string; plate: string | null; brand: string | null; model: string | null; color: string | null } | null
+  scheduleServices?: Array<{ service: { id: string; name: string | null; price: number } | null } | null> | null
 }
 
 interface PublicService {
@@ -57,12 +59,20 @@ interface CustomerResult {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatTime(iso: string): string {
-  return formatScheduleTime(iso)
+function isValidDate(d: Date): boolean {
+  return !Number.isNaN(d.getTime())
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+function formatTime(iso: string | null | undefined): string {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  return isValidDate(d) ? formatScheduleTime(d) : "—"
+}
+
+function formatShortDate(iso: string | null | undefined): string {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  return isValidDate(d) ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "—"
 }
 
 function formatCurrency(cents: number): string {
@@ -94,6 +104,50 @@ function getStatusConfig(status: string) {
 function getPaymentMethodLabel(method: string | null): string {
   const map: Record<string, string> = { PIX: "PIX", CREDIT_CARD: "Crédito", DEBIT_CARD: "Débito", CASH: "Dinheiro" }
   return method ? (map[method] ?? "—") : "—"
+}
+
+// Getters defensivos: dados reais de agendamento podem ter campos null
+// (placa/marca de veículo, profissional ausente, nome de cliente vazio).
+function customerName(s: Schedule): string {
+  return s.customer?.name?.trim() || "Cliente"
+}
+function vehicleLabel(s: Schedule): string {
+  return [s.vehicle?.brand, s.vehicle?.model].filter(Boolean).join(" ") || "Veículo"
+}
+function serviceNamesOf(s: Schedule): string {
+  return (s.scheduleServices ?? [])
+    .map((ss) => ss?.service?.name)
+    .filter(Boolean)
+    .join(", ")
+}
+
+// Resiliência por item: isola cada card num error boundary. Um agendamento
+// malformado vira um card de fallback em vez de derrubar a tela inteira.
+class CardErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+          borderRadius: 14, padding: "14px 18px",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <AlertCircle size={15} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: "var(--c-text-4)" }}>
+            Não foi possível exibir este agendamento.
+          </span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 const STATUS_FILTERS = [
@@ -1689,9 +1743,9 @@ export default function AgendamentosPage() {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
     return (
-      s.customer.name.toLowerCase().includes(q) ||
-      s.vehicle.plate.toLowerCase().includes(q) ||
-      s.scheduleServices.some((ss) => ss.service.name.toLowerCase().includes(q))
+      (s.customer?.name ?? "").toLowerCase().includes(q) ||
+      (s.vehicle?.plate ?? "").toLowerCase().includes(q) ||
+      (s.scheduleServices ?? []).some((ss) => (ss?.service?.name ?? "").toLowerCase().includes(q))
     )
   }), [schedules, searchQuery])
 
@@ -1999,13 +2053,13 @@ export default function AgendamentosPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {visibleSchedules.map((s) => {
               const st           = getStatusConfig(s.status)
-              const serviceNames = s.scheduleServices.map((ss) => ss.service.name).join(", ")
+              const serviceNames = serviceNamesOf(s)
               const isHov        = hovCard === s.id
               const isActing     = actionLoading === s.id
 
               return (
+                <CardErrorBoundary key={s.id}>
                 <div
-                  key={s.id}
                   onMouseEnter={() => handleHoverCard(s.id)}
                   onMouseLeave={() => handleHoverCard(null)}
                   style={{
@@ -2035,7 +2089,7 @@ export default function AgendamentosPage() {
                           <div style={{ width: 2, height: 40, borderRadius: 2, backgroundColor: st.color, flexShrink: 0, alignSelf: "center" }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{s.customer.name}</span>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{customerName(s)}</span>
                               {s.isSubscriber && (
                                 <span style={{ fontSize: 10, fontWeight: 600, color: "#A78BFA", backgroundColor: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 5, padding: "2px 6px" }}>Assinante</span>
                               )}
@@ -2043,7 +2097,7 @@ export default function AgendamentosPage() {
                             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                               <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
                               <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
-                                {[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span>
+                                {vehicleLabel(s)}{s.vehicle?.plate ? <> · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span></> : null}
                               </span>
                             </div>
                             <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -2086,12 +2140,12 @@ export default function AgendamentosPage() {
                         <div style={{ width: 3, height: 44, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.customer.name}</p>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{customerName(s)}</p>
                             {s.isSubscriber && (<span style={{ fontSize: 10, fontWeight: 600, color: "#A78BFA", backgroundColor: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 5, padding: "2px 7px", flexShrink: 0 }}>Assinante</span>)}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
                             <Car size={11} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>{[s.vehicle.brand, s.vehicle.model].filter(Boolean).join(" ") || "Veículo"} · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span></span>
+                            <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>{vehicleLabel(s)}{s.vehicle?.plate ? <> · <span style={{ color: "var(--c-text-3)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span></> : null}</span>
                           </div>
                           <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{serviceNames || "—"}</p>
                         </div>
@@ -2116,6 +2170,7 @@ export default function AgendamentosPage() {
                     )}
                   </div>
                 </div>
+                </CardErrorBoundary>
               )
             })}
 
@@ -2178,8 +2233,8 @@ export default function AgendamentosPage() {
               </button>
             </div>
             <div style={{ backgroundColor: "var(--c-bg)", borderRadius: 12, padding: 14, marginBottom: 18 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{selectedSchedule.customer.name}</p>
-              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "4px 0 0" }}>{selectedSchedule.scheduleServices.map((ss) => ss.service.name).join(", ") || "—"}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{customerName(selectedSchedule)}</p>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "4px 0 0" }}>{serviceNamesOf(selectedSchedule) || "—"}</p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
                 <span style={{ fontSize: 13, color: "var(--c-text-4)" }}>Total a cobrar</span>
                 <span style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{formatCurrency(selectedSchedule.totalPrice)}</span>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, type CSSProperties } from "react"
+import { useEffect, useState, useCallback, Component, type CSSProperties, type ReactNode } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -32,9 +32,9 @@ interface Schedule {
   id: string; scheduledAt: string
   status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
   totalPrice: number
-  customer?: { name: string } | null
+  customer?: { name: string | null } | null
   vehicle?: { plate: string | null; model: string | null } | null
-  scheduleServices?: Array<{ service: { name: string } }>
+  scheduleServices?: Array<{ service: { name: string | null } | null } | null> | null
 }
 
 type Status = Schedule["status"]
@@ -43,7 +43,12 @@ type ColumnKey = "wait" | "doing" | "done"
 type VistoriaState = "on" | "pro" | "off"
 
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-const hhmm = (iso: string) => { const d = new Date(iso); return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}` }
+const hhmm = (iso: string | null | undefined) => {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return "—"
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+}
 
 interface Column {
   key: ColumnKey
@@ -66,6 +71,34 @@ const COLUMNS: Column[] = [
 const COL_OF: Record<ColumnKey, Column> = COLUMNS.reduce((acc, c) => { acc[c.key] = c; return acc }, {} as Record<ColumnKey, Column>)
 /** Mapeia um schedule para a coluna a que pertence hoje (p/ saber a origem do drag) */
 const columnKeyOf = (s: Schedule): ColumnKey | null => COLUMNS.find((c) => c.match(s))?.key ?? null
+
+// Resiliência por item: um card malformado vira fallback em vez de derrubar o pátio.
+class CardErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          background: "var(--c-surface)", border: "1px solid var(--c-border)",
+          borderRadius: 10, padding: "10px 12px",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <AlertCircle size={13} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>
+            Não foi possível exibir este agendamento.
+          </span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // ── Card (conteúdo visual, reutilizado no card real e no DragOverlay) ──────────
 function CardBody({
@@ -99,7 +132,7 @@ function CardBody({
         <Car size={11} /> {[s.vehicle?.plate, s.vehicle?.model].filter(Boolean).join(" · ") || "veículo"}
       </p>
       {s.scheduleServices && s.scheduleServices.length > 0 && (
-        <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x.service?.name).filter(Boolean).join(", ")}</p>
+        <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x?.service?.name).filter(Boolean).join(", ")}</p>
       )}
       {col.next && (
         <button
@@ -208,7 +241,9 @@ function DroppableColumn({
           </p>
         )}
         {cards.map((s) => (
-          <DraggableCard key={s.id} s={s} col={col} moving={moving} onAdvance={onAdvance} vistoria={vistoria} />
+          <CardErrorBoundary key={s.id}>
+            <DraggableCard s={s} col={col} moving={moving} onAdvance={onAdvance} vistoria={vistoria} />
+          </CardErrorBoundary>
         ))}
       </AutoAnimate>
     </div>
@@ -410,7 +445,9 @@ export default function PatioPage() {
           <DragOverlay dropAnimation={null}>
             {activeCard && activeCol ? (
               <div style={{ cursor: "grabbing", width: "100%" }}>
-                <CardBody s={activeCard} col={activeCol} moving={moving} onAdvance={advance} vistoria={vistoria} dragging />
+                <CardErrorBoundary>
+                  <CardBody s={activeCard} col={activeCol} moving={moving} onAdvance={advance} vistoria={vistoria} dragging />
+                </CardErrorBoundary>
               </div>
             ) : null}
           </DragOverlay>
