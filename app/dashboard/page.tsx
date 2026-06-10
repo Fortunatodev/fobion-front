@@ -7,7 +7,7 @@ import {
   AlertCircle, BarChart3, Calendar,
   CircleDollarSign, Crown, Sparkles,
   Users, Clock,
-  TrendingUp, Star, UserPlus,
+  TrendingUp, Star, UserPlus, Rocket,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
@@ -254,6 +254,17 @@ export default function DashboardPage() {
   const [ctaHov,            setCtaHov]            = useState(false)
   const [hovRow,            setHovRow]            = useState<string | null>(null)
 
+  // O7 — coordenação Welcome ↔ Checklist + botão flutuante "Continuar configuração"
+  const [reopenSignal, setReopenSignal] = useState(0)
+  const [onbState, setOnbState] = useState<{ ready: boolean; collapsed: boolean; allDone: boolean }>({
+    ready: false, collapsed: false, allDone: false,
+  })
+  const [fabHov, setFabHov] = useState(false)
+  const handleOnbState = useCallback(
+    (s: { ready: boolean; collapsed: boolean; allDone: boolean }) => setOnbState(s),
+    [],
+  )
+
   // B08 — load() reaproveitável (retry sem full reload da SPA)
   const load = useCallback(async () => {
     setLoading(true)
@@ -313,7 +324,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-dash-fade-in">
 
-      <WelcomeModal firstName={firstName} />
+      <WelcomeModal firstName={firstName} onDone={() => setReopenSignal((n) => n + 1)} />
 
       {/* ── Error banner ──────────────────────────────────────────────── */}
       {error && (
@@ -369,8 +380,8 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* ── V2-B1: checklist de ativação (some quando 100% ou dispensado) ── */}
-      <OnboardingChecklist totalCustomers={totalCustomers} />
+      {/* ── O4/O5/O7: checklist de ativação por outcome (some quando 100% ou recolhido) ── */}
+      <OnboardingChecklist reopenSignal={reopenSignal} onStateChange={handleOnbState} />
 
       {/* ── Metric cards (.metrics-grid) ──────────────────────────────── */}
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}
@@ -785,6 +796,40 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* ── O7: botão flutuante "Continuar configuração" ──────────────────── */}
+      {/* Reabre/expande o checklist se foi recolhido e ainda faltam passos. */}
+      {onbState.ready && onbState.collapsed && !onbState.allDone && (
+        <button
+          onClick={() => setReopenSignal((n) => n + 1)}
+          onMouseEnter={() => setFabHov(true)}
+          onMouseLeave={() => setFabHov(false)}
+          style={{
+            position: "fixed",
+            right: 20,
+            bottom: 20,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "linear-gradient(135deg, #0066FF, #7C3AED)",
+            border: "none",
+            borderRadius: 999,
+            padding: "11px 18px",
+            color: "#FFFFFF",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            boxShadow: fabHov ? "0 10px 30px rgba(0,102,255,0.45)" : "0 6px 20px rgba(0,102,255,0.3)",
+            transform: fabHov ? "translateY(-2px)" : "translateY(0)",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Rocket size={15} />
+          Continuar configuração
+        </button>
+      )}
     </div>
   )
 }
