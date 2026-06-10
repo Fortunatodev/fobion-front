@@ -7,7 +7,6 @@ import { useUser } from "@/contexts/UserContext"
 import type { BusinessPlan } from "@/types"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
-import TeamCard from "@/components/settings/TeamCard"
 import PricingCards from "@/components/shared/PricingCards"
 import SlotsPreview from "@/components/dashboard/SlotsPreview"
 import {
@@ -15,6 +14,7 @@ import {
   AlertCircle, CheckCircle2,
   ExternalLink, Crown, Zap, X,
   Camera, Loader2, Calendar,
+  Users, ChevronRight,
 } from "lucide-react"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1083,7 +1083,7 @@ function ConfiguracoesContent() {
                   <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0" }}>
                     De quanto em quanto tempo os horários aparecem pro cliente.
                   </p>
-                  {/* Preview ao vivo da grade — usa o 1º dia aberto como referência (reativo ao select) */}
+                  {/* Preview ao vivo da agenda do cliente — usa o 1º dia aberto como referência (reativo ao select) */}
                   {(() => {
                     const refDay = hours.find((h) => h.isOpen)
                     return (
@@ -1092,37 +1092,99 @@ function ConfiguracoesContent() {
                         openTime={refDay?.openTime}
                         closeTime={refDay?.closeTime}
                         dayLabel={refDay ? DAY_LABELS[refDay.dayOfWeek] : undefined}
+                        accent={themeColor}
                       />
                     )
                   })()}
                 </div>
 
                 {/* Exigir aprovação */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
-                      Exigir minha aprovação
-                    </p>
-                    <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0" }}>
-                      Agendamentos da loja pública entram como Solicitação e você confirma.
-                    </p>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
+                        Exigir minha aprovação
+                      </p>
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                        Esta é sua loja pública — o cliente agenda sozinho pelo seu link. Escolha como funciona:
+                      </p>
+                    </div>
+                    <div
+                      onClick={() => setRequireApproval((v) => !v)}
+                      role="switch"
+                      aria-checked={requireApproval}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRequireApproval((v) => !v) } }}
+                      style={{
+                        width: 40, height: 22, borderRadius: 100, marginTop: 2,
+                        backgroundColor: requireApproval ? themeColor : "var(--c-border-2)",
+                        cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
+                      }}
+                    >
+                      <div style={{
+                        position: "absolute", top: 3,
+                        left: requireApproval ? 21 : 3,
+                        width: 16, height: 16, borderRadius: "50%",
+                        backgroundColor: "var(--c-text)", transition: "left 0.2s",
+                      }} />
+                    </div>
                   </div>
-                  <div
-                    onClick={() => setRequireApproval((v) => !v)}
-                    role="switch"
-                    aria-checked={requireApproval}
-                    style={{
-                      width: 40, height: 22, borderRadius: 100, marginTop: 2,
-                      backgroundColor: requireApproval ? themeColor : "var(--c-border-2)",
-                      cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
-                    }}
-                  >
-                    <div style={{
-                      position: "absolute", top: 3,
-                      left: requireApproval ? 21 : 3,
-                      width: 16, height: 16, borderRadius: "50%",
-                      backgroundColor: "var(--c-text)", transition: "left 0.2s",
-                    }} />
+
+                  {/* Explicação dos 2 modos — estado ativo em destaque */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                    {/* DESLIGADO: agendamento direto */}
+                    <div
+                      onClick={() => setRequireApproval(false)}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                        backgroundColor: !requireApproval ? "rgba(16,185,129,0.08)" : "var(--c-bg)",
+                        border: `1px solid ${!requireApproval ? "rgba(16,185,129,0.35)" : "var(--c-border-2)"}`,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <Zap size={15} color={!requireApproval ? "#10B981" : "var(--c-text-4)"} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>Agendamento direto</span>
+                          {!requireApproval && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#10B981", backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 6, padding: "2px 7px", letterSpacing: "0.5px" }}>
+                              ATIVO
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "3px 0 0", lineHeight: 1.5 }}>
+                          O horário já fica confirmado na sua agenda assim que o cliente escolhe.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* LIGADO: você aprova antes */}
+                    <div
+                      onClick={() => setRequireApproval(true)}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                        backgroundColor: requireApproval ? `rgba(${themeRgb},0.08)` : "var(--c-bg)",
+                        border: `1px solid ${requireApproval ? `rgba(${themeRgb},0.4)` : "var(--c-border-2)"}`,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <Shield size={15} color={requireApproval ? themeColor : "var(--c-text-4)"} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>Você aprova antes</span>
+                          {requireApproval && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: themeColor, backgroundColor: `rgba(${themeRgb},0.14)`, borderRadius: 6, padding: "2px 7px", letterSpacing: "0.5px" }}>
+                              ATIVO
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "3px 0 0", lineHeight: 1.5 }}>
+                          O cliente sinaliza o horário desejado, entra como {"“Solicitado”"}, e só vira confirmado quando você aprovar (na aba Agendamentos).
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1327,8 +1389,46 @@ function ConfiguracoesContent() {
             {/* IMP-101 — troca/definição de senha */}
             <PasswordCard isMobile={isMobile} />
 
-            {/* V2-B4: gestão de acessos da equipe (RBAC) */}
-            <TeamCard isMobile={isMobile} />
+            {/* V2-B4: gestão de acessos da equipe (RBAC) — vive na aba Acessos agora.
+                Aqui só um atalho; o formulário de criar/editar logins mora em /dashboard/acessos. */}
+            <div
+              onClick={() => router.push("/dashboard/acessos")}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push("/dashboard/acessos") } }}
+              style={{
+                backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
+                borderRadius: 12, padding: isMobile ? "14px 14px" : "14px 16px",
+                marginBottom: 24, cursor: "pointer",
+                display: "flex", justifyContent: "space-between",
+                alignItems: isMobile ? "flex-start" : "center",
+                flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0,
+                transition: "border-color 0.15s",
+              }}
+            >
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <Users size={16} color="var(--c-text-3)" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
+                    Equipe &amp; acessos
+                  </p>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2, lineHeight: 1.5 }}>
+                    Crie e gerencie os logins dos funcionários numa página dedicada.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push("/dashboard/acessos") }}
+                style={{
+                  height: 36, padding: "0 14px", borderRadius: 9, border: "1px solid var(--c-border-2)",
+                  background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
+                  flexShrink: 0, whiteSpace: "nowrap",
+                }}
+              >
+                Gerenciar acessos <ChevronRight size={14} />
+              </button>
+            </div>
 
             {/* Danger zone */}
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "#EF4444", margin: "0 0 12px" }}>

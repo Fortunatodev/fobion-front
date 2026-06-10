@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import {
   Plus, Edit3, Trash2, X, Crown,
   Users, Percent, AlertCircle, Link2,
-  Package,
+  Package, Repeat, FilePlus2, Store, Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
@@ -368,6 +368,7 @@ function PlanosContent() {
   const [hoveredId,      setHoveredId]      = useState<string | null>(null)
   const [confirmOpen,    setConfirmOpen]    = useState(false)
   const [deleteTarget,   setDeleteTarget]   = useState<CustomerPlan | null>(null)
+  const [showTutorial,   setShowTutorial]   = useState(false)
 
   const [formName,        setFormName]        = useState("")
   const [formDescription, setFormDescription] = useState("")
@@ -400,6 +401,20 @@ function PlanosContent() {
 
   useEffect(() => { fetchPlans() }, [fetchPlans])
   useEffect(() => { fetchServices() }, [fetchServices])
+
+  // Tutorial dispensável — só aparece pra quem ainda não marcou "entendi".
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("forbion_planos_tutorial_ok") !== "1") {
+        setShowTutorial(true)
+      }
+    } catch { /* localStorage indisponível — ignora */ }
+  }, [])
+
+  function dismissTutorial() {
+    setShowTutorial(false)
+    try { localStorage.setItem("forbion_planos_tutorial_ok", "1") } catch { /* ignore */ }
+  }
 
   function closeModal() {
     setShowModal(null); setSelectedPlan(null)
@@ -584,6 +599,9 @@ function PlanosContent() {
         animation: "fadePl 0.35s ease both",
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       }}>
+
+        {/* ── TUTORIAL / ONBOARDING ───────────────────────────────────── */}
+        {showTutorial && <PlanosTutorial onDismiss={dismissTutorial} />}
 
         {/* ── HEADER ──────────────────────────────────────────────────── */}
         <div style={{
@@ -994,6 +1012,152 @@ function PlanosContent() {
         loading={deleteTarget ? actionLoading === deleteTarget.id : false}
       />
     </>
+  )
+}
+
+// ── Tutorial / Onboarding ───────────────────────────────────────────────────
+
+function PlanosTutorial({ onDismiss }: { onDismiss: () => void }) {
+  const [closeHov, setCloseHov] = useState(false)
+  const [gotItHov, setGotItHov] = useState(false)
+
+  const steps = [
+    {
+      icon: Repeat,
+      title: "1. O que é o clube de assinatura",
+      text: "Transforme serviços avulsos em receita recorrente: o cliente paga todo mês (ex.: \"Lavagem mensal R$99\") e você garante caixa previsível.",
+    },
+    {
+      icon: FilePlus2,
+      title: "2. Crie um plano",
+      text: "Clique em \"Novo plano\" e defina nome, preço, periodicidade (mensal/anual) e quais serviços estão inclusos, com desconto por serviço.",
+    },
+    {
+      icon: Store,
+      title: "3. O cliente assina",
+      text: "Ele assina pelo link de pagamento do plano ou direto na sua loja pública — sem precisar de cadastro manual da sua parte.",
+    },
+    {
+      icon: Users,
+      title: "4. Acompanhe os assinantes",
+      text: "Veja quem está ativo, cobranças e cancelamentos na aba Assinantes. A receita recorrente aparece nos seus relatórios.",
+    },
+  ]
+
+  return (
+    <div style={{
+      position: "relative", overflow: "hidden",
+      background: "linear-gradient(135deg, rgba(0,102,255,0.10), rgba(124,58,237,0.10))",
+      border: "1px solid rgba(124,58,237,0.22)",
+      borderRadius: 20, padding: "22px 24px", marginBottom: 24,
+      animation: "fadePl 0.35s ease both",
+    }}>
+      {/* Glow decorativo */}
+      <div style={{
+        position: "absolute", top: -60, right: -40,
+        width: 200, height: 200, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(124,58,237,0.14), transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Cabeçalho */}
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "flex-start", gap: 12, position: "relative",
+      }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: "linear-gradient(135deg,#0066FF,#7C3AED)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <Sparkles size={17} color="#fff" />
+          </div>
+          <div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+              Como funciona o clube de assinatura
+            </p>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", marginTop: 2 }}>
+              Receita recorrente em 4 passos rápidos
+            </p>
+          </div>
+        </div>
+
+        <button
+          title="Fechar tutorial"
+          onClick={onDismiss}
+          onMouseEnter={() => setCloseHov(true)}
+          onMouseLeave={() => setCloseHov(false)}
+          style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: closeHov ? "var(--c-border)" : "var(--c-surface-2)",
+            border: "1px solid var(--c-border-2)",
+            color: "var(--c-text-3)", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background-color 0.15s",
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Passos */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 14, marginTop: 18, position: "relative",
+      }}>
+        {steps.map((step) => {
+          const Icon = step.icon
+          return (
+            <div key={step.title} style={{
+              backgroundColor: "var(--c-surface)",
+              border: "1px solid var(--c-border)",
+              borderRadius: 14, padding: 14,
+              display: "flex", flexDirection: "column", gap: 8,
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 9,
+                backgroundColor: "rgba(0,102,255,0.10)",
+                border: "1px solid rgba(0,102,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Icon size={15} color="#0066FF" />
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0, lineHeight: 1.35 }}>
+                {step.title}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0, lineHeight: 1.55 }}>
+                {step.text}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Rodapé */}
+      <div style={{
+        display: "flex", justifyContent: "flex-end",
+        marginTop: 16, position: "relative",
+      }}>
+        <button
+          onClick={onDismiss}
+          onMouseEnter={() => setGotItHov(true)}
+          onMouseLeave={() => setGotItHov(false)}
+          style={{
+            height: 38, padding: "0 18px", borderRadius: 10,
+            fontSize: 13, fontWeight: 600, cursor: "pointer",
+            background: "linear-gradient(135deg,#0066FF,#7C3AED)",
+            border: "none", color: "#fff",
+            boxShadow: gotItHov ? "0 8px 24px rgba(0,102,255,0.45)" : "0 4px 16px rgba(0,102,255,0.28)",
+            transform: gotItHov ? "scale(1.02)" : "scale(1)",
+            transition: "all 0.2s", fontFamily: "inherit",
+          }}
+        >
+          Entendi
+        </button>
+      </div>
+    </div>
   )
 }
 

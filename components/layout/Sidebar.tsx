@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package,
+  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package, ShieldCheck,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
@@ -49,6 +49,7 @@ const navSections = [
   {
     label: "CONFIGURAÇÕES",
     items: [
+      { href: "/dashboard/acessos",       label: "Acessos",       icon: ShieldCheck, ownerOnly: true },
       { href: "/dashboard/configuracoes", label: "Configurações", icon: Settings, ownerOnly: true },
     ],
   },

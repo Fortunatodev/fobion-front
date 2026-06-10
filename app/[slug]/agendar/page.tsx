@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useReducer } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle, Hourglass } from "lucide-react"
 import { toast } from "sonner"
 import type { PublicBusiness, PlanServiceRule } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
@@ -1055,26 +1055,75 @@ function AgendarContent() {
             return (
               <div style={{ animation: "fadeAg 0.25s ease" }}>
 
-                {/* Ícone + título */}
+                {/* Ícone + título — estado visual distinto p/ aguardando aprovação */}
                 <div style={{ textAlign: "center", paddingTop: 40, marginBottom: 24 }}>
                   <div style={{
                     width: 64, height: 64, borderRadius: "50%",
-                    background: `linear-gradient(135deg, ${theme}, #059669)`,
+                    background: requiresApproval
+                      ? "linear-gradient(135deg, #F59E0B, #D97706)"
+                      : `linear-gradient(135deg, ${theme}, #059669)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     margin: "0 auto 16px",
-                    boxShadow: `0 8px 32px rgba(${themeRgb}, 0.25)`,
+                    boxShadow: requiresApproval
+                      ? "0 8px 32px rgba(245,158,11,0.25)"
+                      : `0 8px 32px rgba(${themeRgb}, 0.25)`,
                   }}>
-                    <CheckCircle2 size={30} color="var(--c-text)" />
+                    {requiresApproval
+                      ? <Hourglass size={28} color="#FFFFFF" />
+                      : <CheckCircle2 size={30} color="var(--c-text)" />}
                   </div>
                   <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: "0 0 6px" }}>
-                    {requiresApproval ? "Pedido enviado!" : "Agendamento confirmado"}
+                    {requiresApproval ? "Agendamento enviado!" : "Agendamento confirmado!"}
                   </h2>
-                  <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: 0 }}>
+                  <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: 0, lineHeight: 1.5 }}>
                     {requiresApproval
-                      ? `A ${business!.name} vai confirmar seu horário em breve. Você será avisado assim que for aprovado.`
+                      ? `Seu horário foi enviado para a ${business!.name} e está aguardando confirmação. Você será avisado assim que for aprovado.`
                       : "Tudo certo! Aqui está o resumo do seu agendamento."}
                   </p>
                 </div>
+
+                {/* ── Card destaque: aguardando confirmação + CTA WhatsApp ── */}
+                {requiresApproval && (
+                  <div style={{
+                    backgroundColor: "rgba(245,158,11,0.06)",
+                    border: "1px solid rgba(245,158,11,0.22)",
+                    borderRadius: 16, padding: "16px 18px", marginBottom: 16,
+                    display: "flex", flexDirection: "column", gap: 12,
+                  }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 10,
+                        backgroundColor: "rgba(245,158,11,0.12)",
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>
+                        <Clock size={17} color="#F59E0B" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 3px" }}>
+                          Aguardando confirmação da loja
+                        </p>
+                        <p style={{ fontSize: 12.5, color: "var(--c-text-2)", margin: 0, lineHeight: 1.5 }}>
+                          Seu horário foi enviado para a loja e está aguardando confirmação. Confirme pelo WhatsApp pra agilizar:
+                        </p>
+                      </div>
+                    </div>
+                    {confirmWhatsappUrl && (
+                      <button
+                        onClick={() => window.open(confirmWhatsappUrl, "_blank", "noopener,noreferrer")}
+                        style={{
+                          width: "100%", height: 50, borderRadius: 14, fontSize: 15, fontWeight: 700,
+                          background: "linear-gradient(135deg, #25D366, #128C7E)",
+                          border: "none", color: "#FFFFFF", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                          fontFamily: "inherit",
+                          boxShadow: "0 4px 24px rgba(37,211,102,0.3)",
+                        }}
+                      >
+                        <MessageCircle size={17} /> Confirmar pelo WhatsApp
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Resumo */}
                 <div style={{
@@ -1147,26 +1196,27 @@ function AgendarContent() {
                   </div>
                 </div>
 
-                {/* Botão DESTAQUE — confirmar horário pelo WhatsApp */}
-                {confirmWhatsappUrl && (
-                  <button
-                    onClick={() => window.open(confirmWhatsappUrl, "_blank", "noopener,noreferrer")}
-                    style={{
-                      width: "100%", height: 50, borderRadius: 14, fontSize: 15, fontWeight: 700,
-                      background: "linear-gradient(135deg, #25D366, #128C7E)",
-                      border: "none", color: "#FFFFFF", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      fontFamily: "inherit", marginBottom: 8,
-                      boxShadow: "0 4px 24px rgba(37,211,102,0.3)",
-                    }}
-                  >
-                    <MessageCircle size={17} /> Confirmar pelo WhatsApp
-                  </button>
-                )}
-                {confirmWhatsappUrl && (
-                  <p style={{ fontSize: 12, color: "var(--c-text-3)", textAlign: "center", margin: "0 0 16px", lineHeight: 1.4 }}>
-                    Fale com a {business!.name} pelo WhatsApp pra confirmar seu horário.
-                  </p>
+                {/* Botão DESTAQUE — confirmar pelo WhatsApp (fluxo confirmação direta;
+                    no fluxo de aprovação o CTA já vive no card âmbar acima) */}
+                {!requiresApproval && confirmWhatsappUrl && (
+                  <>
+                    <button
+                      onClick={() => window.open(confirmWhatsappUrl, "_blank", "noopener,noreferrer")}
+                      style={{
+                        width: "100%", height: 50, borderRadius: 14, fontSize: 15, fontWeight: 700,
+                        background: "linear-gradient(135deg, #25D366, #128C7E)",
+                        border: "none", color: "#FFFFFF", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        fontFamily: "inherit", marginBottom: 8,
+                        boxShadow: "0 4px 24px rgba(37,211,102,0.3)",
+                      }}
+                    >
+                      <MessageCircle size={17} /> Confirmar pelo WhatsApp
+                    </button>
+                    <p style={{ fontSize: 12, color: "var(--c-text-3)", textAlign: "center", margin: "0 0 16px", lineHeight: 1.4 }}>
+                      Fale com a {business!.name} pelo WhatsApp pra confirmar seu horário.
+                    </p>
+                  </>
                 )}
 
                 {/* Botão WhatsApp — tirar dúvida */}

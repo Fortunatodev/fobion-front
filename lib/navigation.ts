@@ -8,6 +8,7 @@ import {
   Crown,
   Settings,
   Wallet,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 
@@ -47,6 +48,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "CONTA",
     items: [
+      { label: "Acessos",       href: "/dashboard/acessos",       icon: ShieldCheck, ownerOnly: true },
       { label: "Configurações", href: "/dashboard/configuracoes", icon: Settings, ownerOnly: true },
     ],
   },
