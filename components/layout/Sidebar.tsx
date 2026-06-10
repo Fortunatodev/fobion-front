@@ -24,20 +24,22 @@ const navSections = [
   {
     label: "VISÃO GERAL",
     items: [
-      { href: "/dashboard",        label: "Dashboard", icon: LayoutDashboard },
+      // RBAC: Dashboard (resumo financeiro) e Pátio são gerenciais → escondidos do EMPLOYEE.
+      { href: "/dashboard",        label: "Dashboard", icon: LayoutDashboard, ownerOnly: true },
       { href: "/dashboard/agenda", label: "Agenda",    icon: Calendar        },
-      { href: "/dashboard/patio",  label: "Pátio",     icon: LayoutGrid      },
+      { href: "/dashboard/patio",  label: "Pátio",     icon: LayoutGrid, ownerOnly: true },
     ],
   },
   {
     label: "GESTÃO",
     items: [
+      // Operacional (visível pro funcionário): só Agendamentos. O resto é gestão (ownerOnly).
       { href: "/dashboard/agendamentos", label: "Agendamentos", icon: CalendarDays },
-      { href: "/dashboard/clientes",     label: "Clientes",     icon: UserCircle   },
+      { href: "/dashboard/clientes",     label: "Clientes",     icon: UserCircle, ownerOnly: true },
       { href: "/dashboard/employees",    label: "Funcionários", icon: Users,       ownerOnly: true },
-      { href: "/dashboard/servicos",     label: "Serviços",     icon: Wrench       },
-      { href: "/dashboard/orcamentos",   label: "Orçamentos",   icon: FileText     },
-      { href: "/dashboard/estoque",      label: "Estoque",      icon: Package      },
+      { href: "/dashboard/servicos",     label: "Serviços",     icon: Wrench, ownerOnly: true },
+      { href: "/dashboard/orcamentos",   label: "Orçamentos",   icon: FileText, ownerOnly: true },
+      { href: "/dashboard/estoque",      label: "Estoque",      icon: Package, ownerOnly: true },
       { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard,  ownerOnly: true },
       { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck,   ownerOnly: true },
       { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2,   ownerOnly: true },

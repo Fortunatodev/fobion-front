@@ -27,16 +27,18 @@ export interface NavGroup {
 export const navGroups: NavGroup[] = [
   {
     items: [
-      { label: "Dashboard", href: "/dashboard",       icon: LayoutDashboard },
+      // RBAC: Dashboard (resumo financeiro) é gerencial → escondido do EMPLOYEE.
+      { label: "Dashboard", href: "/dashboard",       icon: LayoutDashboard, ownerOnly: true },
       { label: "Agenda",    href: "/dashboard/agenda", icon: CalendarDays },
     ],
   },
   {
     label: "GESTÃO",
     items: [
+      // Operacional (visível pro funcionário): só Agendamentos. O resto é gestão (ownerOnly).
       { label: "Agendamentos", href: "/dashboard/agendamentos", icon: ClipboardList },
-      { label: "Clientes",     href: "/dashboard/clientes",     icon: Users },
-      { label: "Serviços",     href: "/dashboard/servicos",     icon: Wrench },
+      { label: "Clientes",     href: "/dashboard/clientes",     icon: Users, ownerOnly: true },
+      { label: "Serviços",     href: "/dashboard/servicos",     icon: Wrench, ownerOnly: true },
       { label: "Planos",       href: "/dashboard/planos",       icon: CreditCard, ownerOnly: true },
       { label: "Assinantes",   href: "/dashboard/assinantes",   icon: Crown, ownerOnly: true },
       { label: "Repasses",     href: "/dashboard/relatorios/repasses", icon: Wallet, ownerOnly: true },

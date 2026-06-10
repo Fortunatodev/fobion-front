@@ -15,7 +15,7 @@ export default function DashboardLayout({
 }) {
   const router   = useRouter()
   const pathname = usePathname()
-  const { loading, accountLock } = useUser()
+  const { loading, accountLock, user } = useUser()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -30,6 +30,15 @@ export default function DashboardLayout({
       router.replace("/auth/login")
     }
   }, [loading, router])
+
+  // RBAC (defesa em profundidade): EMPLOYEE é operacional — só Agenda e Agendamentos.
+  // O menu já esconde o resto; aqui barramos acesso por URL direta (o back também devolve 403).
+  useEffect(() => {
+    if (loading || user?.role !== "EMPLOYEE") return
+    const allowed = ["/dashboard/agenda", "/dashboard/agendamentos"]
+    const ok = allowed.some(p => pathname === p || pathname.startsWith(p + "/"))
+    if (!ok) router.replace("/dashboard/agenda")
+  }, [loading, user, pathname, router])
 
   // ── Loading spinner ─────────────────────────────────────────────────────────
   if (loading) {
