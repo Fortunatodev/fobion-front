@@ -9,6 +9,7 @@ import {
   Settings,
   Wallet,
   ShieldCheck,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react"
 
@@ -42,6 +43,7 @@ export const navGroups: NavGroup[] = [
       { label: "Serviços",     href: "/dashboard/servicos",     icon: Wrench, ownerOnly: true },
       { label: "Planos",       href: "/dashboard/planos",       icon: CreditCard, ownerOnly: true },
       { label: "Assinantes",   href: "/dashboard/assinantes",   icon: Crown, ownerOnly: true },
+      { label: "Pós-venda",    href: "/dashboard/pos-venda",    icon: RotateCcw, ownerOnly: true },
       { label: "Repasses",     href: "/dashboard/relatorios/repasses", icon: Wallet, ownerOnly: true },
     ],
   },

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2 } from "lucide-react"
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react"
+import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload"
@@ -34,6 +34,30 @@ function formatDuration(min: number) {
   const h = Math.floor(min / 60)
   const m = min % 60
   return m > 0 ? `${h}h ${m}min` : `${h}h`
+}
+
+// Faixa de preço por porte (CAR/MOTORCYCLE/TRUCK/SUV em centavos) — só dado já
+// retornado pelo back. Retorna o menor preço entre o base e os portes, e se há
+// variação (pra mostrar "a partir de"). Não inventa campo novo.
+function priceRange(service: Service): { min: number; varies: boolean } {
+  const porte = service.priceByVehicleType
+  if (!porte) return { min: service.price, varies: false }
+  const vals = Object.values(porte).filter((v): v is number => typeof v === "number" && v > 0)
+  if (vals.length === 0) return { min: service.price, varies: false }
+  const all = [service.price, ...vals]
+  const min = Math.min(...all)
+  const max = Math.max(...all)
+  return { min, varies: max !== min }
+}
+
+type SortKey = "recent" | "name" | "priceAsc" | "priceDesc" | "duration"
+
+const SORT_LABELS: Record<SortKey, string> = {
+  recent:    "Mais recentes",
+  name:      "Nome (A-Z)",
+  priceAsc:  "Menor preço",
+  priceDesc: "Maior preço",
+  duration:  "Maior duração",
 }
 
 // ─── Componente de input reutilizável ─────────────────────────────────────────
@@ -84,6 +108,8 @@ export default function ServicosPage() {
   const [formError,    setFormError]    = useState<string | null>(null)
   const [successMsg,   setSuccessMsg]   = useState<string | null>(null)
   const [isMobile,     setIsMobile]     = useState(false)
+  const [search,       setSearch]       = useState("")
+  const [sortKey,      setSortKey]      = useState<SortKey>("recent")
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -119,6 +145,28 @@ export default function ServicosPage() {
   }, [])
 
   useEffect(() => { fetchServices() }, [fetchServices])
+
+  // ── Busca + ordenação (front-puro, sobre os dados já carregados) ─────────────
+  const activeCount   = useMemo(() => services.filter(s => s.isActive).length, [services])
+  const inactiveCount = services.length - activeCount
+
+  const visibleServices = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const filtered = q
+      ? services.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          (s.description ?? "").toLowerCase().includes(q))
+      : services
+    const sorted = [...filtered]
+    switch (sortKey) {
+      case "name":      sorted.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")); break
+      case "priceAsc":  sorted.sort((a, b) => a.price - b.price); break
+      case "priceDesc": sorted.sort((a, b) => b.price - a.price); break
+      case "duration":  sorted.sort((a, b) => b.durationMinutes - a.durationMinutes); break
+      default:          sorted.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    }
+    return sorted
+  }, [services, search, sortKey])
 
   // ── V2-B1: pré-seed de ~30 serviços de estética (conta deixa de nascer vazia) ──
   const [seeding, setSeeding] = useState(false)
@@ -329,6 +377,59 @@ export default function ServicosPage() {
           </div>
         )}
 
+        {/* ── Toolbar: busca + ordenação + stats (só com lista carregada) ── */}
+        {!loading && services.length > 0 && (
+          <div style={{
+            display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap",
+            alignItems: "center", flexDirection: isMobile ? "column" : "row",
+          }}>
+            {/* Busca */}
+            <div style={{ flex: 1, minWidth: isMobile ? "100%" : 220, position: "relative", width: isMobile ? "100%" : undefined }}>
+              <Search size={14} color="var(--c-text-4)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar serviço por nome ou descrição..."
+                style={{
+                  width: "100%", height: 40, backgroundColor: "var(--c-surface)",
+                  border: "1px solid var(--c-border)", borderRadius: 12,
+                  paddingLeft: 36, paddingRight: 14, fontSize: 13,
+                  color: "var(--c-text)", outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+                }}
+                onFocus={e => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
+                onBlur={e  => { e.target.style.borderColor = "var(--c-border)" }}
+              />
+            </div>
+
+            {/* Ordenação */}
+            <select
+              value={sortKey}
+              onChange={e => setSortKey(e.target.value as SortKey)}
+              style={{
+                height: 40, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+                borderRadius: 12, padding: "0 12px", fontSize: 13, color: "var(--c-text-2)",
+                outline: "none", fontFamily: "inherit", cursor: "pointer",
+                width: isMobile ? "100%" : undefined,
+              }}
+            >
+              {(Object.keys(SORT_LABELS) as SortKey[]).map(k => (
+                <option key={k} value={k} style={{ backgroundColor: "var(--c-surface)", color: "var(--c-text)" }}>
+                  {SORT_LABELS[k]}
+                </option>
+              ))}
+            </select>
+
+            {/* Stats */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <StatBadge value={services.length} label="Total" color="var(--c-text-2)" bg="var(--c-surface)" border="var(--c-border)" />
+              <StatBadge value={activeCount}     label="Ativos"   color="#10B981" bg="rgba(16,185,129,0.06)" border="rgba(16,185,129,0.2)" />
+              {inactiveCount > 0 && (
+                <StatBadge value={inactiveCount} label="Inativos" color="var(--c-text-3)" bg="var(--c-surface)" border="var(--c-border)" />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Loading ── */}
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
@@ -380,20 +481,43 @@ export default function ServicosPage() {
                 onMouseEnter={(e) => { if (!seeding) e.currentTarget.style.borderColor = "#0066FF" }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--c-border)" }}
               >
-                {seeding ? "Adicionando…" : "✨ Adicionar 30 serviços prontos"}
+                {seeding ? "Adicionando…" : "Adicionar 30 serviços prontos"}
               </button>
             </div>
           </div>
         )}
 
+        {/* ── Sem resultados de busca ── */}
+        {!loading && services.length > 0 && visibleServices.length === 0 && (
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <Search size={26} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>
+              Nenhum serviço encontrado
+            </p>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
+              Nada combina com “{search.trim()}”. Tente outro termo.
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                marginTop: 16, height: 36, padding: "0 16px", borderRadius: 10,
+                background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                border: "1px solid var(--c-border)", cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              Limpar busca
+            </button>
+          </div>
+        )}
+
         {/* ── Grid de serviços ── */}
-        {!loading && services.length > 0 && (
+        {!loading && visibleServices.length > 0 && (
           <div style={{
             display: "grid",
             gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
             gap: 16,
           }}>
-            {services.map(s => (
+            {visibleServices.map(s => (
               <ServiceCard
                 key={s.id}
                 service={s}
@@ -701,6 +825,7 @@ function ServiceCard({
   deleting: boolean
 }) {
   const [hovered, setHovered] = useState(false)
+  const range = priceRange(service)
 
   return (
     <div
@@ -769,15 +894,39 @@ function ServiceCard({
         </div>
 
         {/* Preço + duração */}
-        <div style={{ display: "flex", gap: 12, marginTop: 14, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, marginTop: 14, alignItems: "baseline", flexWrap: "wrap" }}>
+          {range.varies && (
+            <span style={{ fontSize: 11, color: "var(--c-text-4)", alignSelf: "center" }}>a partir de</span>
+          )}
           <span style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)" }}>
-            {formatCurrency(service.price)}
+            {formatCurrency(range.min)}
           </span>
-          <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>·</span>
-          <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
+          <span style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 12, color: "var(--c-text-3)" }}>
+            <Clock size={12} color="var(--c-text-4)" />
             {formatDuration(service.durationMinutes)}
           </span>
         </div>
+
+        {/* Badges: porte variável · garantia · repasse (só dado que o back retorna) */}
+        {(range.varies || (service.warrantyDays ?? 0) > 0 || (service.commissionPercent ?? 0) > 0) && (
+          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+            {range.varies && (
+              <CardChip color="#0066FF" bg="rgba(0,102,255,0.08)" border="rgba(0,102,255,0.2)">
+                Preço por porte
+              </CardChip>
+            )}
+            {(service.warrantyDays ?? 0) > 0 && (
+              <CardChip color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)" icon={<ShieldCheck size={11} />}>
+                Garantia {service.warrantyDays}d
+              </CardChip>
+            )}
+            {(service.commissionPercent ?? 0) > 0 && (
+              <CardChip color="#A78BFA" bg="rgba(124,58,237,0.08)" border="rgba(124,58,237,0.22)" icon={<Percent size={11} />}>
+                Repasse {service.commissionPercent}%
+              </CardChip>
+            )}
+          </div>
+        )}
 
         {/* Ações */}
         <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
@@ -830,5 +979,41 @@ function ServiceCard({
         </div>
       </div>
     </div>
+  )
+}
+// ─── StatBadge (espelha o padrão da tela de Clientes) ──────────────────────────
+
+function StatBadge({
+  value, label, color, bg, border,
+}: {
+  value: number; label: string; color: string; bg: string; border: string
+}) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "baseline", gap: 6,
+      backgroundColor: bg, border: `1px solid ${border}`,
+      borderRadius: 10, padding: "7px 12px",
+    }}>
+      <span style={{ fontSize: 14, fontWeight: 800, color }}>{value}</span>
+      <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{label}</span>
+    </div>
+  )
+}
+
+// ─── CardChip (badge compacto no card de serviço) ──────────────────────────────
+
+function CardChip({
+  children, color, bg, border, icon,
+}: {
+  children: ReactNode; color: string; bg: string; border: string; icon?: ReactNode
+}) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+      backgroundColor: bg, border: `1px solid ${border}`, color,
+    }}>
+      {icon}{children}
+    </span>
   )
 }

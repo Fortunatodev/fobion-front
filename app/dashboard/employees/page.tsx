@@ -1,8 +1,8 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -23,6 +23,13 @@ interface Employee {
 
 function getInitials(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map(n => n[0]).join("").toUpperCase()
+}
+
+// "na equipe desde" — só usa createdAt que o back já retorna
+function formatJoined(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ""
+  return d.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
 }
 
 function Field({
@@ -101,6 +108,15 @@ function EmployeesContent() {
   const [formName,      setFormName]      = useState("")
   const [formEmail,     setFormEmail]     = useState("")
   const [deactivateTarget, setDeactivateTarget] = useState<Employee | null>(null)
+  const [search,        setSearch]        = useState("")
+
+  const withCalendar = useMemo(() => employees.filter(e => e.calendarConnected).length, [employees])
+  const visibleEmployees = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return employees
+    return employees.filter(e =>
+      e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q))
+  }, [employees, search])
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true)
@@ -268,6 +284,32 @@ function EmployeesContent() {
           </div>
         )}
 
+        {/* ── Toolbar: busca + stats (só com equipe carregada) ── */}
+        {!loading && employees.length > 0 && (
+          <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
+              <Search size={14} color="var(--c-text-4)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar por nome ou e-mail..."
+                style={{
+                  width: "100%", height: 40, backgroundColor: "var(--c-surface)",
+                  border: "1px solid var(--c-border)", borderRadius: 12,
+                  paddingLeft: 36, paddingRight: 14, fontSize: 13,
+                  color: "var(--c-text)", outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+                }}
+                onFocus={e => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
+                onBlur={e  => { e.target.style.borderColor = "var(--c-border)" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <StatBadge value={employees.length} label="Na equipe" color="var(--c-text-2)" bg="var(--c-surface)" border="var(--c-border)" />
+              <StatBadge value={withCalendar}     label="Com agenda" color="#3B82F6" bg="rgba(59,130,246,0.06)" border="rgba(59,130,246,0.2)" />
+            </div>
+          </div>
+        )}
+
         {/* ── Loading skeleton ── */}
         {loading && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
@@ -294,10 +336,33 @@ function EmployeesContent() {
           </div>
         )}
 
+        {/* ── Sem resultados de busca ── */}
+        {!loading && employees.length > 0 && visibleEmployees.length === 0 && (
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <Search size={26} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)", marginTop: 14 }}>
+              Nenhum funcionário encontrado
+            </p>
+            <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 6 }}>
+              Nada combina com “{search.trim()}”.
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                marginTop: 16, height: 36, padding: "0 16px", borderRadius: 10,
+                background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                border: "1px solid var(--c-border)", cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              Limpar busca
+            </button>
+          </div>
+        )}
+
         {/* ── Grid de cards ── */}
-        {!loading && employees.length > 0 && (
+        {!loading && visibleEmployees.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
-            {employees.map(emp => {
+            {visibleEmployees.map(emp => {
               const isHov = hoveredId === emp.id
               return (
                 <div
@@ -313,17 +378,30 @@ function EmployeesContent() {
                 >
                   {/* ── Avatar + info + badges ── */}
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                    <div style={{
-                      width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-                      background: "linear-gradient(135deg, #0066FF, #7C3AED)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, fontWeight: 700, color: "var(--c-on-primary)",
-                    }}>
-                      {getInitials(emp.name)}
-                    </div>
+                    {emp.avatarUrl ? (
+                      <img
+                        src={emp.avatarUrl}
+                        alt={emp.name}
+                        style={{ width: 48, height: 48, borderRadius: "50%", flexShrink: 0, objectFit: "cover", display: "block" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+                        background: "linear-gradient(135deg, #0066FF, #7C3AED)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16, fontWeight: 700, color: "var(--c-on-primary)",
+                      }}>
+                        {getInitials(emp.name)}
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.name}</p>
                       <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.email}</p>
+                      {formatJoined(emp.createdAt) && (
+                        <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "3px 0 0" }}>
+                          Na equipe desde {formatJoined(emp.createdAt)}
+                        </p>
+                      )}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
                       <span style={{
@@ -484,5 +562,23 @@ function EmployeesContent() {
         loading={deactivateTarget !== null && actionLoading === deactivateTarget.id}
       />
     </>
+  )
+}
+// ─── StatBadge (espelha o padrão das telas de Clientes/Serviços) ───────────────
+
+function StatBadge({
+  value, label, color, bg, border,
+}: {
+  value: number; label: string; color: string; bg: string; border: string
+}) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "baseline", gap: 6,
+      backgroundColor: bg, border: `1px solid ${border}`,
+      borderRadius: 10, padding: "7px 12px",
+    }}>
+      <span style={{ fontSize: 14, fontWeight: 800, color }}>{value}</span>
+      <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>{label}</span>
+    </div>
   )
 }

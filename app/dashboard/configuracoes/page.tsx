@@ -9,13 +9,17 @@ import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
 import PricingCards from "@/components/shared/PricingCards"
 import SlotsPreview from "@/components/dashboard/SlotsPreview"
+import PublicStorePreview from "@/components/dashboard/PublicStorePreview"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
-  ExternalLink, Crown, Zap, X,
+  Zap, X,
   Camera, Loader2, Calendar,
   Users, ChevronRight,
+  Lightbulb, Instagram, MessageCircle,
 } from "lucide-react"
+
+const NEGOCIO_TUTORIAL_KEY = "forbion_negocio_tutorial_ok"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,23 +246,6 @@ function DescTextarea({
   )
 }
 
-function ExternalLinkBtn({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        height: 38, padding: "0 16px", borderRadius: 10,
-        border: "1px solid var(--c-border-2)", backgroundColor: "transparent",
-        color: "var(--c-text-2)", fontSize: 12, fontWeight: 500,
-        cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-        fontFamily: "inherit",
-      }}
-    >
-      <ExternalLink size={12} /> Abrir loja
-    </button>
-  )
-}
-
 function HourRow({ hour, onToggle, onOpenChange, onCloseChange }: {
   hour: BusinessHour
   onToggle: () => void
@@ -445,6 +432,9 @@ function ConfiguracoesContent() {
   const [success,     setSuccess]     = useState<string | null>(null)
   const [activeTab,   setActiveTab]   = useState<TabId>("negocio")
   const [isMobile,    setIsMobile]    = useState(false)
+  // Tutorial dispensável da aba Negócio. Começa fechado pra evitar flash; o efeito
+  // de mount reabre se o dono ainda não dispensou (chave em localStorage).
+  const [showNegocioTutorial, setShowNegocioTutorial] = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -452,6 +442,19 @@ function ConfiguracoesContent() {
     window.addEventListener("resize", check)
     return () => window.removeEventListener("resize", check)
   }, [])
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(NEGOCIO_TUTORIAL_KEY) !== "1") setShowNegocioTutorial(true)
+    } catch {
+      setShowNegocioTutorial(true)
+    }
+  }, [])
+
+  function dismissNegocioTutorial() {
+    setShowNegocioTutorial(false)
+    try { localStorage.setItem(NEGOCIO_TUTORIAL_KEY, "1") } catch { /* ignore */ }
+  }
 
   const [formName,        setFormName]        = useState("")
   const [formPhone,       setFormPhone]       = useState("")
@@ -711,7 +714,13 @@ function ConfiguracoesContent() {
     }
   }
 
-  const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"}/${config?.slug ?? ""}`
+  const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
+  const slug      = config?.slug ?? ""
+  const publicUrl = `${appUrl}/${slug}`
+  // Versão "bonita" do link só pra exibir (sem https:// e sem porta de dev).
+  // Mantém o domínio real configurado; cai num placeholder amigável em dev local.
+  const displayHost = appUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
+  const displayUrl  = `${/localhost|127\.0\.0\.1/.test(displayHost) ? "app.forbion.digital" : displayHost}/${slug}`
   const openDays  = hours.filter((h) => h.isOpen).length
   const themeRgb  = hexToRgb(themeColor)
 
@@ -804,20 +813,64 @@ function ConfiguracoesContent() {
               Informações do negócio
             </h2>
 
-            {/* URL pública */}
-            <div style={{
-              backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)",
-              borderRadius: 12, padding: "12px 16px", marginBottom: 24,
-              display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
-              flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
-            }}>
-              <div>
-                <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "0 0 4px" }}>URL da sua loja pública</p>
-                <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: 0, fontFamily: "monospace" }}>{publicUrl}</p>
+            {/* ── TUTORIAL/DICA DISPENSÁVEL ── */}
+            {showNegocioTutorial && (
+              <div style={{
+                position: "relative",
+                backgroundColor: `rgba(${themeRgb},0.07)`,
+                border: `1px solid rgba(${themeRgb},0.22)`,
+                borderRadius: 12, padding: "14px 40px 14px 16px", marginBottom: 24,
+                display: "flex", gap: 12, alignItems: "flex-start",
+              }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                  backgroundColor: `rgba(${themeRgb},0.14)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Lightbulb size={16} color={themeColor} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+                    Essa é a cara da sua loja
+                  </p>
+                  <p style={{ fontSize: 12.5, color: "var(--c-text-2)", margin: "4px 0 0", lineHeight: 1.55 }}>
+                    Estas informações aparecem na sua loja pública (seu link de agendamento).
+                    Capriche no nome e na descrição: é a primeira coisa que o cliente vê.
+                  </p>
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 9 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--c-text-3)" }}>
+                      <Instagram size={13} color={themeColor} /> Coloque o link na bio do Instagram
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--c-text-3)" }}>
+                      <MessageCircle size={13} color={themeColor} /> Compartilhe no WhatsApp dos clientes
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={dismissNegocioTutorial}
+                  aria-label="Dispensar dica"
+                  title="Dispensar"
+                  style={{
+                    position: "absolute", top: 10, right: 10,
+                    width: 24, height: 24, borderRadius: 7, border: "none",
+                    backgroundColor: "transparent", color: "var(--c-text-4)",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <X size={15} />
+                </button>
               </div>
-              <ExternalLinkBtn onClick={() => window.open(publicUrl, "_blank")} />
-            </div>
+            )}
 
+            {/* ── FORMULÁRIO + PREVIEW AO VIVO ── */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 320px",
+              gap: isMobile ? 24 : 28,
+              alignItems: "start",
+            }}>
+              {/* Coluna esquerda: formulário */}
+              <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <FieldLabel required>Nome do estabelecimento</FieldLabel>
@@ -844,6 +897,22 @@ function ConfiguracoesContent() {
               <div>
                 <FieldLabel>CNPJ <span style={{ color: "var(--c-text-4)", fontWeight: 400 }}>(necessário pra emitir NF-e)</span></FieldLabel>
                 <TextInput value={formCnpj} onChange={setFormCnpj} placeholder="00.000.000/0000-00" />
+              </div>
+            </div>
+              </div>
+
+              {/* Coluna direita: preview ao vivo da loja pública */}
+              <div style={{ position: isMobile ? "static" : "sticky", top: 16 }}>
+                <PublicStorePreview
+                  name={formName}
+                  description={formDescription}
+                  phone={formPhone}
+                  avatarUrl={ownerAvatarUrl}
+                  accent={themeColor}
+                  hours={hours}
+                  publicUrl={publicUrl}
+                  displayUrl={displayUrl}
+                />
               </div>
             </div>
 

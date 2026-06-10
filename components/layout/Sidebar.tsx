@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package, ShieldCheck,
+  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package, ShieldCheck, RotateCcw,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
@@ -18,6 +18,7 @@ const PRO_ONLY_PATHS = new Set([
   "/dashboard/planos",
   "/dashboard/assinantes",
   "/dashboard/relatorios",
+  "/dashboard/pos-venda",
 ])
 
 const navSections = [
@@ -43,6 +44,7 @@ const navSections = [
       { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard,  ownerOnly: true },
       { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck,   ownerOnly: true },
       { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2,   ownerOnly: true },
+      { href: "/dashboard/pos-venda",    label: "Pós-venda",    icon: RotateCcw,   ownerOnly: true },
       { href: "/dashboard/relatorios/repasses", label: "Repasses", icon: Wallet,   ownerOnly: true },
     ],
   },

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
 import { useAnimatedNumber, formatAnimatedCurrency } from "@/lib/useAnimatedNumber"
 import {
   BarChart2, TrendingUp, TrendingDown, Users, Calendar,
@@ -625,15 +624,6 @@ function PainelDeSaude() {
               <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
             </div>
             <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
-            {/* V2-B3: atalhos pros painéis de Retenção (RFM) e Recalls/Garantias */}
-            <div style={{ display: "flex", gap: 16, marginLeft: 30, marginTop: 8, flexWrap: "wrap" }}>
-              <Link href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
-                <Users size={14} /> Retenção de clientes <ArrowUpRight size={14} />
-              </Link>
-              <Link href="/dashboard/relatorios/recalls" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#10B981", textDecoration: "none" }}>
-                <ShieldCheck size={14} /> Retornos & garantias <ArrowUpRight size={14} />
-              </Link>
-            </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <button onClick={exportCSV} disabled={!data} title="Baixar relatório do período em CSV (Excel)" style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: data ? "var(--c-text-2)" : "var(--c-text-4)", fontSize: 12, fontWeight: 600, cursor: data ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
