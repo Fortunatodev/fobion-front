@@ -30,10 +30,10 @@ export default function RootLayout({
     <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#0A0A0A" />
-        {/* Aplica o tema salvo ANTES da pintura — evita flash de cor errada. Default escuro. */}
+        {/* App é dark-first. Limpa qualquer tema "light" salvo (estava deixando páginas dark-only ilegíveis). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('forbion_theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`,
+            __html: `(function(){try{localStorage.removeItem('forbion_theme');document.documentElement.removeAttribute('data-theme');}catch(e){}})();`,
           }}
         />
       </head>

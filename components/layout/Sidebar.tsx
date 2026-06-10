@@ -11,7 +11,6 @@ import {
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
 import ForbionLogo from "@/components/shared/ForbionLogo"
-import ThemeToggle from "@/components/shared/ThemeToggle"
 
 // PRO-only paths — shown with a badge on BASIC plan
 const PRO_ONLY_PATHS = new Set([
@@ -201,7 +200,6 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             </p>
           </div>
         </div>
-        <ThemeToggle />
         <button
           onClick={handleLogout}
           style={{
