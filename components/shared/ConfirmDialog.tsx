@@ -51,15 +51,19 @@ export default function ConfirmDialog({
     >
       <div className="flex flex-col gap-4">
         {variant === "danger" && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
               <AlertTriangle size={18} className="text-red-400" />
             </div>
-            <p className="text-sm text-[var(--c-text-2)]">{description}</p>
+            <p className="min-w-0 break-words text-sm leading-relaxed text-[var(--c-text-2)]">
+              {description}
+            </p>
           </div>
         )}
         {variant === "default" && (
-          <p className="text-sm text-[var(--c-text-2)]">{description}</p>
+          <p className="min-w-0 break-words text-sm leading-relaxed text-[var(--c-text-2)]">
+            {description}
+          </p>
         )}
       </div>
     </Modal>

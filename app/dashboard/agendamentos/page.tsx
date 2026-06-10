@@ -6,9 +6,10 @@ import {
   Plus, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, Car,
   CreditCard, AlertCircle, X,
-  Banknote, QrCode, ChevronDown,
-  User, FileText,
+  Banknote, QrCode,
+  User, FileText, Bike, Truck, CarFront,
 } from "lucide-react"
+import { toast } from "sonner"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
@@ -118,6 +119,10 @@ const VEHICLE_TYPES = ["CAR", "MOTORCYCLE", "TRUCK", "SUV"]
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
   CAR: "Carro", MOTORCYCLE: "Moto", TRUCK: "Caminhão", SUV: "SUV",
 }
+// Ícones lucide por tipo de veículo (sem emoji em UI).
+const VEHICLE_TYPE_ICONS: Record<string, typeof Car> = {
+  CAR: Car, MOTORCYCLE: Bike, TRUCK: Truck, SUV: CarFront,
+}
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
 
@@ -194,34 +199,48 @@ function NfseEmBreveButton() {
 
 // ── FInput ────────────────────────────────────────────────────────────────────
 
-function FInput({ label, value, onChange, placeholder, required, type = "text", disabled }: {
+function FInput({ label, value, onChange, placeholder, required, type = "text", disabled, error, inputRef }: {
   label: string; value: string; onChange: (v: string) => void
   placeholder?: string; required?: boolean; type?: string; disabled?: boolean
+  error?: string; inputRef?: React.Ref<HTMLInputElement>
 }) {
   const [focused, setFocused] = useState(false)
+  const borderColor = error
+    ? "#EF4444"
+    : focused && !disabled
+      ? "rgba(0,102,255,0.4)"
+      : "var(--c-border)"
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
       <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>
         {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
       </label>
       <input
+        ref={inputRef}
         type={type}
         value={value}
         disabled={disabled}
+        aria-invalid={!!error}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
         style={{
           height: 40, backgroundColor: disabled ? "var(--c-bg)" : "var(--c-elevated)",
-          border: `1px solid ${focused && !disabled ? "rgba(0,102,255,0.4)" : "var(--c-border)"}`,
+          border: `1px solid ${borderColor}`,
+          boxShadow: error ? "0 0 0 1px rgba(239,68,68,0.35)" : "none",
           borderRadius: 9, padding: "0 12px",
           fontSize: 13, color: disabled ? "var(--c-text-4)" : "var(--c-text)", outline: "none",
-          transition: "border-color 0.15s", fontFamily: "inherit",
+          transition: "border-color 0.15s, box-shadow 0.15s", fontFamily: "inherit",
           boxSizing: "border-box", width: "100%",
           cursor: disabled ? "not-allowed" : "text",
         }}
       />
+      {error && (
+        <span style={{ fontSize: 11, fontWeight: 500, color: "#EF4444", display: "flex", alignItems: "center", gap: 4 }}>
+          <AlertCircle size={11} style={{ flexShrink: 0 }} /> {error}
+        </span>
+      )}
     </div>
   )
 }
@@ -429,6 +448,23 @@ function NovoAgendamentoModal({
   const [submitting,  setSubmitting]  = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  // Erros de campos obrigatórios por chave (ex.: "customerName", "vehicleModel").
+  // Some assim que o usuário corrige o campo (ver clearFieldError nos onChange).
+  type FieldKey = "customerName" | "vehicleModel" | "vehicleColor"
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({})
+  const nameRef  = useRef<HTMLInputElement>(null)
+  const modelRef = useRef<HTMLInputElement>(null)
+  const colorRef = useRef<HTMLInputElement>(null)
+
+  function clearFieldError(key: FieldKey) {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
   // ── Load business slug + services ────────────────────────────────────────────
@@ -580,14 +616,41 @@ function NovoAgendamentoModal({
   // ── Submit ───────────────────────────────────────────────────────────────────
   async function handleSubmit() {
     setSubmitError(null)
-    if (selectedServices.length === 0) { setSubmitError("Selecione pelo menos um serviço."); return }
-    if (!selectedDate || !selectedSlot) { setSubmitError("Selecione data e horário."); return }
-    if (!customerName.trim()) { setSubmitError("Nome do cliente é obrigatório."); return }
-    if (selectedVehicleId === null) {
-      if (!vehicleModel.trim()) { setSubmitError("Modelo do veículo é obrigatório."); return }
-      if (!vehicleColor.trim()) { setSubmitError("Cor do veículo é obrigatória."); return }
+
+    // Pré-condições de etapas anteriores (não são campos do form atual).
+    if (selectedServices.length === 0) {
+      setStep(1); setSubmitError("Selecione pelo menos um serviço.")
+      toast.error("Selecione pelo menos um serviço.")
+      return
+    }
+    if (!selectedDate || !selectedSlot) {
+      setStep(2); setSubmitError("Selecione data e horário.")
+      toast.error("Selecione data e horário.")
+      return
     }
 
+    // Validação visível dos campos obrigatórios do passo 3.
+    const errs: Partial<Record<FieldKey, string>> = {}
+    if (!customerName.trim()) errs.customerName = "Obrigatório"
+    if (selectedVehicleId === null) {
+      if (!vehicleModel.trim()) errs.vehicleModel = "Obrigatório"
+      if (!vehicleColor.trim()) errs.vehicleColor = "Obrigatório"
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      // Foca/scrolla pro primeiro erro (ordem do formulário).
+      const firstRef = errs.customerName ? nameRef
+        : errs.vehicleModel ? modelRef
+        : errs.vehicleColor ? colorRef
+        : null
+      firstRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      firstRef?.current?.focus({ preventScroll: true })
+      toast.error("Preencha os campos obrigatórios destacados.")
+      return
+    }
+
+    setFieldErrors({})
     setSubmitting(true)
     try {
       const [y, m, d] = selectedDate.split("-").map(Number)
@@ -625,12 +688,15 @@ function NovoAgendamentoModal({
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro ao criar agendamento."
       if (msg.includes("reservado") || msg.includes("conflito") || msg.includes("indisponível")) {
-        setSubmitError("⚠️ " + msg)
-        // Refresh slots on conflict
+        setSubmitError(msg)
+        toast.error("Horário indisponível — escolha outro.")
+        // Conflito de horário: volta pro passo de data/hora e recarrega slots.
         setSelectedSlot("")
+        setStep(2)
         await fetchSlots(selectedDate)
       } else {
         setSubmitError(msg)
+        toast.error(msg)
       }
     } finally {
       setSubmitting(false)
@@ -1103,8 +1169,17 @@ function NovoAgendamentoModal({
                   CLIENTE
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <FInput label="Nome completo" value={customerName} onChange={setCustomerName} placeholder="João da Silva" required disabled={isCustomerLocked} />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <FInput
+                    label="Nome completo"
+                    value={customerName}
+                    onChange={(v) => { setCustomerName(v); clearFieldError("customerName") }}
+                    placeholder="João da Silva"
+                    required
+                    disabled={isCustomerLocked}
+                    error={fieldErrors.customerName}
+                    inputRef={nameRef}
+                  />
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                     <FInput label="Telefone" value={customerPhone} onChange={setCustomerPhone} placeholder="(opcional)" disabled={isCustomerLocked} />
                     <FInput label="E-mail" value={customerEmail} onChange={setCustomerEmail} placeholder="(opcional)" disabled={isCustomerLocked} />
                   </div>
@@ -1176,35 +1251,51 @@ function NovoAgendamentoModal({
                     {existingVehicles.length > 0 ? "NOVO VEÍCULO" : "VEÍCULO"}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <FInput label="Placa" value={vehiclePlate} onChange={(v) => setVehiclePlate(v.toUpperCase())} placeholder="(opcional)" />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
+                      <FInput label="Placa" value={vehiclePlate} onChange={(v) => setVehiclePlate(v.toUpperCase())} placeholder="(opcional)" />
                       <FInput label="Marca" value={vehicleBrand} onChange={setVehicleBrand} placeholder="(opcional)" />
-                      <FInput label="Modelo" value={vehicleModel} onChange={setVehicleModel} placeholder="Civic" required />
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <FInput label="Cor" value={vehicleColor} onChange={setVehicleColor} placeholder="Prata" required />
-                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>Tipo</label>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-                          {VEHICLE_TYPES.map((t) => {
-                            const icons: Record<string, string> = { CAR: "🚗", MOTORCYCLE: "🏍️", TRUCK: "🚚", SUV: "🚙" }
-                            const sel = vehicleType === t
-                            return (
-                              <button key={t} type="button" onClick={() => setVehicleType(t)} style={{
-                                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                                gap: 2, padding: "8px 0", borderRadius: 9, cursor: "pointer",
-                                backgroundColor: sel ? "rgba(0,102,255,0.10)" : "var(--c-elevated)",
-                                border: `1.5px solid ${sel ? "rgba(0,102,255,0.5)" : "var(--c-border)"}`,
-                                transition: "all 0.15s", fontFamily: "inherit",
-                              }}>
-                                <span style={{ fontSize: 18, lineHeight: 1 }}>{icons[t]}</span>
-                                <span style={{ fontSize: 10, fontWeight: 600, color: sel ? "#3B82F6" : "var(--c-text-3)", letterSpacing: "0.02em" }}>
-                                  {VEHICLE_TYPE_LABELS[t]}
-                                </span>
-                              </button>
-                            )
-                          })}
-                        </div>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
+                      <FInput
+                        label="Modelo"
+                        value={vehicleModel}
+                        onChange={(v) => { setVehicleModel(v); clearFieldError("vehicleModel") }}
+                        placeholder="Civic"
+                        required
+                        error={fieldErrors.vehicleModel}
+                        inputRef={modelRef}
+                      />
+                      <FInput
+                        label="Cor"
+                        value={vehicleColor}
+                        onChange={(v) => { setVehicleColor(v); clearFieldError("vehicleColor") }}
+                        placeholder="Prata"
+                        required
+                        error={fieldErrors.vehicleColor}
+                        inputRef={colorRef}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+                      <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em" }}>Tipo</label>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
+                        {VEHICLE_TYPES.map((t) => {
+                          const Icon = VEHICLE_TYPE_ICONS[t]
+                          const sel = vehicleType === t
+                          return (
+                            <button key={t} type="button" onClick={() => setVehicleType(t)} style={{
+                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                              gap: 4, padding: "9px 0", borderRadius: 9, cursor: "pointer", minWidth: 0,
+                              backgroundColor: sel ? "rgba(0,102,255,0.10)" : "var(--c-elevated)",
+                              border: `1.5px solid ${sel ? "rgba(0,102,255,0.5)" : "var(--c-border)"}`,
+                              transition: "all 0.15s", fontFamily: "inherit",
+                            }}>
+                              <Icon size={18} color={sel ? "#3B82F6" : "var(--c-text-3)"} style={{ flexShrink: 0 }} />
+                              <span style={{ fontSize: 10, fontWeight: 600, color: sel ? "#3B82F6" : "var(--c-text-3)", letterSpacing: "0.02em" }}>
+                                {VEHICLE_TYPE_LABELS[t]}
+                              </span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1347,7 +1438,11 @@ function NovoAgendamentoModal({
               </button>
               <button
                 onClick={() => {
-                  if (selectedServices.length === 0) { setSubmitError("Selecione pelo menos um serviço."); return }
+                  if (selectedServices.length === 0) {
+                    setSubmitError("Selecione pelo menos um serviço.")
+                    toast.error("Selecione pelo menos um serviço.")
+                    return
+                  }
                   setSubmitError(null)
                   setStep(2)
                 }}
@@ -1373,7 +1468,11 @@ function NovoAgendamentoModal({
               </button>
               <button
                 onClick={() => {
-                  if (!selectedDate || !selectedSlot) { setSubmitError("Selecione data e horário."); return }
+                  if (!selectedDate || !selectedSlot) {
+                    setSubmitError("Selecione data e horário.")
+                    toast.error("Selecione data e horário.")
+                    return
+                  }
                   setSubmitError(null)
                   setStep(3)
                 }}

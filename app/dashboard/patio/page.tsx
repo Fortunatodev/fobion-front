@@ -1,16 +1,31 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, type CSSProperties } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical } from "lucide-react"
 import { toast } from "sonner"
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  pointerWithin,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { CSS } from "@dnd-kit/utilities"
 import PromptModal from "@/components/shared/PromptModal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
  * Reusa GET /schedules?date= e PUT /schedules/:id/status. Ref: WashAI/ClickLava.
+ * Drag-and-drop entre colunas (@dnd-kit) com pointer + touch; botões mantidos como fallback.
  */
 interface Schedule {
   id: string; scheduledAt: string
@@ -21,23 +36,183 @@ interface Schedule {
   scheduleServices?: Array<{ service: { name: string } }>
 }
 
+type Status = Schedule["status"]
+type ColumnKey = "wait" | "doing" | "done"
+
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const hhmm = (iso: string) => { const d = new Date(iso); return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}` }
 
-const COLUMNS = [
-  { key: "wait",  title: "Aguardando",     color: "#F59E0B", match: (s: Schedule) => s.status === "PENDING" || s.status === "CONFIRMED", next: "IN_PROGRESS", cta: "Iniciar →" },
-  { key: "doing", title: "Em atendimento", color: "#0066FF", match: (s: Schedule) => s.status === "IN_PROGRESS", next: "DONE", cta: "Finalizar ✓" },
-  { key: "done",  title: "Pronto / Entregue", color: "#10B981", match: (s: Schedule) => s.status === "DONE", next: null, cta: null },
-] as const
+interface Column {
+  key: ColumnKey
+  title: string
+  color: string
+  match: (s: Schedule) => boolean
+  /** status alvo ao soltar um card NESTA coluna (mesmo p/ done) */
+  dropStatus: Status
+  /** próximo status do botão de avanço; null = sem botão */
+  next: Status | null
+  cta: string | null
+}
+
+const COLUMNS: Column[] = [
+  { key: "wait",  title: "Aguardando",        color: "#F59E0B", match: (s) => s.status === "PENDING" || s.status === "CONFIRMED", dropStatus: "CONFIRMED", next: "IN_PROGRESS", cta: "Iniciar →" },
+  { key: "doing", title: "Em atendimento",    color: "#0066FF", match: (s) => s.status === "IN_PROGRESS",                          dropStatus: "IN_PROGRESS", next: "DONE",      cta: "Finalizar ✓" },
+  { key: "done",  title: "Pronto / Entregue", color: "#10B981", match: (s) => s.status === "DONE",                                 dropStatus: "DONE",      next: null,         cta: null },
+]
+
+const COL_OF: Record<ColumnKey, Column> = COLUMNS.reduce((acc, c) => { acc[c.key] = c; return acc }, {} as Record<ColumnKey, Column>)
+/** Mapeia um schedule para a coluna a que pertence hoje (p/ saber a origem do drag) */
+const columnKeyOf = (s: Schedule): ColumnKey | null => COLUMNS.find((c) => c.match(s))?.key ?? null
+
+// ── Card (conteúdo visual, reutilizado no card real e no DragOverlay) ──────────
+function CardBody({
+  s, col, moving, onAdvance, dragging,
+}: {
+  s: Schedule
+  col: Column
+  moving: string | null
+  onAdvance: (id: string, next: Status) => void
+  dragging?: boolean
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--c-surface)",
+        border: `1px solid ${dragging ? col.color + "66" : "var(--c-border)"}`,
+        borderRadius: 10,
+        padding: "10px 12px",
+        boxShadow: dragging ? "0 12px 28px rgba(0,0,0,0.28)" : "none",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        <Clock size={12} color="var(--c-text-3)" />
+        <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 600 }}>{hhmm(s.scheduledAt)}</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "#10B981", fontWeight: 700 }}>{fmt(s.totalPrice)}</span>
+        <GripVertical size={14} color="var(--c-text-4)" style={{ marginLeft: 2 }} aria-hidden />
+      </div>
+      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{s.customer?.name ?? "Cliente"}</p>
+      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "1px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
+        <Car size={11} /> {[s.vehicle?.plate, s.vehicle?.model].filter(Boolean).join(" · ") || "veículo"}
+      </p>
+      {s.scheduleServices && s.scheduleServices.length > 0 && (
+        <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x.service?.name).filter(Boolean).join(", ")}</p>
+      )}
+      {col.next && (
+        <button
+          onClick={() => onAdvance(s.id, col.next!)}
+          disabled={moving === s.id}
+          // não deixa o pointer iniciar drag a partir do botão
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{ marginTop: 8, width: "100%", height: 30, borderRadius: 8, background: `${col.color}1A`, border: `1px solid ${col.color}40`, color: col.color, fontSize: 12, fontWeight: 600, cursor: moving === s.id ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+        >
+          {moving === s.id ? "..." : <>{col.cta} <ChevronRight size={13} /></>}
+        </button>
+      )}
+      <Link
+        href={`/dashboard/vistoria/${s.id}`}
+        onPointerDown={(e) => e.stopPropagation()}
+        style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
+      >
+        <ShieldCheck size={12} /> Vistoria
+      </Link>
+    </div>
+  )
+}
+
+// ── Card arrastável ────────────────────────────────────────────────────────────
+function DraggableCard({
+  s, col, moving, onAdvance,
+}: {
+  s: Schedule
+  col: Column
+  moving: string | null
+  onAdvance: (id: string, next: Status) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: s.id,
+    data: { from: col.key },
+  })
+  const style: CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    // o card original some quando vira overlay (evita duplicata visual)
+    opacity: isDragging ? 0 : 1,
+    cursor: "grab",
+    touchAction: "manipulation",
+  }
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <CardBody s={s} col={col} moving={moving} onAdvance={onAdvance} />
+    </div>
+  )
+}
+
+// ── Coluna droppable ─────────────────────────────────────────────────────────
+function DroppableColumn({
+  col, cards, moving, onAdvance, activeFrom,
+}: {
+  col: Column
+  cards: Schedule[]
+  moving: string | null
+  onAdvance: (id: string, next: Status) => void
+  activeFrom: ColumnKey | null
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.key, data: { col: col.key } })
+  // realça a coluna como alvo válido só quando há um drag de OUTRA coluna em curso
+  const isTarget = activeFrom !== null && activeFrom !== col.key
+  const highlight = isOver && isTarget
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        background: "var(--c-bg)",
+        border: `1px solid ${highlight ? col.color : isTarget ? col.color + "55" : "var(--c-border)"}`,
+        outline: highlight ? `2px solid ${col.color}55` : "none",
+        outlineOffset: -1,
+        borderRadius: 14,
+        padding: 12,
+        minHeight: 200,
+        scrollSnapAlign: "start",
+        transition: "border-color .15s ease, background .15s ease",
+        boxSizing: "border-box",
+        ...(highlight ? { background: `${col.color}0D` } : {}),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "0 4px" }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{col.title}</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", fontWeight: 600 }}>{cards.length}</span>
+      </div>
+      <AutoAnimate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {cards.length === 0 && (
+          <p style={{ fontSize: 12, color: highlight ? col.color : "var(--c-text-4)", textAlign: "center", padding: "20px 0", fontWeight: highlight ? 600 : 400 }}>
+            {highlight ? "Solte aqui" : "—"}
+          </p>
+        )}
+        {cards.map((s) => (
+          <DraggableCard key={s.id} s={s} col={col} moving={moving} onAdvance={onAdvance} />
+        ))}
+      </AutoAnimate>
+    </div>
+  )
+}
 
 export default function PatioPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [moving, setMoving] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
   // B20 — capacidade do pátio (vagas/boxes) por dia; config local sem migração
   const [capacity, setCapacity] = useState(10)
   const [capModalOpen, setCapModalOpen] = useState(false)
+
+  // sensores: pointer com distância mínima (não rouba cliques) + touch com delay
+  // (segura ~180ms p/ começar a arrastar no celular, sem atrapalhar taps/scroll)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+  )
+
   useEffect(() => {
     const v = Number(localStorage.getItem("forbion_patio_capacity"))
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -64,15 +239,60 @@ export default function PatioPage() {
   }, [])
   useEffect(fetchData, [fetchData])
 
-  async function advance(id: string, next: string) {
+  async function advance(id: string, next: Status) {
     setMoving(id)
     try { await apiPut(`/schedules/${id}/status`, { status: next }); fetchData() }
     catch { toast.error("Não consegui mover o carro. Tente de novo.") } finally { setMoving(null) }
   }
 
+  // muda status via drag, otimista com rollback
+  async function moveTo(id: string, target: ColumnKey) {
+    const card = schedules.find((s) => s.id === id)
+    if (!card) return
+    const newStatus = COL_OF[target].dropStatus
+    if (card.status === newStatus) return
+    const prevStatus = card.status
+    setSchedules((prev) => prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s)))
+    setMoving(id)
+    try {
+      await apiPut(`/schedules/${id}/status`, { status: newStatus })
+      toast.success(`Movido para "${COL_OF[target].title}"`)
+    } catch {
+      // rollback
+      setSchedules((prev) => prev.map((s) => (s.id === id ? { ...s, status: prevStatus } : s)))
+      toast.error("Não consegui mover o carro. Tente de novo.")
+    } finally {
+      setMoving(null)
+    }
+  }
+
+  function onDragStart(e: DragStartEvent) {
+    setActiveId(String(e.active.id))
+  }
+  function onDragEnd(e: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = e
+    if (!over) return
+    const target = over.id as ColumnKey
+    if (!COL_OF[target]) return
+    const from = (active.data.current?.from as ColumnKey | undefined) ?? null
+    if (from === target) return
+    moveTo(String(active.id), target)
+  }
+
+  const activeCard = activeId ? schedules.find((s) => s.id === activeId) ?? null : null
+  const activeFrom = activeCard ? columnKeyOf(activeCard) : null
+  const activeCol = activeFrom ? COL_OF[activeFrom] : null
+
+  const gridStyle: CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+    gap: 14,
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 48px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 10, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <LayoutGrid size={22} color="#0066FF" />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Pátio</h1>
@@ -93,12 +313,12 @@ export default function PatioPage() {
           </button>
         </div>
       </div>
-      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Mova os carros conforme avançam.</p>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Arraste os carros entre as colunas, ou use os botões.</p>
 
       {loading && (
         <>
           <style>{`@keyframes patioSkel{0%,100%{opacity:.4}50%{opacity:.8}}`}</style>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
+          <div style={gridStyle}>
             {[0, 1, 2].map((i) => (
               <div key={i} style={{ height: 200, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, animation: `patioSkel 1.5s ease ${i * 0.1}s infinite` }} />
             ))}
@@ -129,51 +349,38 @@ export default function PatioPage() {
       )}
 
       {!loading && !error && schedules.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
-          {COLUMNS.map((col) => {
-            const cards = schedules.filter(col.match).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
-            return (
-              <div key={col.key} style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 12, minHeight: 200 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "0 4px" }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{col.title}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", fontWeight: 600 }}>{cards.length}</span>
-                </div>
-                <AutoAnimate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {cards.length === 0 && <p style={{ fontSize: 12, color: "var(--c-text-4)", textAlign: "center", padding: "20px 0" }}>—</p>}
-                  {cards.map((s) => (
-                    <div key={s.id} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                        <Clock size={12} color="var(--c-text-3)" />
-                        <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 600 }}>{hhmm(s.scheduledAt)}</span>
-                        <span style={{ marginLeft: "auto", fontSize: 12, color: "#10B981", fontWeight: 700 }}>{fmt(s.totalPrice)}</span>
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{s.customer?.name ?? "Cliente"}</p>
-                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "1px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
-                        <Car size={11} /> {[s.vehicle?.plate, s.vehicle?.model].filter(Boolean).join(" · ") || "veículo"}
-                      </p>
-                      {s.scheduleServices && s.scheduleServices.length > 0 && (
-                        <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0" }}>{s.scheduleServices.map((x) => x.service?.name).filter(Boolean).join(", ")}</p>
-                      )}
-                      {col.next && (
-                        <button
-                          onClick={() => advance(s.id, col.next!)}
-                          disabled={moving === s.id}
-                          style={{ marginTop: 8, width: "100%", height: 30, borderRadius: 8, background: `${col.color}1A`, border: `1px solid ${col.color}40`, color: col.color, fontSize: 12, fontWeight: 600, cursor: moving === s.id ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-                        >
-                          {moving === s.id ? "..." : <>{col.cta} <ChevronRight size={13} /></>}
-                        </button>
-                      )}
-                      <Link href={`/dashboard/vistoria/${s.id}`} style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}>
-                        <ShieldCheck size={12} /> Vistoria
-                      </Link>
-                    </div>
-                  ))}
-                </AutoAnimate>
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+          {/* mobile: scroll horizontal com snap; desktop: 3 colunas via auto-fit */}
+          <div
+            style={{
+              ...gridStyle,
+              cursor: activeId ? "grabbing" : undefined,
+              scrollSnapType: "x proximity",
+            }}
+          >
+            {COLUMNS.map((col) => {
+              const cards = schedules.filter(col.match).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
+              return (
+                <DroppableColumn
+                  key={col.key}
+                  col={col}
+                  cards={cards}
+                  moving={moving}
+                  onAdvance={advance}
+                  activeFrom={activeFrom}
+                />
+              )
+            })}
+          </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeCard && activeCol ? (
+              <div style={{ cursor: "grabbing", width: "100%" }}>
+                <CardBody s={activeCard} col={activeCol} moving={moving} onAdvance={advance} dragging />
               </div>
-            )
-          })}
-        </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       <PromptModal

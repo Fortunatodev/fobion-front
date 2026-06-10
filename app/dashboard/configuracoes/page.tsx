@@ -1152,19 +1152,12 @@ function ConfiguracoesContent() {
                   <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0" }}>
                     De quanto em quanto tempo os horários aparecem pro cliente.
                   </p>
-                  {/* Preview ao vivo da agenda do cliente — usa o 1º dia aberto como referência (reativo ao select) */}
-                  {(() => {
-                    const refDay = hours.find((h) => h.isOpen)
-                    return (
-                      <SlotsPreview
-                        slotMinutes={slotMinutes}
-                        openTime={refDay?.openTime}
-                        closeTime={refDay?.closeTime}
-                        dayLabel={refDay ? DAY_LABELS[refDay.dayOfWeek] : undefined}
-                        accent={themeColor}
-                      />
-                    )
-                  })()}
+                  {/* Mini-calendário ao vivo da agenda do cliente — reativo ao expediente + intervalo */}
+                  <SlotsPreview
+                    slotMinutes={slotMinutes}
+                    hours={hours}
+                    accent={themeColor}
+                  />
                 </div>
 
                 {/* Exigir aprovação */}

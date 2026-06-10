@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react"
-import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent } from "lucide-react"
+import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent, Tag } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload"
@@ -13,6 +13,7 @@ interface Service {
   id: string
   name: string
   description?: string
+  category?: string | null
   price: number
   durationMinutes: number
   isActive: boolean
@@ -22,6 +23,19 @@ interface Service {
   priceByVehicleType?: Record<string, number> | null
   createdAt: string
 }
+
+// Sugestões de categoria de estética automotiva (input é livre via datalist).
+const CATEGORY_SUGGESTIONS = [
+  "Lavagem",
+  "Polimento",
+  "Vitrificação",
+  "Higienização",
+  "Proteção",
+  "Estética geral",
+  "Outros",
+] as const
+
+const NO_CATEGORY_LABEL = "Sem categoria"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -110,6 +124,7 @@ export default function ServicosPage() {
   const [isMobile,     setIsMobile]     = useState(false)
   const [search,       setSearch]       = useState("")
   const [sortKey,      setSortKey]      = useState<SortKey>("recent")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")  // "all" | nome da categoria | NO_CATEGORY_LABEL
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -121,6 +136,7 @@ export default function ServicosPage() {
   // Form
   const [formName,     setFormName]     = useState("")
   const [formDesc,        setFormDesc]        = useState("")
+  const [formCategory,    setFormCategory]    = useState("")
   const [formPrice,       setFormPrice]       = useState("")
   const [formDuration,    setFormDuration]    = useState("")
   const [formActive,      setFormActive]      = useState(true)
@@ -150,13 +166,34 @@ export default function ServicosPage() {
   const activeCount   = useMemo(() => services.filter(s => s.isActive).length, [services])
   const inactiveCount = services.length - activeCount
 
+  // Categorias presentes no catálogo (pro dropdown de filtro). Ordem alfabética;
+  // "Sem categoria" entra no fim se houver algum serviço sem categoria.
+  const availableCategories = useMemo(() => {
+    const named = new Set<string>()
+    let hasUncategorized = false
+    for (const s of services) {
+      const c = (s.category ?? "").trim()
+      if (c) named.add(c); else hasUncategorized = true
+    }
+    const list = [...named].sort((a, b) => a.localeCompare(b, "pt-BR"))
+    if (hasUncategorized) list.push(NO_CATEGORY_LABEL)
+    return list
+  }, [services])
+
   const visibleServices = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const filtered = q
+    let filtered = q
       ? services.filter(s =>
           s.name.toLowerCase().includes(q) ||
-          (s.description ?? "").toLowerCase().includes(q))
+          (s.description ?? "").toLowerCase().includes(q) ||
+          (s.category ?? "").toLowerCase().includes(q))
       : services
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(s => {
+        const c = (s.category ?? "").trim()
+        return categoryFilter === NO_CATEGORY_LABEL ? !c : c === categoryFilter
+      })
+    }
     const sorted = [...filtered]
     switch (sortKey) {
       case "name":      sorted.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")); break
@@ -166,7 +203,23 @@ export default function ServicosPage() {
       default:          sorted.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     }
     return sorted
-  }, [services, search, sortKey])
+  }, [services, search, sortKey, categoryFilter])
+
+  // Agrupa os serviços visíveis por categoria (mantém a ordenação interna já
+  // aplicada). "Sem categoria" sempre por último. Headers de seção no render.
+  const groupedServices = useMemo(() => {
+    const groups = new Map<string, Service[]>()
+    for (const s of visibleServices) {
+      const key = (s.category ?? "").trim() || NO_CATEGORY_LABEL
+      const arr = groups.get(key)
+      if (arr) arr.push(s); else groups.set(key, [s])
+    }
+    return [...groups.entries()].sort(([a], [b]) => {
+      if (a === NO_CATEGORY_LABEL) return 1
+      if (b === NO_CATEGORY_LABEL) return -1
+      return a.localeCompare(b, "pt-BR")
+    })
+  }, [visibleServices])
 
   // ── V2-B1: pré-seed de ~30 serviços de estética (conta deixa de nascer vazia) ──
   const [seeding, setSeeding] = useState(false)
@@ -185,7 +238,7 @@ export default function ServicosPage() {
   // ── Modal helpers ───────────────────────────────────────────────────────────
   const openCreate = () => {
     setSelected(null)
-    setFormName(""); setFormDesc("")
+    setFormName(""); setFormDesc(""); setFormCategory("")
     setFormPrice(""); setFormDuration("")
     setFormActive(true); setFormImageUrl("")
     setFormCommissionPct("")
@@ -199,6 +252,7 @@ export default function ServicosPage() {
     setSelected(s)
     setFormName(s.name)
     setFormDesc(s.description || "")
+    setFormCategory(s.category || "")
     setFormPrice(String(s.price / 100))
     setFormDuration(String(s.durationMinutes))
     setFormActive(s.isActive)
@@ -251,6 +305,7 @@ export default function ServicosPage() {
       const body = {
         name:            formName.trim(),
         description:     formDesc.trim() || undefined,
+        category:        formCategory.trim() || null,
         price:           Math.round(Number(formPrice) * 100),
         durationMinutes: Number(formDuration),
         isActive:        formActive,
@@ -419,6 +474,29 @@ export default function ServicosPage() {
               ))}
             </select>
 
+            {/* Filtro por categoria (só se houver alguma categoria no catálogo) */}
+            {availableCategories.length > 0 && (
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                style={{
+                  height: 40, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+                  borderRadius: 12, padding: "0 12px", fontSize: 13, color: "var(--c-text-2)",
+                  outline: "none", fontFamily: "inherit", cursor: "pointer",
+                  width: isMobile ? "100%" : undefined,
+                }}
+              >
+                <option value="all" style={{ backgroundColor: "var(--c-surface)", color: "var(--c-text)" }}>
+                  Todas as categorias
+                </option>
+                {availableCategories.map(c => (
+                  <option key={c} value={c} style={{ backgroundColor: "var(--c-surface)", color: "var(--c-text)" }}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+
             {/* Stats */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <StatBadge value={services.length} label="Total" color="var(--c-text-2)" bg="var(--c-surface)" border="var(--c-border)" />
@@ -510,21 +588,48 @@ export default function ServicosPage() {
           </div>
         )}
 
-        {/* ── Grid de serviços ── */}
+        {/* ── Grid de serviços (agrupado por categoria, com headers de seção) ── */}
         {!loading && visibleServices.length > 0 && (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 16,
-          }}>
-            {visibleServices.map(s => (
-              <ServiceCard
-                key={s.id}
-                service={s}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-                deleting={deleting === s.id}
-              />
+          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+            {groupedServices.map(([categoryName, items]) => (
+              <section key={categoryName}>
+                {/* Header de seção da categoria */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
+                }}>
+                  <Tag size={13} color="var(--c-text-4)" />
+                  <h2 style={{
+                    fontSize: 13, fontWeight: 700, color: "var(--c-text-2)",
+                    margin: 0, letterSpacing: "-0.2px",
+                  }}>
+                    {categoryName}
+                  </h2>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, color: "var(--c-text-3)",
+                    backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+                    borderRadius: 100, padding: "1px 8px",
+                  }}>
+                    {items.length}
+                  </span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-border)" }} />
+                </div>
+
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: 16,
+                }}>
+                  {items.map(s => (
+                    <ServiceCard
+                      key={s.id}
+                      service={s}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                      deleting={deleting === s.id}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
@@ -581,6 +686,32 @@ export default function ServicosPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Field label="Nome" required value={formName} onChange={setFormName} placeholder="Ex: Polimento Espelhado" />
               <Field label="Descrição" value={formDesc} onChange={setFormDesc} placeholder="Descreva o serviço..." />
+
+              {/* Categoria — sugestões via datalist + digitação livre */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)" }}>
+                  Categoria
+                </label>
+                <input
+                  list="service-category-suggestions"
+                  value={formCategory}
+                  onChange={e => setFormCategory(e.target.value)}
+                  placeholder="Ex: Polimento (ou escolha uma sugestão)"
+                  maxLength={40}
+                  style={{
+                    height: 42, backgroundColor: "var(--c-bg)",
+                    border: "1px solid var(--c-border-2)",
+                    borderRadius: 10, padding: "0 14px", fontSize: 14,
+                    color: "var(--c-text)", outline: "none", width: "100%",
+                    boxSizing: "border-box", fontFamily: "inherit", transition: "border-color 0.15s ease",
+                  }}
+                  onFocus={e => { e.target.style.borderColor = "rgba(0,102,255,0.4)" }}
+                  onBlur={e  => { e.target.style.borderColor = "var(--c-border-2)" }}
+                />
+                <datalist id="service-category-suggestions">
+                  {CATEGORY_SUGGESTIONS.map(c => <option key={c} value={c} />)}
+                </datalist>
+              </div>
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 <Field
@@ -907,9 +1038,14 @@ function ServiceCard({
           </span>
         </div>
 
-        {/* Badges: porte variável · garantia · repasse (só dado que o back retorna) */}
-        {(range.varies || (service.warrantyDays ?? 0) > 0 || (service.commissionPercent ?? 0) > 0) && (
+        {/* Badges: categoria · porte variável · garantia · repasse (só dado que o back retorna) */}
+        {((service.category ?? "").trim() || range.varies || (service.warrantyDays ?? 0) > 0 || (service.commissionPercent ?? 0) > 0) && (
           <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+            {(service.category ?? "").trim() && (
+              <CardChip color="var(--c-text-2)" bg="var(--c-surface-2)" border="var(--c-border)" icon={<Tag size={11} />}>
+                {(service.category ?? "").trim()}
+              </CardChip>
+            )}
             {range.varies && (
               <CardChip color="#0066FF" bg="rgba(0,102,255,0.08)" border="rgba(0,102,255,0.2)">
                 Preço por porte

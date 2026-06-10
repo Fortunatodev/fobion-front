@@ -124,7 +124,7 @@ export default function EstoquePage() {
   }
 
   // estilos base
-  const inp: React.CSSProperties = { height: 40, padding: "0 12px", background: "var(--c-input-bg)", border: "1px solid var(--c-border-2)", borderRadius: 10, color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
+  const inp: React.CSSProperties = { width: "100%", height: 44, padding: "0 14px", background: "var(--c-input-bg)", border: "1px solid var(--c-border-2)", borderRadius: 10, color: "var(--c-text)", fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }
   const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
   const iconBtn = (color: string, border: string): React.CSSProperties => ({ width: 32, height: 32, borderRadius: 8, background: "var(--c-surface)", border: `1px solid ${border}`, color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 })
 
@@ -231,26 +231,38 @@ export default function EstoquePage() {
         </div>
       )}
 
+      {/* CSS dos modais: remove spinner feio do number + grid de pares que colapsa no mobile */}
+      <style>{`
+        .est-num::-webkit-outer-spin-button,
+        .est-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .est-num[type=number] { -moz-appearance: textfield; }
+        .est-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        @media (max-width: 380px) { .est-pair { grid-template-columns: 1fr; } }
+        .est-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+        .est-foot > * { min-width: 0; }
+        @media (max-width: 380px) { .est-foot > * { flex: 1 1 auto; } }
+      `}</style>
+
       {/* Modal cadastro/edição */}
       {modal && (
-        <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22 }}>
+        <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, maxHeight: "calc(100vh - 32px)", overflowY: "auto", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, boxSizing: "border-box" }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>{editingId ? "Editar produto" : "Novo produto"}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Nome (ex: Cera Carnaúba)" style={inp} />
               <input value={f.sku} onChange={(e) => setF({ ...f, sku: e.target.value })} placeholder="SKU / código (opcional)" style={inp} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <input type="number" value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} placeholder="Custo R$" style={{ ...inp, flex: 1 }} />
-                <input type="number" value={f.sale} onChange={(e) => setF({ ...f, sale: e.target.value })} placeholder="Venda R$" style={{ ...inp, flex: 1 }} />
+              <div className="est-pair">
+                <input className="est-num" type="number" value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} placeholder="Custo R$" style={inp} />
+                <input className="est-num" type="number" value={f.sale} onChange={(e) => setF({ ...f, sale: e.target.value })} placeholder="Venda R$" style={inp} />
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {!editingId && <input type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} placeholder="Qtd inicial" style={{ ...inp, flex: 1 }} />}
-                <input type="number" value={f.min} onChange={(e) => setF({ ...f, min: e.target.value })} placeholder="Estoque mínimo" style={{ ...inp, flex: 1 }} />
+              <div className="est-pair">
+                {!editingId && <input className="est-num" type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} placeholder="Qtd inicial" style={inp} />}
+                <input className="est-num" type="number" value={f.min} onChange={(e) => setF({ ...f, min: e.target.value })} placeholder="Estoque mínimo" style={inp} />
               </div>
               {editingId && <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: 0 }}>A quantidade em estoque é alterada pelos botões de entrada/saída na lista.</p>}
             </div>
             {fErr && <p style={{ color: "#F87171", fontSize: 12, margin: "10px 0 0" }}>{fErr}</p>}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <div className="est-foot">
               <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
               <button onClick={save} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-surface-2)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : editingId ? "Salvar" : "Criar"}</button>
             </div>
@@ -260,8 +272,8 @@ export default function EstoquePage() {
 
       {/* Modal ajuste de estoque (entrada/saída por quantidade) */}
       {adjFor && (
-        <div onClick={() => setAdjFor(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 380, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22 }}>
+        <div onClick={() => setAdjFor(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 380, maxHeight: "calc(100vh - 32px)", overflowY: "auto", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Ajustar estoque</h2>
               <button onClick={() => setAdjFor(null)} style={{ background: "none", border: "none", color: "var(--c-text-3)", cursor: "pointer", padding: 2 }}><X size={18} /></button>
@@ -271,8 +283,8 @@ export default function EstoquePage() {
               <button onClick={() => setAdjDir("in")} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${adjDir === "in" ? "#10B981" : "var(--c-border-2)"}`, background: adjDir === "in" ? "rgba(16,185,129,0.1)" : "transparent", color: adjDir === "in" ? "#10B981" : "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Entrada (+)</button>
               <button onClick={() => setAdjDir("out")} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${adjDir === "out" ? "#EF4444" : "var(--c-border-2)"}`, background: adjDir === "out" ? "rgba(239,68,68,0.1)" : "transparent", color: adjDir === "out" ? "#EF4444" : "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Saída (−)</button>
             </div>
-            <input autoFocus type="number" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doAdjust() }} placeholder="Quantidade" style={{ ...inp, width: "100%" }} />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <input className="est-num" autoFocus type="number" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doAdjust() }} placeholder="Quantidade" style={inp} />
+            <div className="est-foot">
               <button onClick={() => setAdjFor(null)} style={ghostBtn}>Cancelar</button>
               <button onClick={doAdjust} disabled={busy === adjFor.id || !adjQty} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: !adjQty ? "var(--c-surface-2)" : "#0066FF", color: !adjQty ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: !adjQty ? "not-allowed" : "pointer", fontFamily: "inherit" }}>Confirmar</button>
             </div>

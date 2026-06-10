@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search, Wrench } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -10,6 +10,12 @@ import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
+interface Specialty {
+  id:       string
+  name:     string
+  category: string | null
+}
 
 interface Employee {
   id:                string
@@ -19,6 +25,12 @@ interface Employee {
   active:            boolean
   calendarConnected: boolean
   createdAt:         string
+  specialties:       Specialty[]
+}
+
+interface ServiceOption {
+  id:   string
+  name: string
 }
 
 function getInitials(name: string): string {
@@ -109,8 +121,16 @@ function EmployeesContent() {
   const [formEmail,     setFormEmail]     = useState("")
   const [deactivateTarget, setDeactivateTarget] = useState<Employee | null>(null)
   const [search,        setSearch]        = useState("")
+  const [services,      setServices]      = useState<ServiceOption[]>([])
+  const [formServiceIds, setFormServiceIds] = useState<string[]>([])
+  const [serviceSearch, setServiceSearch] = useState("")
 
   const withCalendar = useMemo(() => employees.filter(e => e.calendarConnected).length, [employees])
+  const filteredServices = useMemo(() => {
+    const q = serviceSearch.trim().toLowerCase()
+    if (!q) return services
+    return services.filter(s => s.name.toLowerCase().includes(q))
+  }, [services, serviceSearch])
   const visibleEmployees = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return employees
@@ -131,7 +151,16 @@ function EmployeesContent() {
     }
   }, [])
 
-  useEffect(() => { fetchEmployees() }, [fetchEmployees])
+  const fetchServices = useCallback(async () => {
+    try {
+      const res = await apiGet<{ services: ServiceOption[] }>("/services")
+      setServices((res.services ?? []).map(s => ({ id: s.id, name: s.name })))
+    } catch {
+      // silencioso: a tela de equipe continua usável mesmo sem o catálogo
+    }
+  }, [])
+
+  useEffect(() => { fetchEmployees(); fetchServices() }, [fetchEmployees, fetchServices])
 
   // ── Handle ?calendar=success|error from OAuth callback redirect ───────────
   useEffect(() => {
@@ -149,15 +178,24 @@ function EmployeesContent() {
 
   function openCreate() {
     setFormName(""); setFormEmail(""); setFormError(null)
+    setFormServiceIds([]); setServiceSearch("")
     setSelected(null); setShowModal("create")
   }
 
   function openEdit(emp: Employee) {
     setFormName(emp.name); setFormEmail(emp.email); setFormError(null)
+    setFormServiceIds(emp.specialties.map(s => s.id)); setServiceSearch("")
     setSelected(emp); setShowModal("edit")
   }
 
-  function closeModal() { setShowModal(null); setSelected(null); setFormError(null) }
+  function closeModal() {
+    setShowModal(null); setSelected(null); setFormError(null)
+    setServiceSearch("")
+  }
+
+  function toggleService(id: string) {
+    setFormServiceIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
 
   async function handleSave() {
     if (!formName.trim()) {
@@ -175,9 +213,9 @@ function EmployeesContent() {
     setFormError(null)
     try {
       if (isCreate) {
-        await apiPost("/employees", { name: formName.trim(), email: formEmail.trim() })
+        await apiPost("/employees", { name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds })
       } else if (selected) {
-        await apiPut(`/employees/${selected.id}`, { name: formName.trim(), email: formEmail.trim() })
+        await apiPut(`/employees/${selected.id}`, { name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds })
       }
       closeModal()
       await fetchEmployees()
@@ -427,6 +465,35 @@ function EmployeesContent() {
                     </div>
                   </div>
 
+                  {/* ── Especialidades (serviços que o funcionário executa) ── */}
+                  <div style={{ marginBottom: 14 }}>
+                    {emp.specialties.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {emp.specialties.map(s => (
+                          <span
+                            key={s.id}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 5,
+                              fontSize: 11, fontWeight: 600, borderRadius: 99,
+                              padding: "3px 9px",
+                              color: "var(--c-text-2)",
+                              backgroundColor: "var(--c-surface-2)",
+                              border: "1px solid var(--c-border-2)",
+                            }}
+                          >
+                            <Wrench size={10} style={{ flexShrink: 0, color: "var(--c-text-4)" }} />
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                        <Wrench size={11} style={{ flexShrink: 0 }} />
+                        Sem especialidades definidas
+                      </p>
+                    )}
+                  </div>
+
                   {/* ── Action buttons (grid 2x2 estável, não quebra feio em card estreito) ── */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                     <button
@@ -520,6 +587,73 @@ function EmployeesContent() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Nome"   value={formName}  onChange={setFormName}  placeholder="Ex: João Silva"     required />
               <Field label="E-mail" value={formEmail} onChange={setFormEmail} placeholder="joao@exemplo.com" required type="email" />
+
+              {/* ── Especialidades (serviços que o funcionário executa) ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: 6 }}>
+                  Especialidades
+                  {formServiceIds.length > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#0066FF", backgroundColor: "rgba(0,102,255,0.1)", borderRadius: 99, padding: "1px 7px" }}>
+                      {formServiceIds.length}
+                    </span>
+                  )}
+                </label>
+
+                {services.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0", lineHeight: 1.5 }}>
+                    Nenhum serviço cadastrado. Crie serviços no catálogo para definir especialidades.
+                  </p>
+                ) : (
+                  <>
+                    {services.length > 6 && (
+                      <input
+                        value={serviceSearch}
+                        onChange={e => setServiceSearch(e.target.value)}
+                        placeholder="Filtrar serviços..."
+                        style={{
+                          height: 36, padding: "0 12px", borderRadius: 9,
+                          border: "1px solid var(--c-border-2)", backgroundColor: "var(--c-surface-2)",
+                          color: "var(--c-text)", fontSize: 13, outline: "none",
+                          fontFamily: "inherit", boxSizing: "border-box", width: "100%", marginBottom: 2,
+                        }}
+                      />
+                    )}
+                    <div style={{
+                      display: "flex", flexWrap: "wrap", gap: 8,
+                      maxHeight: 168, overflowY: "auto",
+                      padding: 10, borderRadius: 10,
+                      border: "1px solid var(--c-border-2)", backgroundColor: "var(--c-surface-2)",
+                    }}>
+                      {filteredServices.length === 0 ? (
+                        <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Nenhum serviço encontrado.</span>
+                      ) : filteredServices.map(svc => {
+                        const on = formServiceIds.includes(svc.id)
+                        return (
+                          <button
+                            key={svc.id}
+                            type="button"
+                            onClick={() => toggleService(svc.id)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              height: 30, padding: "0 11px", borderRadius: 99,
+                              fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                              border: on ? "1px solid rgba(0,102,255,0.4)" : "1px solid var(--c-border-2)",
+                              backgroundColor: on ? "rgba(0,102,255,0.12)" : "transparent",
+                              color: on ? "#3B82F6" : "var(--c-text-2)",
+                              transition: "background-color 0.12s, border-color 0.12s",
+                            }}
+                          >
+                            {on
+                              ? <Check size={12} style={{ flexShrink: 0 }} />
+                              : <Plus size={12} style={{ flexShrink: 0 }} />}
+                            {svc.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {formError && (

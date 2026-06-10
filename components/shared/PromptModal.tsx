@@ -54,7 +54,6 @@ export default function PromptModal({
     // reset ao abrir (padrão do codebase p/ modais controlados)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(defaultValue)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null)
     const t = setTimeout(() => inputRef.current?.focus(), 50)
     return () => clearTimeout(t)
@@ -88,6 +87,12 @@ export default function PromptModal({
         </>
       }
     >
+      {/* remove o spinner feio do input number (Chrome/Safari/Firefox), tema-safe */}
+      <style>{`
+        .fb-prompt-input::-webkit-outer-spin-button,
+        .fb-prompt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .fb-prompt-input[type=number] { -moz-appearance: textfield; }
+      `}</style>
       <Input
         ref={inputRef}
         label={label}
@@ -102,6 +107,9 @@ export default function PromptModal({
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSubmit()
         }}
+        // altura/padding confortáveis + cor de texto tema-safe + foco com ring azul.
+        // box-border garante que padding não estoure a largura no mobile.
+        className="fb-prompt-input box-border !h-12 w-full !px-[14px] !text-[15px] !text-[var(--c-text)] !bg-[var(--c-input-bg)]"
       />
     </Modal>
   )
