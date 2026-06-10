@@ -1488,7 +1488,9 @@ function ConfiguracoesContent() {
             {/* 3 tiers reais (lê /billing/tiers → checkout Cakto) */}
             <div style={{ marginBottom: 28 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: "0 0 14px" }}>Escolha seu plano</h3>
-              <PricingCards currentTier={config?.tier} />
+              {/* Tier efetivo p/ destacar o card "Seu plano atual": assinante pago tem tier setado;
+                  legado/PRO sem tier cai pra "pro" (top tier vendável); trial/free (plan≠PRO) não destaca nada. */}
+              <PricingCards currentTier={config?.tier ?? (config?.plan === "PRO" ? "pro" : null)} />
             </div>
 
           </SectionCard>
