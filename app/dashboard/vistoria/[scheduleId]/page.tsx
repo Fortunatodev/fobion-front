@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings } from "lucide-react"
+import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings, ExternalLink, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 
 /**
@@ -19,6 +19,16 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 type Severity = "small" | "medium" | "large" // enum do backend (rótulos PT abaixo)
 interface DamageMark { x: number; y: number; severity: Severity; note?: string }
 interface Inspection { photoUrls: string[]; damageMarks: DamageMark[]; notes: string | null; signature: string | null; isLocked: boolean }
+/** V7: o getInspection passou a devolver o token público do relatório + dados do cliente (pra montar o link do WhatsApp). */
+interface InspectionResponse { inspection: Inspection | null; reportToken?: string | null; customer?: { name: string | null; phone: string | null } | null }
+
+/** Monta o link wa.me a partir do telefone do cliente. Retorna null se inválido (mesmo padrão de clientes/[id]). */
+function buildWhatsAppHref(phone: string | null, message: string): string | null {
+  const digits = (phone || "").replace(/\D/g, "")
+  if (digits.length < 10) return null
+  const withCountry = digits.startsWith("55") ? digits : `55${digits}`
+  return `https://wa.me/${withCountry}?text=${encodeURIComponent(message)}`
+}
 
 const SEV: Record<Severity, { label: string; color: string }> = {
   small:  { label: "Leve",  color: "#F59E0B" },
@@ -43,6 +53,8 @@ export default function VistoriaPage() {
   const [notes, setNotes] = useState("")
   const [signature, setSignature] = useState<string | null>(null)
   const [locked, setLocked] = useState(false)
+  const [reportToken, setReportToken] = useState<string | null>(null)
+  const [customer, setCustomer] = useState<{ name: string | null; phone: string | null } | null>(null)
 
   const [sev, setSev] = useState<Severity>("small")
   const [selMark, setSelMark] = useState<number | null>(null)
@@ -74,7 +86,7 @@ export default function VistoriaPage() {
         if (!me.business?.inspectionEnabled) {
           setGate("disabled"); setLoading(false); return
         }
-        const r = await apiGet<{ inspection: Inspection | null }>(`/schedules/${scheduleId}/inspection`)
+        const r = await apiGet<InspectionResponse>(`/schedules/${scheduleId}/inspection`)
         if (cancelled) return
         const ins = r.inspection
         if (ins) {
@@ -84,6 +96,8 @@ export default function VistoriaPage() {
           setSignature(ins.signature ?? null)
           setLocked(!!ins.isLocked)
         }
+        setReportToken(r.reportToken ?? null)
+        setCustomer(r.customer ?? null)
         setGate(null)
       } catch (e) {
         if (cancelled) return
@@ -159,7 +173,10 @@ export default function VistoriaPage() {
   async function save() {
     setSaving(true); setErr(""); setSaved(false)
     try {
-      await apiPost(`/schedules/${scheduleId}/inspection`, { photoUrls, damageMarks: marks, notes: notes.trim() || null, signature })
+      const res = await apiPost<InspectionResponse>(`/schedules/${scheduleId}/inspection`, { photoUrls, damageMarks: marks, notes: notes.trim() || null, signature })
+      // O back gera o token público no primeiro save — capturamos pra liberar "Ver relatório"/WhatsApp.
+      if (res?.reportToken) setReportToken(res.reportToken)
+      if (res?.customer) setCustomer(res.customer)
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } catch (e) { setErr(e instanceof Error ? e.message : "Erro ao salvar vistoria.") } finally { setSaving(false) }
   }
@@ -331,7 +348,55 @@ export default function VistoriaPage() {
             </button>
           </div>
         )}
+
+        {/* V7: compartilhar o relatório público (só depois que existe token = vistoria salva) */}
+        {reportToken && <ShareReport token={reportToken} customer={customer} />}
       </div>
+    </div>
+  )
+}
+
+// ── V7: ações de compartilhamento do relatório público ──────────────────────────
+function ShareReport({ token, customer }: { token: string; customer: { name: string | null; phone: string | null } | null }) {
+  // URL absoluta do relatório (window só existe no client; o componente já roda em "use client").
+  const reportUrl = typeof window !== "undefined" ? `${window.location.origin}/v/${token}` : `/v/${token}`
+  const firstName = customer?.name?.split(" ")[0] ?? ""
+  const message = `Oi${firstName ? ` ${firstName}` : ""}, segue a vistoria do seu veículo: ${reportUrl}`
+  const waHref = buildWhatsAppHref(customer?.phone ?? null, message)
+
+  return (
+    <div style={{ background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 18 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 12px" }}>Compartilhar com o cliente</p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <a
+          href={reportUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text)", fontSize: 14, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}
+        >
+          <ExternalLink size={16} /> Ver relatório
+        </a>
+        {waHref ? (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", borderRadius: 11, background: "#25D366", border: "none", color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none", fontFamily: "inherit" }}
+          >
+            <MessageCircle size={16} /> Enviar no WhatsApp
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="Cadastre o telefone do cliente para enviar pelo WhatsApp"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", borderRadius: 11, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text-4)", fontSize: 14, fontWeight: 700, cursor: "not-allowed", fontFamily: "inherit" }}
+          >
+            <MessageCircle size={16} /> Enviar no WhatsApp
+          </button>
+        )}
+      </div>
+      {!waHref && <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "10px 0 0" }}>O cliente não tem telefone cadastrado — adicione um número para enviar pelo WhatsApp.</p>}
     </div>
   )
 }
