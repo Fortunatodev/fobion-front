@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Rocket, ArrowRight, X } from "lucide-react"
 import { apiGet } from "@/lib/api"
@@ -64,7 +65,7 @@ export default function WelcomeModal({
     router.push(ONBOARDING_STEPS[0]?.href ?? "/dashboard/servicos")
   }
 
-  return (
+  return createPortal(
     <div
       onClick={close}
       style={{
@@ -143,6 +144,7 @@ export default function WelcomeModal({
           Fechar e ver pelo checklist depois
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
