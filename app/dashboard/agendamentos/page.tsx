@@ -7,13 +7,12 @@ import {
   CheckCircle2, XCircle, Car,
   CreditCard, AlertCircle, X,
   Banknote, QrCode, ChevronDown,
-  User,
+  User, FileText,
 } from "lucide-react"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
 import { buildWhatsAppLink } from "@/lib/utils"
-import NfseButton from "@/components/dashboard/NfseButton"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,7 +79,8 @@ function formatDateHeader(dateStr: string) {
 
 function getStatusConfig(status: string) {
   const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
-    PENDING:     { label: "Pendente",     color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.25)"  },
+    REQUESTED:   { label: "Solicitado",   color: "#F59E0B", bg: "rgba(245,158,11,0.10)",  border: "rgba(245,158,11,0.30)"  },
+    PENDING:     { label: "Pendente",     color: "#FBBF24", bg: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.25)"  },
     CONFIRMED:   { label: "Confirmado",   color: "#3B82F6", bg: "rgba(59,130,246,0.08)",  border: "rgba(59,130,246,0.25)"  },
     IN_PROGRESS: { label: "Em andamento", color: "#8B5CF6", bg: "rgba(139,92,246,0.08)",  border: "rgba(139,92,246,0.25)"  },
     DONE:        { label: "Concluído",    color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.25)"  },
@@ -152,6 +152,43 @@ function ActionButton({ onClick, loading, color, bg, border: bc, children }: {
     >
       {loading ? <Spinner size={12} color={color} /> : children}
     </button>
+  )
+}
+
+// ── NfseEmBreveButton ───────────────────────────────────────────────────────
+// NF-e é recurso Premium ("em breve"). Mantemos o botão visível, porém
+// DESABILITADO com badge "Em breve" e tooltip explicando o plano. O motor de
+// emissão (NfseButton) fica fora até o Premium liberar.
+
+function NfseEmBreveButton() {
+  return (
+    <span
+      title="Emissão de NF-e chega no plano Premium"
+      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+    >
+      <button
+        type="button"
+        disabled
+        aria-disabled="true"
+        title="Emissão de NF-e chega no plano Premium"
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "5px 9px", borderRadius: 8, cursor: "not-allowed",
+          background: "var(--c-surface-2)", border: "1px solid var(--c-border)",
+          color: "var(--c-text-4)", fontSize: 12, fontWeight: 600,
+          fontFamily: "inherit", whiteSpace: "nowrap", opacity: 0.7,
+        }}
+      >
+        <FileText size={13} /> Emitir NF-e
+      </button>
+      <span style={{
+        fontSize: 10, fontWeight: 600, color: "#A5B4FC",
+        background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.25)",
+        borderRadius: 6, padding: "2px 7px", whiteSpace: "nowrap",
+      }}>
+        Em breve
+      </span>
+    </span>
   )
 }
 
@@ -1893,7 +1930,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={13} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
+                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={13} /> Concluído</span><NfseEmBreveButton /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
@@ -1929,7 +1966,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</span><NfseButton scheduleId={s.id} /></div>)}
+                          {s.status === "DONE" && (<div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#10B981" }}><CheckCircle2 size={12} /> Concluído</span><NfseEmBreveButton /></div>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>

@@ -28,7 +28,7 @@ function waLink(phone: string | null, name: string | null, service: string, dueD
   if (digits.length < 10) return null
   const withCountry = digits.startsWith("55") ? digits : `55${digits}`
   const venc = dueDays <= 0 ? "venceu" : `vence em ${dueDays} dias`
-  const msg = encodeURIComponent(`Olá${name ? `, ${name.split(" ")[0]}` : ""}! A garantia do(a) ${service} do seu carro ${venc}. Que tal agendar o retorno pra manter a proteção em dia? 🚗✨`)
+  const msg = encodeURIComponent(`Olá${name ? `, ${name.split(" ")[0]}` : ""}! A garantia do(a) ${service} do seu carro ${venc}. Que tal agendar o retorno pra manter a proteção em dia?`)
   return `https://wa.me/${withCountry}?text=${msg}`
 }
 

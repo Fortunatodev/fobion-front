@@ -45,7 +45,7 @@ function getStatusConfig(status: string) {
     ACTIVE:    { label: "Ativo",      color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.2)"  },
     CANCELLED: { label: "Cancelado",  color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.2)"   },
     EXPIRED:   { label: "Expirado",   color: "var(--c-text-2)", bg: "rgba(161,161,170,0.08)", border: "rgba(161,161,170,0.2)" },
-    EXPIRING:  { label: "⏳ Expirando", color: "#F97316", bg: "rgba(249,115,22,0.08)",  border: "rgba(249,115,22,0.2)"  },
+    EXPIRING:  { label: "Expirando",   color: "#F97316", bg: "rgba(249,115,22,0.08)",  border: "rgba(249,115,22,0.2)"  },
   }
   return map[status] ?? map["EXPIRED"]
 }
@@ -179,7 +179,7 @@ function AccessDenied() {
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>Acesso restrito</h2>
         <p style={{ fontSize: 13, color: "var(--c-text-3)", lineHeight: 1.6, margin: "0 0 24px" }}>
-          Esta área é exclusiva do dono da loja.
+          A gestão de assinantes é exclusiva do dono da loja.
         </p>
         <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
           Voltar ao início
@@ -354,7 +354,7 @@ function AssinantesContent() {
     { value: "",          label: "Todos"     },
     { value: "ACTIVE",    label: "Ativo"     },
     { value: "PENDING",   label: "Pendente"  },
-    { value: "EXPIRING",  label: "⏳ Expirando" },
+    { value: "EXPIRING",  label: "Expirando" },
     { value: "CANCELLED", label: "Cancelado" },
     { value: "EXPIRED",   label: "Expirado"  },
   ]
@@ -832,7 +832,7 @@ function AssinantesContent() {
                     {selectedPlanObj.name} · {formatCurrency(selectedPlanObj.price)}/mês
                   </p>
                   <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 6, margin: "6px 0 0" }}>
-                    A assinatura será criada com status PENDENTE
+                    A assinatura será criada como Pendente e poderá ser ativada em seguida.
                   </p>
                 </div>
               )}

@@ -32,7 +32,7 @@ function waLink(phone: string | null, name: string) {
   const digits = phone.replace(/\D/g, "")
   if (digits.length < 10) return null
   const withCountry = digits.startsWith("55") ? digits : `55${digits}`
-  const msg = encodeURIComponent(`Olá, ${name.split(" ")[0]}! Sentimos sua falta aqui. Que tal agendar um cuidado pro seu carro? Temos um horário pra você. 🚗✨`)
+  const msg = encodeURIComponent(`Olá, ${name.split(" ")[0]}! Sentimos sua falta aqui. Que tal agendar um cuidado pro seu carro? Temos um horário pra você.`)
   return `https://wa.me/${withCountry}?text=${msg}`
 }
 
@@ -126,7 +126,7 @@ export default function RetencaoPage() {
               <p style={{ fontSize: 28, fontWeight: 800, color: "var(--c-text)", margin: "2px 0 0" }}>{fmt(data.receitaEmRisco)}</p>
             </div>
             <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--c-text-3)", maxWidth: 220, textAlign: "right" }}>
-              é o ticket médio somado de quem parou de vir. Reative no WhatsApp 👇
+              é o ticket médio somado de quem parou de vir. Reative no WhatsApp abaixo.
             </span>
           </div>
 
@@ -150,7 +150,7 @@ export default function RetencaoPage() {
             Clientes a recuperar <span style={{ color: "var(--c-text-3)", fontWeight: 400, fontSize: 13 }}>({data.recuperaveis.length})</span>
           </h2>
           {data.recuperaveis.length === 0 ? (
-            <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Nenhum cliente inativo no momento. 🎉</p>
+            <p style={{ color: "var(--c-text-3)", fontSize: 14 }}>Nenhum cliente inativo no momento.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.recuperaveis.map((c) => {

@@ -628,10 +628,10 @@ function PainelDeSaude() {
             {/* V2-B3: atalhos pros painéis de Retenção (RFM) e Recalls/Garantias */}
             <div style={{ display: "flex", gap: 16, marginLeft: 30, marginTop: 8, flexWrap: "wrap" }}>
               <Link href="/dashboard/relatorios/retencao" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#0066FF", textDecoration: "none" }}>
-                👥 Retenção de clientes →
+                <Users size={14} /> Retenção de clientes <ArrowUpRight size={14} />
               </Link>
               <Link href="/dashboard/relatorios/recalls" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#10B981", textDecoration: "none" }}>
-                🛡️ Retornos & garantias →
+                <ShieldCheck size={14} /> Retornos & garantias <ArrowUpRight size={14} />
               </Link>
             </div>
           </div>
