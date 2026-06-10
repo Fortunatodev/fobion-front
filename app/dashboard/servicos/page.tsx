@@ -518,7 +518,7 @@ export default function ServicosPage() {
 
         {/* ── Empty ── */}
         {!loading && services.length === 0 && (
-          <div style={{ textAlign: "center", padding: "64px 0" }}>
+          <div style={{ textAlign: "center", padding: "64px 20px", maxWidth: 460, margin: "0 auto" }}>
             <div style={{
               width: 64, height: 64, backgroundColor: "var(--c-surface)",
               border: "1px solid var(--c-border)", borderRadius: 20,
@@ -527,23 +527,25 @@ export default function ServicosPage() {
             }}>
               <ImageIcon size={28} color="var(--c-border-2)" />
             </div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
-              Nenhum serviço cadastrado
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", marginTop: 16, letterSpacing: "-0.2px" }}>
+              Nenhum serviço ainda
             </p>
-            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
-              Crie o primeiro serviço para começar a receber agendamentos.
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 8, lineHeight: 1.55 }}>
+              Cadastre o primeiro (ex.: <span style={{ color: "var(--c-text-2)", fontWeight: 600 }}>&ldquo;Lavagem completa — R$50 carro / R$80 SUV&rdquo;</span>) pra montar seu catálogo e a sua loja pública.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
               <button
                 onClick={openCreate}
                 style={{
+                  display: "flex", gap: 8, alignItems: "center",
                   height: 40, padding: "0 20px", borderRadius: 12,
                   background: "linear-gradient(135deg,#0066FF,#7C3AED)",
                   color: "var(--c-on-primary)", fontSize: 13, fontWeight: 600,
                   border: "none", cursor: "pointer", fontFamily: "inherit",
                 }}
               >
-                + Criar primeiro serviço
+                <Plus size={15} />
+                Novo serviço
               </button>
               {/* V2-B1: catálogo pronto (referência CERA) — fricção zero de setup */}
               <button

@@ -26,16 +26,24 @@ interface Step {
   href: string
 }
 
+// Recorte mínimo do /auth/me só pro que o checklist precisa (slug + horários).
+interface BusinessSignal {
+  slug?: string | null
+  hours?: { isOpen?: boolean }[] | null
+}
+
 export default function OnboardingChecklist({
   totalCustomers,
-  hasScheduleToday,
 }: {
   totalCustomers: number
-  hasScheduleToday: boolean
 }) {
   const router = useRouter()
   const { planStatus } = useUser()
   const [servicesCount, setServicesCount] = useState<number | null>(null)
+  // O3 — "qualquer agendamento" (o aha real), não só os de hoje
+  const [hasFirstSchedule, setHasFirstSchedule] = useState<boolean | null>(null)
+  // O1 — loja pronta pra divulgar = slug definido + pelo menos 1 dia de funcionamento aberto
+  const [storeReady, setStoreReady] = useState<boolean | null>(null)
   const [dismissed, setDismissed] = useState(true) // começa escondido até resolver
 
   // B17 — countdown do trial (gatilho de urgência pra conversão; CERA mantém sempre visível)
@@ -51,23 +59,24 @@ export default function OnboardingChecklist({
   }, [planStatus?.isTrial, planStatus?.planExpiresAt])
 
   // B15 — celebra cada etapa recém-concluída (reforço positivo = mais ativação)
+  // O2 — 4 sinais DISTINTOS: serviço, cliente, 1º agendamento, loja pronta.
   useEffect(() => {
-    if (servicesCount === null) return
-    const done = [servicesCount > 0, totalCustomers > 0, hasScheduleToday, servicesCount > 0].filter(Boolean).length
+    if (servicesCount === null || hasFirstSchedule === null || storeReady === null) return
+    const done = [servicesCount > 0, totalCustomers > 0, hasFirstSchedule, storeReady].filter(Boolean).length
     const prev = Number(localStorage.getItem(CELEB_KEY) ?? "0")
     if (done > prev) {
       if (done < 4) toast.success(`🎉 Etapa concluída! ${Math.round((done / 4) * 100)}% da configuração pronta`)
       else toast.success("🚀 Loja configurada! Bora receber agendamentos.")
       localStorage.setItem(CELEB_KEY, String(done))
     }
-  }, [servicesCount, totalCustomers, hasScheduleToday])
+  }, [servicesCount, totalCustomers, hasFirstSchedule, storeReady])
 
   useEffect(() => {
     const isDismissed = typeof window !== "undefined" && localStorage.getItem(DISMISS_KEY) === "1"
     // leitura única de localStorage no mount (client-only) — não causa cascata
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDismissed(isDismissed)
-    // conta serviços (sinal do 1º passo) — tolerante ao formato da resposta
+    // conta serviços (sinal do passo de serviços) — tolerante ao formato da resposta
     apiGet<unknown>("/services")
       .then((res) => {
         const obj = res as { services?: unknown[]; data?: unknown[] }
@@ -75,16 +84,31 @@ export default function OnboardingChecklist({
         setServicesCount(Array.isArray(list) ? list.length : 0)
       })
       .catch(() => setServicesCount(0))
+
+    // O3 — qualquer agendamento já feito (sem filtro de data = todos do negócio)
+    apiGet<{ schedules?: unknown[] }>("/schedules")
+      .then((res) => setHasFirstSchedule((res?.schedules ?? []).length > 0))
+      .catch(() => setHasFirstSchedule(false))
+
+    // O1 — loja pronta pra divulgar = slug + pelo menos 1 dia de funcionamento aberto
+    apiGet<{ business?: BusinessSignal }>("/auth/me")
+      .then((res) => {
+        const biz = res?.business
+        const hasSlug = !!biz?.slug && biz.slug.trim().length > 0
+        const hasOpenDay = Array.isArray(biz?.hours) && biz.hours.some((h) => h?.isOpen)
+        setStoreReady(hasSlug && hasOpenDay)
+      })
+      .catch(() => setStoreReady(false))
   }, [])
 
-  // ainda carregando os serviços → não pisca nada
-  if (servicesCount === null || dismissed) return null
+  // ainda carregando os sinais → não pisca nada
+  if (servicesCount === null || hasFirstSchedule === null || storeReady === null || dismissed) return null
 
   const steps: Step[] = [
-    { key: "service",  label: "Cadastre seu 1º serviço",   hint: "Lavagem, polimento, vitrificação…", done: servicesCount > 0,   href: "/dashboard/servicos" },
-    { key: "customer", label: "Cadastre seu 1º cliente",    hint: "Comece sua base de clientes",        done: totalCustomers > 0,   href: "/dashboard/clientes" },
-    { key: "schedule", label: "Faça seu 1º agendamento",    hint: "Coloque um carro na agenda",         done: hasScheduleToday,     href: "/dashboard/agendamentos" },
-    { key: "store",    label: "Divulgue sua loja online",   hint: "Seu link de agendamento próprio",    done: servicesCount > 0,    href: "/dashboard/configuracoes" },
+    { key: "service",  label: "Cadastre seu 1º serviço",   hint: "Lavagem, polimento, vitrificação…",      done: servicesCount > 0,   href: "/dashboard/servicos" },
+    { key: "customer", label: "Cadastre seu 1º cliente",    hint: "Comece sua base de clientes",             done: totalCustomers > 0,  href: "/dashboard/clientes" },
+    { key: "schedule", label: "Faça seu 1º agendamento",    hint: "Coloque um carro na agenda",              done: hasFirstSchedule,    href: "/dashboard/agendamentos" },
+    { key: "store",    label: "Divulgue sua loja online",   hint: "Defina link e horário de funcionamento",  done: storeReady,          href: "/dashboard/configuracoes" },
   ]
 
   const doneCount = steps.filter((s) => s.done).length

@@ -8,6 +8,7 @@ import {
   CreditCard, AlertCircle, X,
   Banknote, QrCode,
   User, FileText, Bike, Truck, CarFront,
+  Link2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
@@ -1924,30 +1925,73 @@ export default function AgendamentosPage() {
 
         {/* ── EMPTY STATE ── */}
         {!loading && filteredSchedules.length === 0 && (
-          <div style={{
-            backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
-            borderRadius: 16, padding: "56px 20px", textAlign: "center",
-          }}>
-            <Calendar size={36} color="var(--c-border-2)" style={{ margin: "0 auto 12px" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
-              Nenhum agendamento
-            </p>
-            <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 4 }}>
-              {dateInfo.day} de {dateInfo.month} de {dateInfo.year}
-            </p>
-            <button
-              onClick={() => setShowNovoModal(true)}
-              style={{
-                marginTop: 18, padding: "10px 22px",
-                background: "linear-gradient(135deg, #0066FF, #7C3AED)",
-                border: "none", borderRadius: 10,
-                color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Criar agendamento
-            </button>
-          </div>
+          (searchQuery || filterStatus) ? (
+            /* Há filtro/busca ativos: o dia pode ter agendamentos, só não batem. */
+            <div style={{
+              backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+              borderRadius: 16, padding: "48px 20px", textAlign: "center",
+            }}>
+              <Search size={32} color="var(--c-border-2)" style={{ margin: "0 auto 12px" }} />
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>
+                Nenhum agendamento com esse filtro
+              </p>
+              <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 6 }}>
+                Em {dateInfo.day} de {dateInfo.month}, nada bate com a busca ou o status selecionado.
+              </p>
+              <button
+                onClick={() => { setSearchQuery(""); setFilterStatus(""); setVisibleCount(LIST_PAGE_SIZE) }}
+                style={{
+                  marginTop: 16, height: 36, padding: "0 16px", borderRadius: 10,
+                  background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                  border: "1px solid var(--c-border-2)", cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                Limpar filtros
+              </button>
+            </div>
+          ) : (
+            /* Sem filtro: realmente não há agendamento neste dia — estado que ensina. */
+            <div style={{
+              backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+              borderRadius: 16, padding: "56px 20px", textAlign: "center",
+            }}>
+              <div style={{
+                width: 64, height: 64, backgroundColor: "var(--c-elevated)",
+                border: "1px solid var(--c-border)", borderRadius: 20,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto",
+              }}>
+                <Calendar size={28} color="var(--c-border-2)" />
+              </div>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", margin: "16px 0 0", letterSpacing: "-0.2px" }}>
+                Nenhum agendamento em {dateInfo.day} de {dateInfo.month}
+              </p>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "8px auto 0", maxWidth: 440, lineHeight: 1.55 }}>
+                Cada agendamento junta <span style={{ color: "var(--c-text-2)", fontWeight: 600 }}>cliente</span>, <span style={{ color: "var(--c-text-2)", fontWeight: 600 }}>veículo</span> e <span style={{ color: "var(--c-text-2)", fontWeight: 600 }}>serviço</span> — o modal cria os três na hora se ainda não existirem. O cliente também agenda sozinho pelo link da sua loja.
+              </p>
+              <button
+                onClick={() => setShowNovoModal(true)}
+                style={{
+                  display: "inline-flex", gap: 8, alignItems: "center",
+                  marginTop: 20, height: 40, padding: "0 22px",
+                  background: "linear-gradient(135deg, #0066FF, #7C3AED)",
+                  border: "none", borderRadius: 10,
+                  color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                <Plus size={15} />
+                Novo agendamento
+              </button>
+              <p style={{
+                display: "flex", gap: 6, alignItems: "center", justifyContent: "center",
+                fontSize: 12, color: "var(--c-text-4)", margin: "14px 0 0",
+              }}>
+                <Link2 size={13} color="var(--c-text-4)" />
+                O link público da loja fica em Configurações
+              </p>
+            </div>
+          )
         )}
 
         {/* ── LISTA ── */}

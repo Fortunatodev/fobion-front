@@ -427,34 +427,58 @@ export default function ClientesPage() {
 
         {/* ── EMPTY STATE ─────────────────────────────────────────────────── */}
         {!loading && !error && filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "64px 0" }}>
-            <User size={40} color="var(--c-border)" style={{ margin: "0 auto" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
-              {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado ainda"}
-            </p>
-            {searchQuery ? (
-              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
-                Tente buscar por outro termo
+          searchQuery ? (
+            <div style={{ textAlign: "center", padding: "64px 0" }}>
+              <Search size={36} color="var(--c-border-2)" style={{ margin: "0 auto" }} />
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", marginTop: 16 }}>
+                Nenhum cliente encontrado
               </p>
-            ) : (
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 6 }}>
+                Nada combina com &ldquo;{searchQuery.trim()}&rdquo;. Tente outro nome, telefone ou placa.
+              </p>
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  marginTop: 16, height: 36, padding: "0 16px", borderRadius: 10,
+                  background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
+                  border: "1px solid var(--c-border)", cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                Limpar busca
+              </button>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "64px 20px", maxWidth: 460, margin: "0 auto" }}>
+              <div style={{
+                width: 64, height: 64, backgroundColor: "var(--c-surface)",
+                border: "1px solid var(--c-border)", borderRadius: 20,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto",
+              }}>
+                <User size={28} color="var(--c-border-2)" />
+              </div>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", marginTop: 16, letterSpacing: "-0.2px" }}>
+                Nenhum cliente ainda
+              </p>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 8, lineHeight: 1.55 }}>
+                Seus clientes aparecem aqui conforme você cadastra ou recebe agendamentos pela loja. Cadastre o primeiro pra começar o histórico de veículos e serviços.
+              </p>
               <button
                 onClick={() => setShowModal("create")}
                 style={{
-                  marginTop:    16,
-                  padding:      "10px 20px",
-                  background:   "linear-gradient(135deg, #0066FF, #7C3AED)",
-                  border:       "none",
-                  borderRadius: 12,
-                  color:        "white",
-                  fontSize:     13,
-                  fontWeight:   600,
-                  cursor:       "pointer",
+                  display: "inline-flex", gap: 8, alignItems: "center",
+                  marginTop: 20, height: 40, padding: "0 20px",
+                  background: "linear-gradient(135deg, #0066FF, #7C3AED)",
+                  border: "none", borderRadius: 12,
+                  color: "white", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit",
                 }}
               >
+                <Plus size={15} />
                 Cadastrar primeiro cliente
               </button>
-            )}
-          </div>
+            </div>
+          )
         )}
 
         {/* ── CUSTOMER LIST ────────────────────────────────────────────────── */}

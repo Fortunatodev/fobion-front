@@ -370,7 +370,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── V2-B1: checklist de ativação (some quando 100% ou dispensado) ── */}
-      <OnboardingChecklist totalCustomers={totalCustomers} hasScheduleToday={schedulesToday.length > 0} />
+      <OnboardingChecklist totalCustomers={totalCustomers} />
 
       {/* ── Metric cards (.metrics-grid) ──────────────────────────────── */}
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}
