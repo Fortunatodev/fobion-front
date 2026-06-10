@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
-import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck } from "lucide-react"
+import { useUser } from "@/contexts/UserContext"
+import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings } from "lucide-react"
 import { toast } from "sonner"
 
 /**
@@ -25,11 +27,17 @@ const SEV: Record<Severity, { label: string; color: string }> = {
 }
 const MAX_PHOTOS = 8
 
+/** Motivo de bloqueio da vistoria: feature do Pro ainda não disponível/desligada. */
+type Gate = "pro" | "disabled"
+
 export default function VistoriaPage() {
   const { scheduleId } = useParams<{ scheduleId: string }>()
   const router = useRouter()
+  const { planStatus, loading: userLoading } = useUser()
+  const isPro = planStatus?.plan === "PRO"
 
   const [loading, setLoading] = useState(true)
+  const [gate, setGate] = useState<Gate | null>(null)
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [marks, setMarks] = useState<DamageMark[]>([])
   const [notes, setNotes] = useState("")
@@ -48,8 +56,26 @@ export default function VistoriaPage() {
   const drawing = useRef(false)
 
   useEffect(() => {
-    apiGet<{ inspection: Inspection | null }>(`/schedules/${scheduleId}/inspection`)
-      .then((r) => {
+    // Espera o auth/plano carregar antes de decidir o gate (evita flash de "disponível no Pro").
+    if (userLoading) return
+
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      // Não-Pro: a feature inteira está fora do plano — nem chega a buscar.
+      if (!isPro) {
+        if (!cancelled) { setGate("pro"); setLoading(false) }
+        return
+      }
+      try {
+        // Pro: confirma se a loja habilitou a vistoria nas configurações.
+        const me = await apiGet<{ business: { inspectionEnabled?: boolean | null } | null }>("/auth/me")
+        if (cancelled) return
+        if (!me.business?.inspectionEnabled) {
+          setGate("disabled"); setLoading(false); return
+        }
+        const r = await apiGet<{ inspection: Inspection | null }>(`/schedules/${scheduleId}/inspection`)
+        if (cancelled) return
         const ins = r.inspection
         if (ins) {
           setPhotoUrls(ins.photoUrls ?? [])
@@ -58,10 +84,24 @@ export default function VistoriaPage() {
           setSignature(ins.signature ?? null)
           setLocked(!!ins.isLocked)
         }
-      })
-      .catch(() => toast.error("Não consegui carregar a vistoria. Recarregue a página."))
-      .finally(() => setLoading(false))
-  }, [scheduleId])
+        setGate(null)
+      } catch (e) {
+        if (cancelled) return
+        // O back devolve 403 quando o tier/feature não permite (FEATURE_NOT_AVAILABLE).
+        // O interceptor da api achata pra Error(mensagem); detectamos pelo texto.
+        const msg = e instanceof Error ? e.message.toLowerCase() : ""
+        if (msg.includes("plano pro") || msg.includes("plano premium") || msg.includes("recurso")) {
+          setGate(isPro ? "disabled" : "pro")
+        } else {
+          toast.error("Não consegui carregar a vistoria. Recarregue a página.")
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [scheduleId, userLoading, isPro])
 
   // ── Fotos ──────────────────────────────────────────────────────────────────
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -125,6 +165,51 @@ export default function VistoriaPage() {
   }
 
   if (loading) return <div style={{ padding: 40, color: "var(--c-text-3)", fontSize: 14 }}>Carregando vistoria…</div>
+
+  // ── Gate: feature do Pro (não-Pro) ou desligada nas configurações (Pro) ──────
+  if (gate) {
+    const pro = gate === "pro"
+    const accent = pro ? "#F59E0B" : "#0066FF"
+    const accentBg = pro ? "rgba(245,158,11,0.1)" : "rgba(0,102,255,0.1)"
+    const accentBorder = pro ? "rgba(245,158,11,0.2)" : "rgba(0,102,255,0.2)"
+    const GateIcon = pro ? Crown : Settings
+    return (
+      <div style={{ maxWidth: 920, margin: "0 auto", padding: "24px 20px 64px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <button onClick={() => router.back()} style={{ width: 36, height: 36, borderRadius: 9, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><ArrowLeft size={16} /></button>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <ShieldCheck size={22} color="var(--c-text-3)" />
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Vistoria de entrada</h1>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 480, margin: "32px auto 0", textAlign: "center", padding: "0 8px" }}>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: accentBg, border: `1px solid ${accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+            <GateIcon size={28} color={accent} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>
+            {pro ? "Vistoria disponível no plano Pro" : "Vistoria desabilitada nas configurações"}
+          </h2>
+          <p style={{ fontSize: 13.5, color: "var(--c-text-3)", lineHeight: 1.6, margin: "0 0 22px" }}>
+            {pro
+              ? "Registre o estado do carro na entrada/saída com fotos e assinatura — vira prova contra disputa. Faça upgrade para o Pro para liberar este recurso."
+              : "A vistoria de veículos faz parte do seu plano, mas ainda está desligada. Ative em Configurações › Negócio › Recursos para começar a usar."}
+          </p>
+          <Link
+            href={pro ? "/dashboard/configuracoes?tab=plano" : "/dashboard/configuracoes"}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+              height: 44, padding: "0 22px", borderRadius: 11,
+              background: pro ? "linear-gradient(135deg,#F59E0B,#F97316)" : "linear-gradient(135deg,#0066FF,#7C3AED)",
+              color: "var(--c-on-primary)", fontSize: 14, fontWeight: 700, textDecoration: "none", fontFamily: "inherit",
+            }}
+          >
+            {pro ? <><Crown size={15} /> Fazer upgrade para o Pro</> : <><Settings size={15} /> Ir para Configurações</>}
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const card: React.CSSProperties = { background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 18 }
   const label: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 12px" }

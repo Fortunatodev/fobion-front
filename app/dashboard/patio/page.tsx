@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, type CSSProperties } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
+import { useUser } from "@/contexts/UserContext"
 import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -38,6 +39,8 @@ interface Schedule {
 
 type Status = Schedule["status"]
 type ColumnKey = "wait" | "doing" | "done"
+/** Visibilidade da Vistoria no card: ligada (Pro + habilitada) | só selo Pro (não-Pro) | oculta */
+type VistoriaState = "on" | "pro" | "off"
 
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const hhmm = (iso: string) => { const d = new Date(iso); return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}` }
@@ -66,12 +69,13 @@ const columnKeyOf = (s: Schedule): ColumnKey | null => COLUMNS.find((c) => c.mat
 
 // ── Card (conteúdo visual, reutilizado no card real e no DragOverlay) ──────────
 function CardBody({
-  s, col, moving, onAdvance, dragging,
+  s, col, moving, onAdvance, vistoria, dragging,
 }: {
   s: Schedule
   col: Column
   moving: string | null
   onAdvance: (id: string, next: Status) => void
+  vistoria: VistoriaState
   dragging?: boolean
 }) {
   return (
@@ -108,25 +112,39 @@ function CardBody({
           {moving === s.id ? "..." : <>{col.cta} <ChevronRight size={13} /></>}
         </button>
       )}
-      <Link
-        href={`/dashboard/vistoria/${s.id}`}
-        onPointerDown={(e) => e.stopPropagation()}
-        style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
-      >
-        <ShieldCheck size={12} /> Vistoria
-      </Link>
+      {vistoria === "on" && (
+        <Link
+          href={`/dashboard/vistoria/${s.id}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
+        >
+          <ShieldCheck size={12} /> Vistoria
+        </Link>
+      )}
+      {vistoria === "pro" && (
+        <Link
+          href="/dashboard/configuracoes?tab=plano"
+          onPointerDown={(e) => e.stopPropagation()}
+          title="Vistoria disponível no plano Pro"
+          style={{ marginTop: 6, height: 28, borderRadius: 8, background: "transparent", border: "1px dashed var(--c-border-2)", color: "var(--c-text-4)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
+        >
+          <ShieldCheck size={12} /> Vistoria
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.12)", borderRadius: 5, padding: "1px 5px", letterSpacing: "0.5px" }}>PRO</span>
+        </Link>
+      )}
     </div>
   )
 }
 
 // ── Card arrastável ────────────────────────────────────────────────────────────
 function DraggableCard({
-  s, col, moving, onAdvance,
+  s, col, moving, onAdvance, vistoria,
 }: {
   s: Schedule
   col: Column
   moving: string | null
   onAdvance: (id: string, next: Status) => void
+  vistoria: VistoriaState
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: s.id,
@@ -141,20 +159,21 @@ function DraggableCard({
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CardBody s={s} col={col} moving={moving} onAdvance={onAdvance} />
+      <CardBody s={s} col={col} moving={moving} onAdvance={onAdvance} vistoria={vistoria} />
     </div>
   )
 }
 
 // ── Coluna droppable ─────────────────────────────────────────────────────────
 function DroppableColumn({
-  col, cards, moving, onAdvance, activeFrom,
+  col, cards, moving, onAdvance, activeFrom, vistoria,
 }: {
   col: Column
   cards: Schedule[]
   moving: string | null
   onAdvance: (id: string, next: Status) => void
   activeFrom: ColumnKey | null
+  vistoria: VistoriaState
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key, data: { col: col.key } })
   // realça a coluna como alvo válido só quando há um drag de OUTRA coluna em curso
@@ -189,7 +208,7 @@ function DroppableColumn({
           </p>
         )}
         {cards.map((s) => (
-          <DraggableCard key={s.id} s={s} col={col} moving={moving} onAdvance={onAdvance} />
+          <DraggableCard key={s.id} s={s} col={col} moving={moving} onAdvance={onAdvance} vistoria={vistoria} />
         ))}
       </AutoAnimate>
     </div>
@@ -197,11 +216,16 @@ function DroppableColumn({
 }
 
 export default function PatioPage() {
+  const { planStatus } = useUser()
+  const isPro = planStatus?.plan === "PRO"
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [moving, setMoving] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
+  // Vistoria é feature do Pro: o dono ainda precisa habilitar em Configurações.
+  // inspectionEnabled vem do business em /auth/me (mesma fonte da tela de config).
+  const [inspectionEnabled, setInspectionEnabled] = useState(false)
   // B20 — capacidade do pátio (vagas/boxes) por dia; config local sem migração
   const [capacity, setCapacity] = useState(10)
   const [capModalOpen, setCapModalOpen] = useState(false)
@@ -227,6 +251,12 @@ export default function PatioPage() {
     setCapModalOpen(false)
     toast.success(`Capacidade do pátio definida: ${n} vaga${n > 1 ? "s" : ""}/dia`)
   }
+
+  useEffect(() => {
+    apiGet<{ business: { inspectionEnabled?: boolean | null } | null }>("/auth/me")
+      .then((r) => setInspectionEnabled(!!r.business?.inspectionEnabled))
+      .catch(() => { /* sem business → mantém desabilitado */ })
+  }, [])
 
   const fetchData = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -283,6 +313,9 @@ export default function PatioPage() {
   const activeCard = activeId ? schedules.find((s) => s.id === activeId) ?? null : null
   const activeFrom = activeCard ? columnKeyOf(activeCard) : null
   const activeCol = activeFrom ? COL_OF[activeFrom] : null
+
+  // Vistoria no card: Pro + habilitada → botão; não-Pro → selo "Pro"; Pro sem habilitar → oculto.
+  const vistoria: VistoriaState = !isPro ? "pro" : inspectionEnabled ? "on" : "off"
 
   const gridStyle: CSSProperties = {
     display: "grid",
@@ -368,6 +401,7 @@ export default function PatioPage() {
                   moving={moving}
                   onAdvance={advance}
                   activeFrom={activeFrom}
+                  vistoria={vistoria}
                 />
               )
             })}
@@ -376,7 +410,7 @@ export default function PatioPage() {
           <DragOverlay dropAnimation={null}>
             {activeCard && activeCol ? (
               <div style={{ cursor: "grabbing", width: "100%" }}>
-                <CardBody s={activeCard} col={activeCol} moving={moving} onAdvance={advance} dragging />
+                <CardBody s={activeCard} col={activeCol} moving={moving} onAdvance={advance} vistoria={vistoria} dragging />
               </div>
             ) : null}
           </DragOverlay>

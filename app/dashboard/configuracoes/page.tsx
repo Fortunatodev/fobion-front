@@ -17,6 +17,7 @@ import {
   Camera, Loader2, Calendar,
   Users, ChevronRight,
   Lightbulb, Instagram, MessageCircle,
+  ShieldCheck,
 } from "lucide-react"
 
 const NEGOCIO_TUTORIAL_KEY = "forbion_negocio_tutorial_ok"
@@ -49,6 +50,7 @@ interface BusinessConfig {
   slotMinutes?: number | null
   requireApproval?: boolean | null
   whatsapp?: string | null
+  inspectionEnabled?: boolean | null
   hours: BusinessHour[]
 }
 
@@ -468,6 +470,7 @@ function ConfiguracoesContent() {
   const [colorSaved,      setColorSaved]      = useState(false)
   const [slotMinutes,     setSlotMinutes]     = useState<SlotMinutes>(30)
   const [requireApproval, setRequireApproval] = useState(false)
+  const [inspectionEnabled, setInspectionEnabled] = useState(false)
   const [formWhatsapp,    setFormWhatsapp]    = useState("")
   const [waSource,        setWaSource]        = useState<"phone" | "other">("other")
   const [hours,           setHours]           = useState<BusinessHour[]>([])
@@ -502,6 +505,7 @@ function ConfiguracoesContent() {
       const slot = biz.slotMinutes ?? 30
       setSlotMinutes((SLOT_OPTIONS.includes(slot as SlotMinutes) ? slot : 30) as SlotMinutes)
       setRequireApproval(biz.requireApproval ?? false)
+      setInspectionEnabled(biz.inspectionEnabled ?? false)
       // WhatsApp inteligente: se ainda não há whatsapp e existe phone cadastrado,
       // sugere o phone (modo "phone"). Se já há whatsapp, mantém o valor (modo "other").
       const bizWhatsapp = (biz.whatsapp ?? "").trim()
@@ -549,6 +553,14 @@ function ConfiguracoesContent() {
   }, [])
 
   useEffect(() => { fetchCalendarStatus() }, [fetchCalendarStatus])
+
+  // Deep-link de aba via ?tab= (ex.: CTA de upgrade da Vistoria abre direto no "Plano")
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    if (tab && TABS.some((t) => t.id === tab)) {
+      setActiveTab(tab as TabId)
+    }
+  }, [searchParams])
 
   // Handle ?calendar=success|error from OAuth callback redirect
   useEffect(() => {
@@ -616,6 +628,7 @@ function ConfiguracoesContent() {
         address:        formAddress.trim() || undefined,
         description:    formDescription.trim() || undefined,
         cnpj:           formCnpj.trim(),
+        inspectionEnabled,
       })
       showSuccess("Alterações salvas com sucesso!")
     } catch (e) {
@@ -723,6 +736,7 @@ function ConfiguracoesContent() {
   const displayUrl  = `${/localhost|127\.0\.0\.1/.test(displayHost) ? "app.forbion.digital" : displayHost}/${slug}`
   const openDays  = hours.filter((h) => h.isOpen).length
   const themeRgb  = hexToRgb(themeColor)
+  const isPro     = config?.plan === "PRO"
 
   // ── Guard de role: área exclusiva do dono (espelha ownerOnly do Sidebar) ──
   if (!userLoading && user?.role === "EMPLOYEE") {
@@ -1078,6 +1092,73 @@ function ConfiguracoesContent() {
                   }}>
                     {(formName || "M").charAt(0).toUpperCase()}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── SEÇÃO: VISTORIA DE VEÍCULOS (feature do Pro) ── */}
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid var(--c-border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+                  Recursos
+                </h3>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "0 0 16px" }}>
+                Funcionalidades extras da sua operação
+              </p>
+
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16,
+                padding: "14px 16px", borderRadius: 12,
+                backgroundColor: inspectionEnabled && isPro ? "rgba(0,102,255,0.06)" : "var(--c-bg)",
+                border: `1px solid ${inspectionEnabled && isPro ? "rgba(0,102,255,0.3)" : "var(--c-border-2)"}`,
+                opacity: isPro ? 1 : 0.85,
+                transition: "all 0.15s",
+              }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flex: 1 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                    backgroundColor: "rgba(0,102,255,0.1)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <ShieldCheck size={16} color="#0066FF" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>
+                        Habilitar Vistoria de veículos
+                      </span>
+                      {!isPro && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.12)", borderRadius: 6, padding: "2px 7px", letterSpacing: "0.5px" }}>
+                          DISPONÍVEL NO PRO
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                      Registre o estado do carro na entrada/saída com fotos e assinatura — vira prova contra disputa.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  onClick={() => { if (isPro) setInspectionEnabled((v) => !v) }}
+                  role="switch"
+                  aria-checked={inspectionEnabled && isPro}
+                  aria-disabled={!isPro}
+                  tabIndex={isPro ? 0 : -1}
+                  onKeyDown={(e) => { if (isPro && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setInspectionEnabled((v) => !v) } }}
+                  style={{
+                    width: 40, height: 22, borderRadius: 100, marginTop: 2,
+                    backgroundColor: inspectionEnabled && isPro ? "#0066FF" : "var(--c-border-2)",
+                    cursor: isPro ? "pointer" : "not-allowed",
+                    position: "relative", transition: "background 0.2s", flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 3,
+                    left: inspectionEnabled && isPro ? 21 : 3,
+                    width: 16, height: 16, borderRadius: "50%",
+                    backgroundColor: "var(--c-text)", transition: "left 0.2s",
+                  }} />
                 </div>
               </div>
             </div>
