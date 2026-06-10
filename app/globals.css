@@ -26,7 +26,8 @@
    Semânticos: fundo, superfície, borda e texto FLIPAM por tema.
    Marca (#0066FF/#7C3AED) e status (verde/vermelho/âmbar) ficam iguais nos dois.
    Troca de tema = só mudar data-theme no <html> (ThemeToggle). Default escuro. */
-:root {
+:root,
+[data-theme="dark"] {
   --c-bg: #0A0A0A;
   --c-surface: #111111;
   --c-elevated: #0D0D0D;

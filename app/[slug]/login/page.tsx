@@ -11,7 +11,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 export default function CustomerLoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <div data-theme="dark" style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter',-apple-system,sans-serif" }}>
         <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
         <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
       </div>

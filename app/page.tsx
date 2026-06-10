@@ -28,6 +28,7 @@ export default function RootPage() {
 
   return (
     <div
+      data-theme="dark"
       style={{
         position: "relative",
         minHeight: "100vh",

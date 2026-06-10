@@ -119,7 +119,7 @@ function LoginContent() {
   const errorText = error ? (errorMessages[error] ?? error) : null
 
   return (
-    <div style={{
+    <div data-theme="dark" style={{
       minHeight: "100vh",
       background: "var(--c-bg)",
       display: "flex",
