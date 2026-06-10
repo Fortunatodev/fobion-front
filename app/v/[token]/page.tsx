@@ -4,14 +4,15 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import {
   ShieldCheck, AlertTriangle, Car, Calendar, User, MapPin,
-  FileText, PenLine, Image as ImageIcon, X, BadgeCheck,
+  FileText, PenLine, Image as ImageIcon, X, BadgeCheck, LogIn, LogOut,
 } from "lucide-react"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
 /**
- * V6 — Página PÚBLICA do relatório de vistoria (read-only, sem auth/sidebar).
+ * V6/V3 — Página PÚBLICA do relatório de vistoria (read-only, sem auth/sidebar).
  * O cliente abre pelo link enviado no WhatsApp e vê fotos + avarias + assinatura.
- * Vira a prova: estado documentado do carro na entrada, com selo de aprovação.
+ * Vira a prova: estado documentado do carro na entrada (e na saída, quando houver),
+ * com selo de aprovação. Quando existem as duas etapas, mostramos ANTES/DEPOIS.
  * Back: GET /api/public/inspection/:token (público).
  */
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
@@ -19,6 +20,24 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 type Severity = "small" | "medium" | "large"
 
 interface DamageMark { x: number; y: number; severity: Severity; note?: string | null }
+
+/** Resumo (semáforo V5) calculado pelo back por etapa. */
+interface StageSummary {
+  severityCounts: { verde: number; amarelo: number; vermelho: number }
+  total: number
+  status: "aprovado" | "com_avarias"
+}
+
+/** Uma etapa da vistoria (entrada ou saída). */
+interface PubStage {
+  photoUrls: string[]
+  damageMarks: DamageMark[]
+  notes: string | null
+  signature: string | null
+  lockedAt: string | null
+  signedAt: string | null
+  summary: StageSummary
+}
 
 interface PublicReport {
   business: {
@@ -37,27 +56,21 @@ interface PublicReport {
   customer: { name: string | null }
   vehicle: {
     plate?: string | null
+    brand?: string | null
     model?: string | null
     color?: string | null
+    type?: string | null
   }
-  inspection: {
-    photoUrls: string[]
-    damageMarks: DamageMark[]
-    notes: string | null
-    signature: string | null
-    lockedAt: string | null
-  }
-  // back: severityCounts = { verde(leve), amarelo(médio), vermelho(grave) }
-  summary: {
-    severityCounts: { verde: number; amarelo: number; vermelho: number }
-    total: number
-    status: "aprovado" | "com_avarias"
+  stages: {
+    entrada: PubStage | null
+    saida: PubStage | null
   }
 }
 
+// V5 semáforo: verde = leve, amarelo = médio, vermelho = grave.
 const SEV: Record<Severity, { label: string; color: string }> = {
-  small:  { label: "Leve",  color: "#F59E0B" },
-  medium: { label: "Médio", color: "#F97316" },
+  small:  { label: "Leve",  color: "#10B981" },
+  medium: { label: "Médio", color: "#F59E0B" },
   large:  { label: "Grave", color: "#EF4444" },
 }
 
@@ -71,6 +84,17 @@ function formatDateTime(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   }).format(d)
+}
+
+/** Cor do selo a partir de um resumo: verde se aprovado, vermelho se há grave, senão âmbar. */
+function sealColorOf(summary: StageSummary): string {
+  if (summary.status === "aprovado") return "#10B981"
+  return summary.severityCounts.vermelho > 0 ? "#EF4444" : "#F59E0B"
+}
+
+/** Frase de contagem de avarias ("1 leve · 2 médias · 0 graves"). */
+function countsPhrase(s: StageSummary["severityCounts"]): string {
+  return `${s.verde} leve${s.verde === 1 ? "" : "s"} · ${s.amarelo} médi${s.amarelo === 1 ? "a" : "as"} · ${s.vermelho} grave${s.vermelho === 1 ? "" : "s"}`
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -135,18 +159,11 @@ export default function PublicReportPage() {
     )
   }
 
-  const { business, schedule, customer, vehicle, inspection, summary } = report
+  const { business, schedule, customer, vehicle, stages } = report
   const theme = "#0066FF"
   const logo = business.coverImage || business.ownerAvatarUrl || null
-  const sev = summary.severityCounts
-  const approved = summary.status === "aprovado"
-
-  // Selo: verde se aprovado/sem avarias; senão âmbar/vermelho conforme a pior gravidade.
-  const sealColor = approved
-    ? "#10B981"
-    : sev.vermelho > 0
-      ? "#EF4444"
-      : "#F59E0B"
+  const { entrada, saida } = stages
+  const hasBoth = !!entrada && !!saida
 
   const card: React.CSSProperties = {
     background: "var(--c-elevated)",
@@ -159,6 +176,17 @@ export default function PublicReportPage() {
     textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px",
     display: "flex", alignItems: "center", gap: 7,
   }
+
+  // Resumo do conjunto (topo): considera todas as avarias de todas as etapas presentes.
+  const present = [entrada, saida].filter((s): s is PubStage => !!s)
+  const overall = {
+    verde: present.reduce((a, s) => a + s.summary.severityCounts.verde, 0),
+    amarelo: present.reduce((a, s) => a + s.summary.severityCounts.amarelo, 0),
+    vermelho: present.reduce((a, s) => a + s.summary.severityCounts.vermelho, 0),
+  }
+  const overallTotal = overall.verde + overall.amarelo + overall.vermelho
+  const overallApproved = overallTotal === 0
+  const overallSeal = overallApproved ? "#10B981" : overall.vermelho > 0 ? "#EF4444" : "#F59E0B"
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--c-bg)", color: "var(--c-text)", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
@@ -190,30 +218,32 @@ export default function PublicReportPage() {
           </div>
         </header>
 
-        {/* ── SELO DE STATUS ── */}
-        <div style={{ background: `${sealColor}14`, border: `1px solid ${sealColor}40`, borderRadius: 16, padding: "16px 18px", marginBottom: 16, display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: `${sealColor}26`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {approved ? <ShieldCheck size={24} color={sealColor} /> : <AlertTriangle size={24} color={sealColor} />}
+        {/* ── SELO DE STATUS (conjunto) ── */}
+        <div style={{ background: `${overallSeal}14`, border: `1px solid ${overallSeal}40`, borderRadius: 16, padding: "16px 18px", marginBottom: 16, display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: `${overallSeal}26`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {overallApproved ? <ShieldCheck size={24} color={overallSeal} /> : <AlertTriangle size={24} color={overallSeal} />}
           </div>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 16, fontWeight: 800, color: sealColor, margin: 0, letterSpacing: "-0.3px" }}>
-              {approved ? "Aprovado — sem avarias" : "Veículo com avarias registradas"}
+            <p style={{ fontSize: 16, fontWeight: 800, color: overallSeal, margin: 0, letterSpacing: "-0.3px" }}>
+              {overallApproved ? "Aprovado — sem avarias" : "Veículo com avarias registradas"}
             </p>
             <p style={{ fontSize: 12.5, color: "var(--c-text-2)", margin: "3px 0 0" }}>
-              {approved
-                ? "Nenhum ponto de avaria foi marcado nesta vistoria de entrada."
-                : `${sev.verde} leve${sev.verde === 1 ? "" : "s"} · ${sev.amarelo} médi${sev.amarelo === 1 ? "a" : "as"} · ${sev.vermelho} grave${sev.vermelho === 1 ? "" : "s"}`}
+              {overallApproved
+                ? hasBoth
+                  ? "Nenhuma avaria registrada na entrada nem na saída."
+                  : "Nenhum ponto de avaria foi marcado nesta vistoria."
+                : countsPhrase(overall)}
             </p>
           </div>
         </div>
 
         {/* ── ATENDIMENTO (cliente / veículo / data / serviços) ── */}
         <div style={{ ...card, marginBottom: 16 }}>
-          <p style={sectionLabel}><BadgeCheck size={13} /> Vistoria de entrada</p>
+          <p style={sectionLabel}><BadgeCheck size={13} /> {hasBoth ? "Vistoria de entrada e saída" : "Vistoria de entrada"}</p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
             <InfoItem icon={<User size={14} />} label="Cliente" value={customer.name || "—"} />
-            <InfoItem icon={<Car size={14} />} label="Veículo" value={[vehicle.model, vehicle.color].filter(Boolean).join(" · ") || "—"} />
+            <InfoItem icon={<Car size={14} />} label="Veículo" value={[vehicle.brand, vehicle.model, vehicle.color].filter(Boolean).join(" · ") || "—"} />
             <InfoItem icon={<FileText size={14} />} label="Placa" value={vehicle.plate || "—"} mono />
             <InfoItem icon={<Calendar size={14} />} label="Data" value={formatDateTime(schedule.scheduledAt)} />
           </div>
@@ -237,89 +267,26 @@ export default function PublicReportPage() {
           )}
         </div>
 
-        {/* ── FOTOS ── */}
-        {inspection.photoUrls.length > 0 && (
-          <div style={{ ...card, marginBottom: 16 }}>
-            <p style={sectionLabel}><ImageIcon size={13} /> Fotos da chegada ({inspection.photoUrls.length})</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
-              {inspection.photoUrls.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setZoom(url)}
-                  style={{ aspectRatio: "4/3", borderRadius: 10, overflow: "hidden", border: "1px solid var(--c-border)", padding: 0, cursor: "zoom-in", background: "var(--c-bg)" }}
-                >
-                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* ── ETAPAS (antes/depois) ── */}
+        {entrada && (
+          <StageBlock
+            stage={entrada}
+            kind="entrada"
+            twoStages={hasBoth}
+            card={card}
+            sectionLabel={sectionLabel}
+            onZoom={setZoom}
+          />
         )}
-
-        {/* ── AVARIAS (diagrama + lista) ── */}
-        <div style={{ ...card, marginBottom: 16 }}>
-          <p style={sectionLabel}><AlertTriangle size={13} /> Pontos de avaria</p>
-          {inspection.damageMarks.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: "var(--c-text-3)", margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
-              <ShieldCheck size={15} color="#10B981" /> Nenhuma avaria registrada na entrada.
-            </p>
-          ) : (
-            <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-              {/* diagrama */}
-              <div style={{ position: "relative", width: 200, height: 340, flexShrink: 0, background: "var(--c-bg)", borderRadius: 16, border: "1px solid var(--c-border)", margin: "0 auto" }}>
-                <svg viewBox="0 0 200 340" width="200" height="340" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-                  <rect x="38" y="20" width="124" height="300" rx="48" fill="none" stroke="var(--c-border-2)" strokeWidth="2" />
-                  <path d="M58 70 L142 70 L128 110 L72 110 Z" fill="none" stroke="var(--c-border-2)" strokeWidth="1.5" />
-                  <path d="M72 230 L128 230 L142 270 L58 270 Z" fill="none" stroke="var(--c-border-2)" strokeWidth="1.5" />
-                  <rect x="62" y="120" width="76" height="100" rx="6" fill="none" stroke="var(--c-border-2)" strokeWidth="1" />
-                  <text x="100" y="174" textAnchor="middle" fill="var(--c-border-2)" fontSize="10">frente ↑</text>
-                </svg>
-                {inspection.damageMarks.map((m, i) => (
-                  <span
-                    key={i}
-                    title={m.note ?? SEV[m.severity].label}
-                    style={{ position: "absolute", left: `${m.x * 100}%`, top: `${m.y * 100}%`, transform: "translate(-50%,-50%)", width: 18, height: 18, borderRadius: "50%", background: SEV[m.severity].color, border: "2px solid rgba(0,0,0,0.5)", fontSize: 9, fontWeight: 800, color: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    {i + 1}
-                  </span>
-                ))}
-              </div>
-              {/* lista */}
-              <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 6 }}>
-                {inspection.damageMarks.map((m, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 9, background: "var(--c-bg)", border: `1px solid ${SEV[m.severity].color}40` }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: SEV[m.severity].color, color: "#000", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: SEV[m.severity].color, textTransform: "uppercase", letterSpacing: "0.03em", flexShrink: 0 }}>{SEV[m.severity].label}</span>
-                    {m.note && <span style={{ fontSize: 12.5, color: "var(--c-text-2)", flex: 1, minWidth: 0 }}>— {m.note}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── OBSERVAÇÕES ── */}
-        {inspection.notes && (
-          <div style={{ ...card, marginBottom: 16 }}>
-            <p style={sectionLabel}><FileText size={13} /> Observações</p>
-            <p style={{ fontSize: 13.5, color: "var(--c-text-2)", margin: 0, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{inspection.notes}</p>
-          </div>
-        )}
-
-        {/* ── ASSINATURA ── */}
-        {inspection.signature && (
-          <div style={{ ...card, marginBottom: 16 }}>
-            <p style={sectionLabel}><PenLine size={13} /> Assinatura do cliente</p>
-            <img
-              src={inspection.signature}
-              alt="Assinatura do cliente"
-              style={{ width: "100%", maxWidth: 380, height: 120, objectFit: "contain", background: "var(--c-bg)", borderRadius: 10, border: "1px solid var(--c-border)" }}
-            />
-            {inspection.lockedAt && (
-              <p style={{ fontSize: 11.5, color: "var(--c-text-4)", margin: "10px 0 0" }}>
-                Vistoria registrada e travada em {formatDateTime(inspection.lockedAt)} — documento imutável.
-              </p>
-            )}
-          </div>
+        {saida && (
+          <StageBlock
+            stage={saida}
+            kind="saida"
+            twoStages={hasBoth}
+            card={card}
+            sectionLabel={sectionLabel}
+            onZoom={setZoom}
+          />
         )}
 
         {/* ── RODAPÉ ── */}
@@ -348,6 +315,145 @@ export default function PublicReportPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Bloco de uma etapa (entrada ou saída) ───────────────────────────────────────
+
+function StageBlock({
+  stage, kind, twoStages, card, sectionLabel, onZoom,
+}: {
+  stage: PubStage
+  kind: "entrada" | "saida"
+  twoStages: boolean
+  card: React.CSSProperties
+  sectionLabel: React.CSSProperties
+  onZoom: (url: string) => void
+}) {
+  const isEntry = kind === "entrada"
+  const StageIcon = isEntry ? LogIn : LogOut
+  const title = isEntry ? "Entrada — chegada" : "Saída — entrega"
+  const photoTitle = isEntry ? "Fotos da chegada" : "Fotos da entrega"
+  const noDamageMsg = isEntry ? "Nenhuma avaria registrada na entrada." : "Nenhuma avaria registrada na saída."
+  const seal = sealColorOf(stage.summary)
+  const approved = stage.summary.status === "aprovado"
+
+  return (
+    <section style={{ marginBottom: 16 }}>
+      {/* Cabeçalho da etapa (só destacado quando há antes/depois) */}
+      {twoStages && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 2px", margin: "22px 0 12px" }}>
+          <span style={{ width: 30, height: 30, borderRadius: 9, background: `${seal}1F`, border: `1px solid ${seal}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <StageIcon size={16} color={seal} />
+          </span>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.3px", flex: 1, minWidth: 0 }}>{title}</h2>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: seal, background: `${seal}14`, border: `1px solid ${seal}40`, borderRadius: 999, padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+            {approved ? <ShieldCheck size={12} /> : <AlertTriangle size={12} />}
+            {approved ? "Aprovado" : "Com avarias"}
+          </span>
+        </div>
+      )}
+
+      {/* FOTOS */}
+      {stage.photoUrls.length > 0 && (
+        <div style={{ ...card, marginBottom: 12 }}>
+          <p style={sectionLabel}><ImageIcon size={13} /> {photoTitle} ({stage.photoUrls.length})</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
+            {stage.photoUrls.map((url, i) => (
+              <button
+                key={i}
+                onClick={() => onZoom(url)}
+                style={{ aspectRatio: "4/3", borderRadius: 10, overflow: "hidden", border: "1px solid var(--c-border)", padding: 0, cursor: "zoom-in", background: "var(--c-bg)" }}
+              >
+                <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AVARIAS (diagrama + lista) */}
+      <div style={{ ...card, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+          <p style={{ ...sectionLabel, margin: 0 }}><AlertTriangle size={13} /> Pontos de avaria</p>
+          {/* V5 semáforo: contagem por gravidade */}
+          {stage.summary.total > 0 && (
+            <div style={{ display: "flex", gap: 10 }}>
+              {(Object.keys(SEV) as Severity[]).map((s) => {
+                const n = s === "small" ? stage.summary.severityCounts.verde : s === "medium" ? stage.summary.severityCounts.amarelo : stage.summary.severityCounts.vermelho
+                return (
+                  <span key={s} title={SEV[s].label} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: n > 0 ? SEV[s].color : "var(--c-text-4)" }}>
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: SEV[s].color, opacity: n > 0 ? 1 : 0.4 }} />{n}
+                  </span>
+                )
+              })}
+            </div>
+          )}
+        </div>
+        {stage.damageMarks.length === 0 ? (
+          <p style={{ fontSize: 13.5, color: "var(--c-text-3)", margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+            <ShieldCheck size={15} color="#10B981" /> {noDamageMsg}
+          </p>
+        ) : (
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+            {/* diagrama */}
+            <div style={{ position: "relative", width: 200, height: 340, flexShrink: 0, background: "var(--c-bg)", borderRadius: 16, border: "1px solid var(--c-border)", margin: "0 auto" }}>
+              <svg viewBox="0 0 200 340" width="200" height="340" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                <rect x="38" y="20" width="124" height="300" rx="48" fill="none" stroke="var(--c-border-2)" strokeWidth="2" />
+                <path d="M58 70 L142 70 L128 110 L72 110 Z" fill="none" stroke="var(--c-border-2)" strokeWidth="1.5" />
+                <path d="M72 230 L128 230 L142 270 L58 270 Z" fill="none" stroke="var(--c-border-2)" strokeWidth="1.5" />
+                <rect x="62" y="120" width="76" height="100" rx="6" fill="none" stroke="var(--c-border-2)" strokeWidth="1" />
+                <text x="100" y="174" textAnchor="middle" fill="var(--c-border-2)" fontSize="10">frente ↑</text>
+              </svg>
+              {stage.damageMarks.map((m, i) => (
+                <span
+                  key={i}
+                  title={m.note ?? SEV[m.severity].label}
+                  style={{ position: "absolute", left: `${m.x * 100}%`, top: `${m.y * 100}%`, transform: "translate(-50%,-50%)", width: 19, height: 19, borderRadius: "50%", background: SEV[m.severity].color, border: "2px solid #fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.35)", fontSize: 9, fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  {i + 1}
+                </span>
+              ))}
+            </div>
+            {/* lista */}
+            <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 6 }}>
+              {stage.damageMarks.map((m, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 9, background: "var(--c-bg)", border: `1px solid ${SEV[m.severity].color}40` }}>
+                  <span style={{ width: 19, height: 19, borderRadius: "50%", background: SEV[m.severity].color, color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 0 1px rgba(0,0,0,0.25)" }}>{i + 1}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: SEV[m.severity].color, textTransform: "uppercase", letterSpacing: "0.03em", flexShrink: 0 }}>{SEV[m.severity].label}</span>
+                  {m.note && <span style={{ fontSize: 12.5, color: "var(--c-text-2)", flex: 1, minWidth: 0 }}>— {m.note}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* OBSERVAÇÕES */}
+      {stage.notes && (
+        <div style={{ ...card, marginBottom: 12 }}>
+          <p style={sectionLabel}><FileText size={13} /> Observações</p>
+          <p style={{ fontSize: 13.5, color: "var(--c-text-2)", margin: 0, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{stage.notes}</p>
+        </div>
+      )}
+
+      {/* ASSINATURA */}
+      {stage.signature && (
+        <div style={{ ...card, marginBottom: 12 }}>
+          <p style={sectionLabel}><PenLine size={13} /> Assinatura do cliente</p>
+          <img
+            src={stage.signature}
+            alt="Assinatura do cliente"
+            style={{ width: "100%", maxWidth: 380, height: 120, objectFit: "contain", background: "var(--c-bg)", borderRadius: 10, border: "1px solid var(--c-border)" }}
+          />
+          {stage.lockedAt && (
+            <p style={{ fontSize: 11.5, color: "var(--c-text-4)", margin: "10px 0 0" }}>
+              Vistoria registrada e travada em {formatDateTime(stage.lockedAt)} — documento imutável.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 
