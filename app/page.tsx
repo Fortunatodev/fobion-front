@@ -32,7 +32,7 @@ export default function RootPage() {
   }, [router])
 
   return (
-    <div data-theme="dark" style={{ minHeight: "100vh", background: "var(--c-bg)", color: "var(--c-text)", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "var(--c-bg)", color: "var(--c-text)", position: "relative", overflow: "hidden" }}>
       {/* glow + dot grid */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(60% 40% at 50% 0%, rgba(0,102,255,0.14), transparent 70%)" }} />
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.5, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)", backgroundSize: "64px 64px", maskImage: "radial-gradient(70% 50% at 50% 0%, #000, transparent)" }} />

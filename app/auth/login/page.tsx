@@ -119,7 +119,7 @@ function LoginContent() {
   const errorText = error ? (errorMessages[error] ?? error) : null
 
   return (
-    <div data-theme="dark" style={{
+    <div style={{
       minHeight: "100vh",
       background: "var(--c-bg)",
       display: "flex",
@@ -163,8 +163,8 @@ function LoginContent() {
         position: "relative", zIndex: 1,
         width: "100%", maxWidth: 420,
         margin: "0 24px",
-        background: "rgba(14,14,14,0.9)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--c-surface)",
+        border: "1px solid var(--c-border)",
         borderRadius: 24,
         padding: "40px 36px",
         backdropFilter: "blur(24px)",
