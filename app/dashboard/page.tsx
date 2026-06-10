@@ -355,7 +355,7 @@ export default function DashboardPage() {
       <div className="page-header">
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
-            Olá, {firstName} 👋
+            Olá, {firstName}
           </h1>
           <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 4, textTransform: "capitalize" }}>
             {formatTodayDate()}
