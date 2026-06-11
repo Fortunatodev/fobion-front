@@ -8,7 +8,9 @@ import { getToken, removeToken, setToken } from "@/lib/auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
 // ── Feature flag — controlada pela env var na Vercel ─────────────────────────
-const ENABLE_GOOGLE_LOGIN = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN === "true"
+// Google login LIGADO por padrão (verificado em prod: back→Google→callback com role→/dashboard).
+// Desligável com NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN="false" se algum dia precisar (kill-switch).
+const ENABLE_GOOGLE_LOGIN = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN !== "false"
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
 export default function LoginPage() {
