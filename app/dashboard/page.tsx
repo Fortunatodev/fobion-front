@@ -345,7 +345,9 @@ export default function DashboardPage() {
   }, [router])
 
   return (
-    <div className="animate-dash-fade-in">
+    // paddingBottom: garante que o conteúdo final (ex.: "Ver completo" do card de
+    // relatórios) não fique escondido atrás do launcher flutuante da Carla.
+    <div className="animate-dash-fade-in" style={{ paddingBottom: 80 }}>
 
       <WelcomeModal firstName={firstName} onDone={() => setReopenSignal((n) => n + 1)} />
 

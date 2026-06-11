@@ -289,11 +289,14 @@ export default function ClientesPage() {
 
       <div
         style={{
-          maxWidth:   1280,
-          margin:     "0 auto",
-          padding:    isMobile ? "16px 14px" : undefined,
-          animation:  "fadePage 0.35s ease both",
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+          maxWidth:      1280,
+          margin:        "0 auto",
+          padding:       isMobile ? "16px 14px" : undefined,
+          // Espaço extra no fim pra que a última linha (ações) não fique atrás do
+          // launcher flutuante da Carla (fixed, canto inferior direito).
+          paddingBottom: 80,
+          animation:     "fadePage 0.35s ease both",
+          fontFamily:    "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
 
@@ -633,27 +636,31 @@ export default function ClientesPage() {
                       </span>
                     ) : (
                       <>
-                        {visibleVehicles.map((v) => (
-                          <span
-                            key={v.id}
-                            style={{
-                              fontSize:           11,
-                              fontWeight:         500,
-                              color:              "var(--c-text-2)",
-                              backgroundColor:    "var(--c-surface-2)",
-                              border:             "1px solid var(--c-border)",
-                              borderRadius:       6,
-                              padding:            "3px 8px",
-                              display:            "flex",
-                              alignItems:         "center",
-                              gap:                5,
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            <Car size={10} color="var(--c-text-4)" />
-                            {v.plate}
-                          </span>
-                        ))}
+                        {visibleVehicles.map((v) => {
+                          const hasPlate = Boolean(v.plate?.trim())
+                          return (
+                            <span
+                              key={v.id}
+                              style={{
+                                fontSize:           11,
+                                fontWeight:         hasPlate ? 500 : 400,
+                                color:              hasPlate ? "var(--c-text-2)" : "var(--c-text-4)",
+                                backgroundColor:    "var(--c-surface-2)",
+                                border:             "1px solid var(--c-border)",
+                                borderRadius:       6,
+                                padding:            "3px 8px",
+                                display:            "flex",
+                                alignItems:         "center",
+                                gap:                5,
+                                fontVariantNumeric: "tabular-nums",
+                                fontStyle:          hasPlate ? "normal" : "italic",
+                              }}
+                            >
+                              <Car size={10} color="var(--c-text-4)" />
+                              {hasPlate ? v.plate : "Sem placa"}
+                            </span>
+                          )
+                        })}
                         {extraVehicles > 0 && (
                           <span
                             style={{

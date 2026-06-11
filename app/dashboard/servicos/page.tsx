@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react"
+import { useState, useEffect, useCallback, useMemo, Fragment, type ReactNode } from "react"
 import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent, Tag } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
@@ -590,14 +590,25 @@ export default function ServicosPage() {
           </div>
         )}
 
-        {/* ── Grid de serviços (agrupado por categoria, com headers de seção) ── */}
+        {/* ── Grid de serviços ──────────────────────────────────────────────
+            Grade contínua única (3-4 cards por linha). A categoria entra como
+            divisória leve que ocupa a linha inteira (gridColumn 1/-1), então os
+            cards de cada categoria fluem na mesma grade em vez de cada categoria
+            ocupar uma seção de largura total com a linha quase vazia. */}
         {!loading && visibleServices.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-            {groupedServices.map(([categoryName, items]) => (
-              <section key={categoryName}>
-                {/* Header de seção da categoria */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))",
+            gap: 16,
+            alignItems: "start",
+          }}>
+            {groupedServices.map(([categoryName, items], gi) => (
+              <Fragment key={categoryName}>
+                {/* Divisória de categoria (linha inteira da grade) */}
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
+                  gridColumn: "1 / -1",
+                  display: "flex", alignItems: "center", gap: 8,
+                  marginTop: gi === 0 ? 0 : 12,
                 }}>
                   <Tag size={13} color="var(--c-text-4)" />
                   <h2 style={{
@@ -616,22 +627,16 @@ export default function ServicosPage() {
                   <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-border)" }} />
                 </div>
 
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: 16,
-                }}>
-                  {items.map(s => (
-                    <ServiceCard
-                      key={s.id}
-                      service={s}
-                      onEdit={openEdit}
-                      onDelete={handleDelete}
-                      deleting={deleting === s.id}
-                    />
-                  ))}
-                </div>
-              </section>
+                {items.map(s => (
+                  <ServiceCard
+                    key={s.id}
+                    service={s}
+                    onEdit={openEdit}
+                    onDelete={handleDelete}
+                    deleting={deleting === s.id}
+                  />
+                ))}
+              </Fragment>
             ))}
           </div>
         )}
@@ -973,22 +978,16 @@ function ServiceCard({
         opacity: service.isActive ? 1 : 0.55,
       }}
     >
-      {/* Imagem do serviço */}
-      {service.imageUrl ? (
+      {/* Imagem do serviço — só renderiza quando há foto. Sem imagem, o card
+          fica compacto (sem o bloco cinza grande que parecia quebrado quando
+          todos os serviços nascem sem foto). */}
+      {service.imageUrl && (
         <div style={{ height: 120, overflow: "hidden", borderBottom: "1px solid var(--c-surface-2)" }}>
           <img
             src={service.imageUrl}
             alt={service.name}
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
-        </div>
-      ) : (
-        <div style={{
-          height: 80, borderBottom: "1px solid var(--c-surface-2)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: "var(--c-elevated)",
-        }}>
-          <ImageIcon size={24} color="var(--c-border-2)" />
         </div>
       )}
 
