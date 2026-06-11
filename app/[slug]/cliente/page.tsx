@@ -22,6 +22,13 @@ function formatCurrency(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 
+/** Normaliza um telefone para o formato aceito pelo wa.me (só dígitos, com DDI 55). */
+function normalizeWhatsappPhone(raw?: string | null): string {
+  const digits = (raw ?? "").replace(/\D/g, "")
+  if (!digits) return ""
+  return digits.startsWith("55") ? digits : `55${digits}`
+}
+
 function formatDate(iso?: string | null) {
   if (!iso) return "—"
   const d = new Date(iso)
@@ -114,6 +121,7 @@ function ClientAreaContent() {
   const [error,        setError]        = useState("")
   const [themeColor,   setThemeColor]   = useState("#0066FF")
   const [businessPlan, setBusinessPlan] = useState<string>("FREE")
+  const [businessPhone, setBusinessPhone] = useState<string>("")
 
   // ── Profile editing ──────────────────────────────────────────────────────
   const [editing,      setEditing]      = useState(false)
@@ -167,6 +175,7 @@ function ClientAreaContent() {
         setSchedules(schedulesData.schedules ?? [])
         if (bizData?.business?.themeColor) setThemeColor(bizData.business.themeColor)
         if (bizData?.business?.plan) setBusinessPlan(bizData.business.plan)
+        if (typeof bizData?.business?.phone === "string") setBusinessPhone(bizData.business.phone)
         setError("")
       })
       .catch((e: Error) => {
@@ -320,6 +329,9 @@ function ClientAreaContent() {
     ...(businessPlan === "PRO" ? [{ id: "planos" as TabId, label: "Planos", icon: Crown }] : []),
     { id: "perfil",       label: "Perfil",       icon: User     },
   ]
+
+  // Telefone da loja (WhatsApp) para a solicitação de cancelamento. Vazio = sem WhatsApp configurado.
+  const cancelWhatsappPhone = normalizeWhatsappPhone(businessPhone)
 
   return (
     <>
@@ -889,13 +901,24 @@ function ClientAreaContent() {
           onClose={() => setCancelTarget(null)}
           onConfirm={() => {
             if (!cancelTarget) return
-            const msg = encodeURIComponent(`Olá, gostaria de cancelar minha assinatura do plano ${cancelTarget.name}.`)
-            window.open(`https://wa.me/?text=${msg}`, "_blank")
+            if (!cancelWhatsappPhone) {
+              toast.error("Esta loja ainda não cadastrou um WhatsApp. Entre em contato pelos canais de atendimento para cancelar.")
+              setCancelTarget(null)
+              return
+            }
+            const msg = encodeURIComponent(`Olá, quero cancelar minha assinatura do plano ${cancelTarget.name}. Pode me ajudar?`)
+            window.open(`https://wa.me/${cancelWhatsappPhone}?text=${msg}`, "_blank")
             setCancelTarget(null)
           }}
           title="Cancelar sua assinatura?"
-          description={cancelTarget ? `Você vai abrir o WhatsApp para solicitar o cancelamento do plano ${cancelTarget.name}. Sua assinatura continua ativa até confirmarmos o cancelamento.` : ""}
-          confirmLabel="Falar no WhatsApp"
+          description={
+            !cancelTarget
+              ? ""
+              : cancelWhatsappPhone
+                ? `Você vai abrir o WhatsApp da loja para solicitar o cancelamento do plano ${cancelTarget.name}. Sua assinatura continua ativa até confirmarmos o cancelamento.`
+                : `Esta loja ainda não cadastrou um WhatsApp para solicitações de cancelamento. Entre em contato pelos canais de atendimento da loja para cancelar o plano ${cancelTarget.name}.`
+          }
+          confirmLabel={cancelWhatsappPhone ? "Falar no WhatsApp" : "Entendi"}
           cancelLabel="Manter plano"
           variant="danger"
         />

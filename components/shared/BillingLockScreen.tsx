@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import {
   Lock,
@@ -38,9 +37,9 @@ function formatDate(iso: string): string {
 }
 
 function planLabel(plan: string): string {
-  if (plan === "PRO") return "Premium"
-  if (plan === "BASIC") return "Basic"
-  return "Basic"
+  if (plan === "PRO") return "Pro"
+  if (plan === "BASIC") return "Essencial"
+  return "Essencial"
 }
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
@@ -214,7 +213,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <Crown size={18} color="#F59E0B" />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>
-              Recomendado: Plano Premium
+              Recomendado: Plano Pro
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -271,7 +270,7 @@ export default function BillingLockScreen({ lock }: BillingLockScreenProps) {
               }}
             >
               <Crown size={18} />
-              {redirecting ? "Abrindo checkout..." : isNoPlan ? "Começar plano Premium" : "Renovar plano Premium"}
+              {redirecting ? "Abrindo checkout..." : isNoPlan ? "Começar o Pro" : "Renovar o Pro"}
               <ArrowRight size={16} />
             </button>
           )}

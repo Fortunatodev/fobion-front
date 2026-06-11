@@ -140,7 +140,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                       borderRadius: 4, padding: "1px 5px",
                       display: "flex", alignItems: "center", gap: 2,
                     }}>
-                      <Crown size={8} /> PREMIUM
+                      <Crown size={8} /> PRO
                     </span>
                   )}
                   {active && !isProOnly && <ChevronRight size={12} color="#0066FF" />}
@@ -165,7 +165,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 fontSize: 10, fontWeight: 700,
                 color: isPro ? "#F59E0B" : "#0066FF",
               }}>
-                {isPro ? "PREMIUM" : "ESSENCIAL"}
+                {isPro ? "PRO" : "ESSENCIAL"}
                 {planStatus.isTrial ? " · TRIAL" : ""}
               </span>
             </div>

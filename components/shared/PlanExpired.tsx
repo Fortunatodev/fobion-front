@@ -20,7 +20,7 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
     ? new Date(planStatus.planExpiresAt).toLocaleDateString("pt-BR")
     : null
 
-  const planLabel = planStatus.plan === "PRO" ? "Premium" : "Basic"
+  const planLabel = planStatus.plan === "PRO" ? "Pro" : "Essencial"
 
   async function handleSubscribe() {
     setRedirecting(true)
@@ -105,7 +105,7 @@ export default function PlanExpired({ planStatus }: { planStatus: PlanStatus }) 
             }}
           >
             <Crown size={18} />
-            {redirecting ? "Abrindo checkout..." : planStatus.isTrial ? "Assinar plano Premium" : "Renovar plano Premium"}
+            {redirecting ? "Abrindo checkout..." : planStatus.isTrial ? "Assinar o Pro" : "Renovar o Pro"}
             <ArrowRight size={16} />
           </button>
 

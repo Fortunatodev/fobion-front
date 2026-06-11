@@ -1,11 +1,17 @@
 "use client"
 
 import Link from "next/link"
-import { Crown, Lock, MessageCircle } from "lucide-react"
+import { useState } from "react"
+import { Crown, Lock, ArrowRight } from "lucide-react"
+import { apiGet } from "@/lib/api"
 
 /**
- * Component shown in place of a PRO-only feature when user is on BASIC plan.
- * Use this as a wrapper around pages like Relatórios, Planos, Assinantes.
+ * Component shown in place of a Pro-only feature when the user is on the BASIC plan.
+ * Use this as a wrapper around pages like Relatórios, Planos, Assinantes, Pós-venda.
+ *
+ * O tier vendável hoje é o **Pro**. O CTA primário abre o checkout do Pro
+ * (mesmo link usado nas telas de billing: /billing/payment-link). Se o link não
+ * carregar, cai pra aba de plano em Configurações.
  */
 export default function ProFeatureGate({
   featureName,
@@ -14,6 +20,26 @@ export default function ProFeatureGate({
   featureName: string
   description?: string
 }) {
+  const [redirecting, setRedirecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubscribe() {
+    setRedirecting(true)
+    setError(null)
+    try {
+      const res = await apiGet<{ paymentLink: string }>("/billing/payment-link")
+      if (res?.paymentLink) {
+        window.location.href = res.paymentLink
+        return
+      }
+      setError("Não foi possível abrir o checkout.")
+    } catch (err) {
+      setError((err as Error).message || "Erro ao abrir o checkout.")
+    } finally {
+      setRedirecting(false)
+    }
+  }
+
   return (
     <div style={{
       display: "flex",
@@ -31,31 +57,31 @@ export default function ProFeatureGate({
         {/* Icon */}
         <div style={{
           width: 64, height: 64, borderRadius: "50%",
-          background: "rgba(245,158,11,0.1)",
-          border: "1px solid rgba(245,158,11,0.2)",
+          background: "rgba(0,102,255,0.1)",
+          border: "1px solid rgba(0,102,255,0.2)",
           display: "flex", alignItems: "center", justifyContent: "center",
           margin: "0 auto 20px",
         }}>
-          <Lock size={28} color="#F59E0B" />
+          <Lock size={28} color="#0066FF" />
         </div>
 
         {/* Title */}
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", margin: "0 0 8px" }}>
-          Recurso Premium
+          Recurso do plano Pro
         </h2>
 
         {/* Feature name */}
         <p style={{ fontSize: 15, color: "var(--c-text-2)", margin: "0 0 8px" }}>
           <strong style={{ color: "var(--c-text)" }}>{featureName}</strong> faz parte do plano{" "}
           <span style={{
-            color: "#F59E0B",
+            color: "#0066FF",
             fontWeight: 600,
-            background: "rgba(245,158,11,0.1)",
+            background: "rgba(0,102,255,0.1)",
             borderRadius: 4,
             padding: "1px 6px",
           }}>
             <Crown size={12} style={{ display: "inline", verticalAlign: "-1px", marginRight: 3 }} />
-            PREMIUM
+            PRO
           </span>
         </p>
 
@@ -69,21 +95,26 @@ export default function ProFeatureGate({
 
         {/* CTA */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <a
-            href="https://api.whatsapp.com/send/?phone=5547920025084&text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20Premium%20do%20Forbion"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleSubscribe}
+            disabled={redirecting}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "12px 20px", borderRadius: 10,
-              background: "linear-gradient(135deg, #F59E0B, #D97706)",
+              background: redirecting ? "var(--c-text-4)" : "linear-gradient(135deg, #0066FF, #7C3AED)",
               color: "var(--c-on-primary)", fontSize: 14, fontWeight: 600,
-              textDecoration: "none", transition: "opacity 0.15s",
+              border: "none", cursor: redirecting ? "wait" : "pointer",
+              fontFamily: "inherit", transition: "opacity 0.15s",
             }}
           >
-            <MessageCircle size={16} />
-            Falar com suporte sobre o Premium
-          </a>
+            <Crown size={16} />
+            {redirecting ? "Abrindo checkout..." : "Assinar o Pro"}
+            <ArrowRight size={15} />
+          </button>
+
+          {error && (
+            <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{error}</p>
+          )}
 
           <Link
             href="/dashboard/configuracoes?tab=plano"
