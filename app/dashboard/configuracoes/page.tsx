@@ -72,15 +72,6 @@ const TABS: { id: TabId; label: string; Icon: React.ElementType }[] = [
   { id: "plano",    label: "Plano",         Icon: Shield    },
 ]
 
-const PLAN_FEATURES: { label: string; basic: boolean; pro: boolean }[] = [
-  { label: "Agendamentos ilimitados",         basic: true,  pro: true  },
-  { label: "Gestão de clientes",              basic: true,  pro: true  },
-  { label: "Relatórios básicos",              basic: true,  pro: true  },
-  { label: "Relatórios avançados",            basic: false, pro: true  },
-  { label: "Assinantes / planos recorrentes", basic: false, pro: true  },
-  { label: "Loja pública personalizada",      basic: false, pro: true  },
-]
-
 const COLOR_PALETTE = [
   { label: "Azul",     value: "#0066FF" },
   { label: "Roxo",     value: "#7C3AED" },
@@ -356,41 +347,6 @@ function LogoutBtn({ onClick }: { onClick: () => void }) {
   )
 }
 
-function FeatureCell({ label, available, labelColor }: {
-  label: string; available: boolean; labelColor: string
-}) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--c-surface-2)" }}>
-      <span style={{ fontSize: 13, color: labelColor }}>{label}</span>
-      {available
-        ? <CheckCircle2 size={14} color="#10B981" />
-        : <X size={14} color="var(--c-text-4)" />}
-    </div>
-  )
-}
-
-function UpgradeBtn({ onClick }: { onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        width: "100%", height: 46, borderRadius: 12, border: "none",
-        background: "linear-gradient(135deg,#0066FF,#7C3AED)",
-        color: "var(--c-on-primary)", fontSize: 14, fontWeight: 700,
-        cursor: "pointer", fontFamily: "inherit",
-        boxShadow: hov ? "0 8px 30px rgba(0,102,255,0.4)" : "0 4px 20px rgba(0,102,255,0.2)",
-        transform: hov ? "scale(1.01)" : "scale(1)",
-        transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-      }}
-    >
-      <Zap size={15} /> Fazer upgrade para PRO
-    </button>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function AccessDenied() {
@@ -478,9 +434,6 @@ function ConfiguracoesContent() {
   const [calendarLoading,   setCalendarLoading]   = useState(false)
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  // Garante que a persistência dos horários default dispare no máximo uma vez por
-  // sessão (evita PUTs duplicados sob StrictMode / re-montagem de efeitos).
-  const hoursDefaultPersisted = useRef(false)
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -522,16 +475,10 @@ function ConfiguracoesContent() {
         const found = biz.hours?.find((h) => h.dayOfWeek === i)
         return found ?? { dayOfWeek: i, isOpen: i !== 0, openTime: "08:00", closeTime: "18:00" }
       })
+      // Loja nunca salvou horário → só preenche o ESTADO LOCAL com os defaults
+      // (sem PUT no mount). A persistência só acontece quando o dono clica
+      // "Salvar horários" (handleSaveHorarios). Os defaults já são editáveis na UI.
       setHours(filled)
-      // Loja nunca salvou horário → persiste os defaults UMA vez, pra a loja pública
-      // não nascer "Fechado"/vazia (bug do estado inicial). Só dispara quando vazio,
-      // e no máximo uma vez por sessão.
-      if ((!biz.hours || biz.hours.length === 0) && !hoursDefaultPersisted.current) {
-        hoursDefaultPersisted.current = true
-        apiPut("/auth/business/hours", { hours: filled }).catch((e) => {
-          console.error("Falha ao persistir horários default", e)
-        })
-      }
       setError(null)
     } catch {
       setError("Erro ao carregar configurações.")

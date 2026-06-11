@@ -10,6 +10,7 @@ import {
 import { apiGet, apiPut } from "@/lib/api"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 import { toast } from "sonner"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -267,14 +268,16 @@ function DetailModal({
   const [confirmCancel, setConfirmCancel] = useState(false)
   const services = serviceNamesOf(schedule) || "—"
 
-  // B05 — ESC fecha + trava o scroll do fundo enquanto o modal está aberto
+  // B05 — ESC fecha + trava o scroll do fundo enquanto o modal está aberto.
+  // Com a confirmação de cancelamento aberta, o ESC é tratado por ela (Radix);
+  // não fechamos o modal de detalhe pra não fechar os dois de uma vez.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !confirmCancel) onClose() }
     document.addEventListener("keydown", onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow }
-  }, [onClose])
+  }, [onClose, confirmCancel])
   const totalDur = totalDurationOf(schedule)
 
   async function doStatus(status: string) {
@@ -299,7 +302,10 @@ function DetailModal({
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
+      // Enquanto a confirmação de cancelamento está aberta, recuamos o z-index
+      // deste modal para baixo do ConfirmDialog (Radix usa z-50), garantindo
+      // que o diálogo de confirmação fique por cima em qualquer tema.
+      position: "fixed", inset: 0, zIndex: confirmCancel ? 40 : 9999,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
     }}>
       <div onClick={onClose} style={{
@@ -359,17 +365,19 @@ function DetailModal({
                   <ActionBtn label="Recusar" color="#EF4444" onClick={() => doStatus("CANCELLED")} loading={updating} outline />
                 </>
               )}
+              {/* Fluxo sequencial alinhado à aba Agendamentos:
+                  PENDING → só Confirmar; CONFIRMED → só Iniciar. */}
               {schedule.status === "PENDING" && (
                 <ActionBtn label="Confirmar" color="#3B82F6" onClick={() => doStatus("CONFIRMED")} loading={updating} />
               )}
-              {(schedule.status === "PENDING" || schedule.status === "CONFIRMED") && (
+              {schedule.status === "CONFIRMED" && (
                 <ActionBtn label="Iniciar" color="#8B5CF6" onClick={() => doStatus("IN_PROGRESS")} loading={updating} />
               )}
               {schedule.status === "IN_PROGRESS" && (
                 <ActionBtn label="Finalizar" color="#10B981" onClick={() => setPhase("close")} loading={false} />
               )}
               {schedule.status !== "REQUESTED" && schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
-                <ActionBtn label={confirmCancel ? "Confirmar cancelamento?" : "Cancelar"} color="#EF4444" onClick={() => (confirmCancel ? doStatus("CANCELLED") : setConfirmCancel(true))} loading={updating} outline />
+                <ActionBtn label="Cancelar" color="#EF4444" onClick={() => setConfirmCancel(true)} loading={updating} outline />
               )}
             </div>
           </>
@@ -404,6 +412,20 @@ function DetailModal({
           </>
         )}
       </div>
+
+      {/* #35 — confirmação de cancelamento via ConfirmDialog (padrão de ações
+          destrutivas do app); substitui o toque-duplo frágil no mobile. */}
+      <ConfirmDialog
+        open={confirmCancel}
+        onClose={() => { if (!updating) setConfirmCancel(false) }}
+        onConfirm={async () => { await doStatus("CANCELLED"); setConfirmCancel(false) }}
+        title="Cancelar agendamento"
+        description={`Cancelar o agendamento de ${customerName(schedule)}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Cancelar agendamento"
+        cancelLabel="Voltar"
+        variant="danger"
+        loading={updating}
+      />
     </div>
   )
 }

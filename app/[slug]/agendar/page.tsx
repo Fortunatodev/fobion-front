@@ -838,11 +838,17 @@ function AgendarContent() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(80px,1fr))", gap: 8 }}>
                         {availableSlots.map(slot => {
                           const sel      = slot.time === selectedSlot
-                          // Desabilitar horários que já passaram pra hoje
-                          const isPastSlot = selectedDate === new Date().toISOString().split("T")[0] && (() => {
-                            const [h, m] = slot.time.split(":").map(Number)
-                            const now = new Date()
-                            return h * 60 + m <= now.getHours() * 60 + now.getMinutes()
+                          // Desabilitar horários que já passaram.
+                          // O projeto trata o horário do agendamento como UTC (ver lib/dateUtils.ts
+                          // e a construção de scheduledAt com Date.UTC). Por isso comparamos o
+                          // instante absoluto do slot (data + hora em UTC) com o agora — usando a
+                          // MESMA referência. Assim, perto da virada do dia (ex.: 21h BRT = 00h UTC),
+                          // um slot futuro não some e um slot já passado não aparece.
+                          const isPastSlot = (() => {
+                            const [y, mo, d] = selectedDate.split("-").map(Number)
+                            const [h, m]     = slot.time.split(":").map(Number)
+                            const slotMs     = Date.UTC(y, mo - 1, d, h, m, 0)
+                            return slotMs <= Date.now()
                           })()
                           const disabled = !slot.available || isPastSlot
 
@@ -1179,12 +1185,14 @@ function AgendarContent() {
                         </span>
                       </div>
                     )}
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Bell size={13} color={theme} />
+                    {customerEmail && (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Bell size={13} color={theme} />
+                        </div>
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Enviaremos um lembrete por e-mail 24h antes do horário</span>
                       </div>
-                      <span style={{ fontSize: 12, color: "var(--c-text-2)", lineHeight: 1.4 }}>Enviaremos um lembrete 24h antes do horário</span>
-                    </div>
+                    )}
                     {business!.address && (
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `rgba(${themeRgb}, 0.08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

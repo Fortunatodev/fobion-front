@@ -48,6 +48,22 @@ function formatDateTime(iso?: string | null) {
   return `${day}/${month}/${year} ${hour}:${min}`
 }
 
+/**
+ * Verifica se uma assinatura está expirada com base em expiresAt.
+ * Critério de fuso consistente com o resto do projeto (datas tratadas via UTC):
+ * compara apenas a data (YYYY-MM-DD) de expiresAt com a data de hoje em UTC.
+ * Sem expiresAt = sem data de validade, não expira.
+ */
+function isSubscriptionExpired(expiresAt?: string | null): boolean {
+  if (!expiresAt) return false
+  const exp = new Date(expiresAt)
+  if (Number.isNaN(exp.getTime())) return false
+  const expDay = Date.UTC(exp.getUTCFullYear(), exp.getUTCMonth(), exp.getUTCDate())
+  const now = new Date()
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  return expDay < today
+}
+
 function formatStatus(status: string) {
   const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
     PENDING:     { label: "Pendente",     color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.2)"  },
@@ -206,8 +222,15 @@ function ClientAreaContent() {
   }, [router, slug])
 
   useEffect(() => {
-    if (tab === "planos") fetchPlans()
-  }, [tab, fetchPlans])
+    if (tab === "planos" && businessPlan === "PRO") fetchPlans()
+  }, [tab, businessPlan, fetchPlans])
+
+  // ── Se o negócio não é PRO, a aba "planos" não existe — volta pra agendamentos ──
+  useEffect(() => {
+    if (tab === "planos" && businessPlan !== "PRO" && !loading) {
+      setTab("agendamentos")
+    }
+  }, [tab, businessPlan, loading])
 
   // ── Save profile ──────────────────────────────────────────────────────────
   const handleSaveProfile = async () => {
@@ -568,6 +591,31 @@ function ClientAreaContent() {
               {(() => {
                 const activeSub = profile?.subscriptions?.find((s) => s.status === "ACTIVE")
                 if (!activeSub?.customerPlan) return null
+
+                // Assinatura marcada ACTIVE mas com data de validade vencida: não mostrar como ativa.
+                if (isSubscriptionExpired(activeSub.expiresAt)) {
+                  return (
+                    <div style={{ marginBottom: 16, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 16, padding: "16px 20px", display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <AlertCircle size={18} color="#F59E0B" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+                          Sua assinatura do plano {activeSub.customerPlan.name} expirou
+                        </p>
+                        <p style={{ fontSize: 13, color: "var(--c-text-2)", marginTop: 3 }}>
+                          {activeSub.expiresAt
+                            ? `Venceu em ${formatDate(activeSub.expiresAt)}. Renove para continuar aproveitando os benefícios de assinante.`
+                            : "Renove para continuar aproveitando os benefícios de assinante."}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", padding: "5px 10px", borderRadius: 8, flexShrink: 0 }}>
+                        Expirado
+                      </span>
+                    </div>
+                  )
+                }
+
                 return (
                   <div style={{ marginBottom: 16, background: "linear-gradient(135deg,rgba(124,58,237,0.08),rgba(0,102,255,0.06))", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 16, padding: "16px 20px", display: "flex", gap: 12, alignItems: "center" }}>
                     <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg,#7C3AED,${themeColor})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -675,8 +723,8 @@ function ClientAreaContent() {
             </div>
           )}
 
-          {/* ═══ PLANOS ═══ */}
-          {tab === "planos" && (
+          {/* ═══ PLANOS ═══ (só quando o negócio tem clube de assinatura ativo/PRO) */}
+          {tab === "planos" && businessPlan === "PRO" && (
             <div>
               <div style={{ marginBottom: 24 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>Planos de assinatura</h2>
