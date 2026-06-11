@@ -286,9 +286,11 @@ export default function PatioPage() {
   // Vistoria é feature do Pro: o dono ainda precisa habilitar em Configurações.
   // inspectionEnabled vem do business em /auth/me (mesma fonte da tela de config).
   const [inspectionEnabled, setInspectionEnabled] = useState(false)
-  // B20 — capacidade do pátio (vagas/boxes) por dia; config local sem migração
+  // #36 — capacidade do pátio (vagas/boxes) por dia; fonte da verdade é o business
+  // (Business.patioCapacity), salvo via PUT /auth/business. Antes era localStorage por-dispositivo.
   const [capacity, setCapacity] = useState(10)
   const [capModalOpen, setCapModalOpen] = useState(false)
+  const [savingCap, setSavingCap] = useState(false)
 
   // sensores: pointer com distância mínima (não rouba cliques) + touch com delay
   // (segura ~180ms p/ começar a arrastar no celular, sem atrapalhar taps/scroll)
@@ -297,25 +299,34 @@ export default function PatioPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   )
 
-  useEffect(() => {
-    const v = Number(localStorage.getItem("forbion_patio_capacity"))
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (v > 0) setCapacity(v)
-  }, [])
   function editCapacity() { setCapModalOpen(true) }
-  function saveCapacity(value: string) {
+  // Salva no business (fonte da verdade): PUT /auth/business { patioCapacity }.
+  async function saveCapacity(value: string) {
     const n = Number(value)
-    if (!(n > 0)) return
-    setCapacity(n)
-    localStorage.setItem("forbion_patio_capacity", String(n))
-    setCapModalOpen(false)
-    toast.success(`Capacidade do pátio definida: ${n} vaga${n > 1 ? "s" : ""}/dia`)
+    if (!Number.isInteger(n) || n < 1) return
+    setSavingCap(true)
+    try {
+      await apiPut("/auth/business", { patioCapacity: n })
+      setCapacity(n)
+      setCapModalOpen(false)
+      toast.success(`Capacidade do pátio definida: ${n} vaga${n > 1 ? "s" : ""}/dia`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui salvar a capacidade. Tente de novo.")
+    } finally {
+      setSavingCap(false)
+    }
   }
 
+  // Lê do business (mesma fonte da tela de config): inspectionEnabled + patioCapacity (#36).
   useEffect(() => {
-    apiGet<{ business: { inspectionEnabled?: boolean | null } | null }>("/auth/me")
-      .then((r) => setInspectionEnabled(!!r.business?.inspectionEnabled))
-      .catch(() => { /* sem business → mantém desabilitado */ })
+    apiGet<{ business: { inspectionEnabled?: boolean | null; patioCapacity?: number | null } | null }>("/auth/me")
+      .then((r) => {
+        setInspectionEnabled(!!r.business?.inspectionEnabled)
+        // fallback de 10 se vier null/ausente
+        const cap = Number(r.business?.patioCapacity)
+        if (Number.isInteger(cap) && cap > 0) setCapacity(cap)
+      })
+      .catch(() => { /* sem business → mantém padrões */ })
   }, [])
 
   const fetchData = useCallback(() => {
@@ -488,9 +499,15 @@ export default function PatioPage() {
         label="Vagas por dia"
         type="number"
         min={1}
+        max={200}
         defaultValue={String(capacity)}
         confirmLabel="Salvar"
-        validate={(v) => (Number(v) > 0 ? null : "Informe um número maior que zero.")}
+        loading={savingCap}
+        validate={(v) => {
+          const n = Number(v)
+          if (!Number.isInteger(n) || n < 1 || n > 200) return "Informe um inteiro entre 1 e 200."
+          return null
+        }}
       />
     </div>
   )
