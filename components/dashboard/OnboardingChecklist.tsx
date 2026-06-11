@@ -28,6 +28,10 @@ import {
 
 export const COLLAPSED_KEY = "forbion_onboarding_collapsed_v1"
 const CELEB_KEY = "forbion_onboarding_celebrated_v1"
+// Sinal de que o dono REALMENTE copiou/compartilhou o link (ação de maior valor).
+// O slug nasce auto-gerado, então sem isso o passo "Compartilhe" nasceria concluído
+// e o dono nunca seria nudgeado a divulgar a loja.
+const STORE_SHARED_KEY = "forbion_store_shared_v1"
 
 // ── Fonte única dos passos (consumida também pelo WelcomeModal) ─────────────────
 export type OnboardingStepKey = "service" | "hours" | "store" | "schedule"
@@ -119,6 +123,7 @@ export default function OnboardingChecklist({
 
   const [collapsed, setCollapsed] = useState(false)
   const [openStore, setOpenStore] = useState(false)
+  const [storeShared, setStoreShared] = useState(false)
 
   // B17 — countdown do trial (urgência pra conversão; CERA mantém sempre visível)
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
@@ -137,6 +142,8 @@ export default function OnboardingChecklist({
     const isCollapsed = typeof window !== "undefined" && localStorage.getItem(COLLAPSED_KEY) === "1"
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCollapsed(isCollapsed)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStoreShared(typeof window !== "undefined" && localStorage.getItem(STORE_SHARED_KEY) === "1")
 
     apiGet<unknown>("/services")
       .then((res) => {
@@ -176,7 +183,9 @@ export default function OnboardingChecklist({
   const doneMap: Record<OnboardingStepKey, boolean> = {
     service: (servicesCount ?? 0) > 0,
     hours: hasOpenDay === true, // pelo menos 1 dia de atendimento aberto
-    store: hasSlug === true,    // tem link/apelido público definido
+    // O slug nasce auto-gerado; só conta como "compartilhou" se o dono copiou o link
+    // (storeShared) OU já tem agendamento (loja claramente rodando — não nudgeia conta ativa).
+    store: hasSlug === true && (storeShared || hasFirstSchedule === true),
     schedule: hasFirstSchedule === true,
   }
   const doneCount = ready ? ONBOARDING_STEPS.filter((s) => doneMap[s.key]).length : 0
@@ -217,6 +226,8 @@ export default function OnboardingChecklist({
   const copyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(publicUrl)
+      localStorage.setItem(STORE_SHARED_KEY, "1") // marca o passo "Compartilhe" como concluído
+      setStoreShared(true)
       toast.success("Link copiado! Cole no Instagram ou WhatsApp")
     } catch {
       toast.error("Não consegui copiar — copie manualmente o link acima")
