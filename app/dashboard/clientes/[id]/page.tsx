@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation"
 import {
   ArrowLeft, Phone, Mail, Car, Calendar, AlertCircle,
   Crown, CheckCircle2, CreditCard, FileText, Hash, Wallet,
+  Edit3, Plus, CalendarPlus, X,
 } from "lucide-react"
-import { apiGet } from "@/lib/api"
+import { apiGet, apiPost, apiPut } from "@/lib/api"
+import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 import { toast } from "sonner"
 
 // ── Types (shape exato de getCustomerController → { customer }) ─────────────────
@@ -59,6 +61,12 @@ interface CustomerDetail {
   schedules: Schedule[]
 }
 
+// Estado do modal de ações: editar cliente, novo veículo ou editar veículo.
+type ModalState =
+  | { mode: "edit-customer" }
+  | { mode: "add-vehicle" }
+  | { mode: "edit-vehicle"; vehicle: Vehicle }
+
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
 function getInitials(name: string): string {
@@ -69,10 +77,12 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR")
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-  })
+// Data + hora do agendamento usando o MESMO critério UTC do resto do app
+// (formatScheduleDate/Time tratam o horário salvo como UTC "puro"), evitando
+// o desvio de fuso do browser — ex.: um agendamento das 08:00 não vira 05:00.
+function formatScheduleDateTime(iso: string): string {
+  const [y, m, d] = formatScheduleDate(iso).split("-")
+  return `${d}/${m}/${y} ${formatScheduleTime(iso)}`
 }
 
 function formatCurrency(cents: number): string {
@@ -117,6 +127,10 @@ export default function ClienteDetalhePage() {
   const [error,    setError]    = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Modal de ações (editar cliente / adicionar ou editar veículo).
+  // `vehicle` é o veículo em edição quando o modo é "edit-vehicle".
+  const [modal, setModal] = useState<ModalState | null>(null)
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
@@ -140,6 +154,16 @@ export default function ClienteDetalhePage() {
   }, [id])
 
   useEffect(() => { fetchCustomer() }, [fetchCustomer])
+
+  // Leva pro fluxo de novo agendamento já indicando o cliente atual via query.
+  // (A tela de agendamentos pode consumir o param para pré-selecionar; se não
+  // consumir ainda, o atendente apenas busca o cliente — sem endpoint novo.)
+  const goToNewSchedule = useCallback(() => {
+    if (!customer) return
+    const params = new URLSearchParams({ customerId: customer.id })
+    if (customer.name) params.set("customerName", customer.name)
+    router.push(`/dashboard/agendamentos?${params.toString()}`)
+  }, [customer, router])
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
@@ -232,6 +256,7 @@ export default function ClienteDetalhePage() {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0);   }
         }
+        @keyframes cdSpin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div
@@ -331,23 +356,62 @@ export default function ClienteDetalhePage() {
             </div>
           </div>
 
-          {/* WhatsApp */}
-          {whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Ações */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: "stretch",
+              gap: 8,
+              flexShrink: 0,
+              width: isMobile ? "100%" : undefined,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setModal({ mode: "edit-customer" })}
               style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                height: 42, padding: "0 18px", borderRadius: 12, flexShrink: 0,
-                background: "linear-gradient(135deg, #10B981, #059669)", color: "white",
-                fontSize: 13, fontWeight: 600, textDecoration: "none",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+                height: 42, padding: "0 16px", borderRadius: 12, cursor: "pointer",
+                background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+                color: "var(--c-text-2)", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
                 width: isMobile ? "100%" : undefined,
               }}
             >
-              <Phone size={15} /> Falar no WhatsApp
-            </a>
-          )}
+              <Edit3 size={15} /> Editar cliente
+            </button>
+
+            <button
+              type="button"
+              onClick={goToNewSchedule}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+                height: 42, padding: "0 16px", borderRadius: 12, cursor: "pointer",
+                background: "linear-gradient(135deg, #0066FF, #7C3AED)", border: "none",
+                color: "white", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+                width: isMobile ? "100%" : undefined,
+              }}
+            >
+              <CalendarPlus size={15} /> Novo agendamento
+            </button>
+
+            {whatsappHref && (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  height: 42, padding: "0 16px", borderRadius: 12,
+                  background: "linear-gradient(135deg, #10B981, #059669)", color: "white",
+                  fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  width: isMobile ? "100%" : undefined,
+                }}
+              >
+                <Phone size={15} /> WhatsApp
+              </a>
+            )}
+          </div>
         </div>
 
         {/* ── STATS ─────────────────────────────────────────────────────────── */}
@@ -376,7 +440,25 @@ export default function ClienteDetalhePage() {
         >
           {/* ── VEÍCULOS ────────────────────────────────────────────────────── */}
           <section>
-            <SectionTitle icon={<Car size={15} />} title="Veículos" count={customer.vehicles.length} />
+            <SectionTitle
+              icon={<Car size={15} />}
+              title="Veículos"
+              count={customer.vehicles.length}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setModal({ mode: "add-vehicle" })}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, height: 30,
+                    padding: "0 12px", borderRadius: 9, cursor: "pointer",
+                    background: "rgba(0,102,255,0.08)", border: "1px solid rgba(0,102,255,0.2)",
+                    color: "#0066FF", fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+                  }}
+                >
+                  <Plus size={13} /> Veículo
+                </button>
+              }
+            />
             {customer.vehicles.length === 0 ? (
               <EmptyBox icon={<Car size={26} />} text="Nenhum veículo cadastrado." />
             ) : (
@@ -422,6 +504,19 @@ export default function ClienteDetalhePage() {
                         {[v.brand, v.model].filter(Boolean).join(" ")}{v.color ? ` · ${v.color}` : ""}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      title="Editar veículo"
+                      onClick={() => setModal({ mode: "edit-vehicle", vehicle: v })}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+                        color: "var(--c-text-3)", cursor: "pointer",
+                      }}
+                    >
+                      <Edit3 size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -452,7 +547,7 @@ export default function ClienteDetalhePage() {
                         <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <Calendar size={13} color="var(--c-text-4)" />
                           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
-                            {formatDateTime(s.scheduledAt)}
+                            {formatScheduleDateTime(s.scheduledAt)}
                           </span>
                         </span>
                         <span
@@ -545,6 +640,17 @@ export default function ClienteDetalhePage() {
           </section>
         </div>
       </div>
+
+      {/* ── MODAL DE AÇÕES ──────────────────────────────────────────────────── */}
+      {modal && (
+        <CustomerActionsModal
+          modal={modal}
+          customer={customer}
+          isMobile={isMobile}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); fetchCustomer() }}
+        />
+      )}
     </>
   )
 }
@@ -574,7 +680,7 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   )
 }
 
-function SectionTitle({ icon, title, count }: { icon: React.ReactNode; title: string; count: number }) {
+function SectionTitle({ icon, title, count, action }: { icon: React.ReactNode; title: string; count: number; action?: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
       <span style={{ color: "var(--c-text-3)", display: "flex" }}>{icon}</span>
@@ -590,6 +696,7 @@ function SectionTitle({ icon, title, count }: { icon: React.ReactNode; title: st
       >
         {count}
       </span>
+      {action && <div style={{ marginLeft: "auto" }}>{action}</div>}
     </div>
   )
 }
@@ -608,5 +715,280 @@ function EmptyBox({ icon, text }: { icon: React.ReactNode; text: string }) {
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>{icon}</div>
       <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: 0 }}>{text}</p>
     </div>
+  )
+}
+
+// ── Modal de ações ──────────────────────────────────────────────────────────────
+// Reaproveita os MESMOS endpoints da lista de clientes:
+//   editar cliente  → PUT  /customers/:id
+//   novo veículo    → POST /customers/:id/vehicles
+//   editar veículo  → PUT  /vehicles/:vehicleId
+// Nenhum endpoint novo é criado aqui.
+
+function ModalField({
+  label, value, onChange, placeholder, required, type = "text",
+}: {
+  label: string; value: string; onChange: (v: string) => void
+  placeholder?: string; required?: boolean; type?: string
+}) {
+  const [focused, setFocused] = useState(false)
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6 }}>
+        {label}{required && <span style={{ color: "#EF4444", marginLeft: 2 }}>*</span>}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          height: 42, backgroundColor: "var(--c-bg)",
+          border: `1px solid ${focused ? "#0066FF" : "var(--c-border-2)"}`,
+          borderRadius: 10, padding: "0 14px",
+          fontSize: 14, color: "var(--c-text)",
+          outline: "none", width: "100%", boxSizing: "border-box",
+          transition: "border-color 0.15s ease", fontFamily: "inherit",
+        }}
+      />
+    </div>
+  )
+}
+
+function CustomerActionsModal({
+  modal, customer, isMobile, onClose, onSaved,
+}: {
+  modal: ModalState
+  customer: CustomerDetail
+  isMobile: boolean
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const isVehicle = modal.mode !== "edit-customer"
+  const editingVehicle = modal.mode === "edit-vehicle" ? modal.vehicle : null
+
+  // Form — cliente
+  const [name,  setName]  = useState(modal.mode === "edit-customer" ? customer.name : "")
+  const [phone, setPhone] = useState(modal.mode === "edit-customer" ? (customer.phone ?? "") : "")
+  const [email, setEmail] = useState(modal.mode === "edit-customer" ? (customer.email ?? "") : "")
+
+  // Form — veículo
+  const [plate, setPlate] = useState(editingVehicle?.plate ?? "")
+  const [brand, setBrand] = useState(editingVehicle?.brand ?? "")
+  const [model, setModel] = useState(editingVehicle?.model ?? "")
+  const [color, setColor] = useState(editingVehicle?.color ?? "")
+  const [type,  setType]  = useState<VehicleType>(editingVehicle?.type ?? "CAR")
+
+  const [submitting, setSubmitting] = useState(false)
+  const [formError,  setFormError]  = useState<string | null>(null)
+
+  const title =
+    modal.mode === "edit-customer" ? "Editar cliente"
+    : modal.mode === "add-vehicle" ? "Adicionar veículo"
+    : "Editar veículo"
+
+  async function handleSubmit() {
+    setFormError(null)
+
+    if (modal.mode === "edit-customer") {
+      if (!name.trim()) { setFormError("Nome é obrigatório."); toast.error("Preencha o nome do cliente"); return }
+      setSubmitting(true)
+      try {
+        await apiPut(`/customers/${customer.id}`, {
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+          email: email.trim() || undefined,
+        })
+        toast.success("Cliente atualizado")
+        onSaved()
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Erro ao atualizar cliente."
+        setFormError(msg); toast.error(msg)
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
+    // Veículo (novo ou edição)
+    const missing =
+      !plate.trim() ? "a placa" :
+      !brand.trim() ? "a marca" :
+      !model.trim() ? "o modelo" :
+      !color.trim() ? "a cor" : null
+    if (missing) {
+      setFormError("Preencha todos os campos do veículo.")
+      toast.error(`Preencha ${missing} do veículo`)
+      return
+    }
+    setSubmitting(true)
+    const payload = {
+      plate: plate.trim().toUpperCase(),
+      brand: brand.trim(),
+      model: model.trim(),
+      color: color.trim(),
+      type,
+    }
+    try {
+      if (modal.mode === "edit-vehicle") {
+        await apiPut(`/vehicles/${modal.vehicle.id}`, payload)
+        toast.success("Veículo atualizado")
+      } else {
+        await apiPost(`/customers/${customer.id}/vehicles`, payload)
+        toast.success("Veículo adicionado")
+      }
+      onSaved()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar veículo."
+      setFormError(msg); toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
+          backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 100,
+        }}
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
+          borderRadius: isMobile ? 16 : 20, padding: isMobile ? 20 : 28,
+          width: isMobile ? "calc(100% - 32px)" : "100%", maxWidth: 440,
+          maxHeight: "90vh", overflowY: "auto", zIndex: 101,
+          boxShadow: "0 32px 64px rgba(0,0,0,0.7)", boxSizing: "border-box",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>{title}</h2>
+            {isVehicle && (
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4 }}>
+                para {customer.name}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+              borderRadius: 8, width: 32, height: 32, display: "flex",
+              alignItems: "center", justifyContent: "center", cursor: "pointer",
+              color: "var(--c-text-3)", flexShrink: 0,
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Erro */}
+        {formError && (
+          <div
+            style={{
+              backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: 10, padding: "10px 14px", marginBottom: 16,
+              display: "flex", alignItems: "center", gap: 8,
+            }}
+          >
+            <AlertCircle size={14} color="#EF4444" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "#EF4444" }}>{formError}</span>
+          </div>
+        )}
+
+        {/* Campos */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {modal.mode === "edit-customer" ? (
+            <>
+              <ModalField label="Nome completo" value={name} onChange={setName} placeholder="João da Silva" required />
+              <ModalField label="Telefone" value={phone} onChange={setPhone} placeholder="(47) 99999-0000" />
+              <ModalField label="E-mail" value={email} onChange={setEmail} placeholder="cliente@email.com (opcional)" />
+            </>
+          ) : (
+            <>
+              <ModalField label="Placa" value={plate} onChange={(v) => setPlate(v.toUpperCase())} placeholder="ABC-1234" required />
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <ModalField label="Marca" value={brand} onChange={setBrand} placeholder="Honda" required />
+                <ModalField label="Modelo" value={model} onChange={setModel} placeholder="Civic" required />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <ModalField label="Cor" value={color} onChange={setColor} placeholder="Prata" required />
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text-2)", marginBottom: 6 }}>Tipo</label>
+                  <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value as VehicleType)}
+                    style={{
+                      height: 42, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 10, padding: "0 14px", fontSize: 14, color: "var(--c-text)",
+                      outline: "none", cursor: "pointer", fontFamily: "inherit",
+                      appearance: "none", WebkitAppearance: "none",
+                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+                      backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+                    }}
+                  >
+                    <option value="CAR">Carro</option>
+                    <option value="MOTORCYCLE">Moto</option>
+                    <option value="TRUCK">Caminhão</option>
+                    <option value="SUV">SUV</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              height: 40, padding: "0 18px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: "pointer", background: "transparent", border: "1px solid var(--c-border-2)",
+              color: "var(--c-text-2)", fontFamily: "inherit",
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            style={{
+              height: 40, padding: "0 18px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: submitting ? "not-allowed" : "pointer",
+              background: isVehicle ? "linear-gradient(135deg, #10B981, #059669)" : "linear-gradient(135deg, #0066FF, #7C3AED)",
+              border: "none", color: "white", display: "flex", alignItems: "center", gap: 8,
+              opacity: submitting ? 0.7 : 1, transition: "opacity 0.15s ease", fontFamily: "inherit",
+            }}
+          >
+            {submitting && (
+              <span
+                style={{
+                  width: 14, height: 14, borderRadius: "50%",
+                  border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white",
+                  animation: "cdSpin 0.7s linear infinite", display: "inline-block", flexShrink: 0,
+                }}
+              />
+            )}
+            {submitting
+              ? "Salvando..."
+              : modal.mode === "add-vehicle" ? "Adicionar veículo" : "Salvar alterações"}
+          </button>
+        </div>
+      </div>
+    </>
   )
 }

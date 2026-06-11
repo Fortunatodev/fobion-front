@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
@@ -77,6 +77,25 @@ const SEV: Record<Severity, { label: string; color: string }> = {
   large:  { label: "Grave", color: "#EF4444" }, // vermelho = grave
 }
 const MAX_PHOTOS = 8
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5MB por foto
+
+/** Lê a mensagem/erro REAL do backend num upload via fetch (que não passa pelo interceptor do axios). */
+async function readUploadError(res: Response): Promise<string> {
+  try {
+    const data = (await res.clone().json()) as { message?: string; error?: string } | null
+    const msg = data?.message || data?.error
+    if (msg) return msg
+  } catch {
+    // corpo não-JSON; tenta texto puro abaixo
+  }
+  try {
+    const text = (await res.text()).trim()
+    if (text) return text
+  } catch {
+    // ignora
+  }
+  return `Falha ao enviar foto (HTTP ${res.status}).`
+}
 
 const STAGES: { key: Stage; label: string; sub: string; icon: typeof LogIn }[] = [
   { key: "ENTRADA", label: "Entrada (check-in)",  sub: "Estado do carro na chegada", icon: LogIn },
@@ -103,6 +122,8 @@ export default function VistoriaPage() {
   const [sev, setSev] = useState<Severity>("small")
   const [selMark, setSelMark] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
+  // #47 progresso por foto: { done, total } enquanto envia em paralelo.
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState("")
@@ -169,19 +190,54 @@ export default function VistoriaPage() {
 
   // ── Fotos ──────────────────────────────────────────────────────────────────
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
-    if (!files.length) return
-    setUploading(true); setErr("")
+    const picked = Array.from(e.target.files ?? [])
+    if (fileRef.current) fileRef.current.value = "" // libera re-seleção do mesmo arquivo
+    if (!picked.length) return
+
+    const room = MAX_PHOTOS - cur.photoUrls.length
+    const files = picked.slice(0, Math.max(0, room))
+    if (!files.length) { setErr(`Limite de ${MAX_PHOTOS} fotos atingido.`); return }
+
+    // #46 valida tipo e tamanho ANTES de enviar (≤5MB, imagem).
+    const invalid = files.find((f) => !f.type.startsWith("image/") || f.size > MAX_PHOTO_BYTES)
+    if (invalid) {
+      setErr(
+        !invalid.type.startsWith("image/")
+          ? `"${invalid.name}" não é uma imagem.`
+          : `"${invalid.name}" passa de 5 MB — escolha uma foto menor.`,
+      )
+      return
+    }
+
+    setErr("")
+    setUploading(true)
+    setUploadProgress({ done: 0, total: files.length })
     const token = typeof window !== "undefined" ? localStorage.getItem("forbion_token") : null
+
     try {
-      for (const file of files.slice(0, MAX_PHOTOS - cur.photoUrls.length)) {
-        const fd = new FormData(); fd.append("file", file)
-        const res = await fetch(`${API}/api/upload/service-image`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd })
-        if (!res.ok) throw new Error()
-        const { url } = (await res.json()) as { url: string }
-        setStages((s) => ({ ...s, [tab]: { ...s[tab], photoUrls: [...s[tab].photoUrls, url] } }))
-      }
-    } catch { setErr("Falha ao enviar foto.") } finally { setUploading(false); if (fileRef.current) fileRef.current.value = "" }
+      // #46 envia em paralelo (não mais em série); #47 incrementa o contador a cada foto concluída.
+      const urls = await Promise.all(
+        files.map(async (file) => {
+          const fd = new FormData(); fd.append("file", file)
+          const res = await fetch(`${API}/api/upload/service-image`, {
+            method: "POST",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: fd,
+          })
+          if (!res.ok) throw new Error(await readUploadError(res)) // #49 mensagem REAL do backend
+          const { url } = (await res.json()) as { url: string }
+          setUploadProgress((p) => (p ? { ...p, done: p.done + 1 } : p))
+          return url
+        }),
+      )
+      setStages((s) => ({ ...s, [tab]: { ...s[tab], photoUrls: [...s[tab].photoUrls, ...urls] } }))
+    } catch (uploadErr) {
+      // #49 propaga o motivo real (status/mensagem) em vez de um erro genérico.
+      setErr(uploadErr instanceof Error && uploadErr.message ? uploadErr.message : "Falha ao enviar foto.")
+    } finally {
+      setUploading(false)
+      setUploadProgress(null)
+    }
   }
 
   // ── Marcação de avarias ──────────────────────────────────────────────────────
@@ -195,15 +251,21 @@ export default function VistoriaPage() {
   }
 
   // ── Assinatura ────────────────────────────────────────────────────────────────
+  // O backing store é dimensionado em CSS px × devicePixelRatio (ver resizeSigCanvas),
+  // e o contexto é escalado pelo dpr — então desenhamos/medimos sempre em CSS px.
   function sigPos(e: React.PointerEvent<HTMLCanvasElement>) {
-    const c = sigRef.current!; const r = c.getBoundingClientRect()
-    return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }
+    const r = sigRef.current!.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+  function sigStroke(ctx: CanvasRenderingContext2D) {
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--c-text").trim() || "#fff"
+    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round"
   }
   function sigDown(e: React.PointerEvent<HTMLCanvasElement>) {
     if (locked) return
     drawing.current = true
     const ctx = sigRef.current!.getContext("2d")!; const { x, y } = sigPos(e)
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--c-text").trim() || "#fff"; ctx.lineWidth = 2; ctx.lineCap = "round"
+    ctx.beginPath(); ctx.moveTo(x, y); sigStroke(ctx)
   }
   function sigMove(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!drawing.current || locked) return
@@ -217,8 +279,45 @@ export default function VistoriaPage() {
   }
   function clearSig() {
     const c = sigRef.current; if (!c) return
-    c.getContext("2d")!.clearRect(0, 0, c.width, c.height); patchStage({ signature: null })
+    const ctx = c.getContext("2d")!
+    // limpa todo o backing store ignorando o transform de dpr corrente
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c.width, c.height); ctx.restore()
+    patchStage({ signature: null })
   }
+
+  // #48 Recalcula o backing store do canvas conforme o tamanho renderizado (CSS px × dpr),
+  // redesenhando o traço atual. Sem isso, girar a tela no celular distorce a área.
+  const resizeSigCanvas = useCallback((sigDataUrl: string | null) => {
+    const c = sigRef.current; if (!c) return
+    const rect = c.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+    const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 3) : 1
+    const ctx = c.getContext("2d"); if (!ctx) return
+    c.width = Math.round(rect.width * dpr)
+    c.height = Math.round(rect.height * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0) // desenhar/medir em CSS px
+    if (sigDataUrl) {
+      const img = new Image()
+      img.onload = () => { ctx.drawImage(img, 0, 0, rect.width, rect.height) }
+      img.src = sigDataUrl
+    }
+  }, [])
+
+  // Dimensiona ao montar a aba e em resize/orientationchange, preservando o que já foi desenhado.
+  useLayoutEffect(() => {
+    if (loading || gate || locked) return // canvas só existe quando carregado, sem gate e destravado
+    // ao (re)montar a aba, parte da assinatura já salva do stage; depois preserva o traço corrente.
+    resizeSigCanvas(stages[tab].signature)
+    const onResize = () => resizeSigCanvas(sigRef.current?.toDataURL("image/png") ?? null)
+    window.addEventListener("resize", onResize)
+    window.addEventListener("orientationchange", onResize)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("orientationchange", onResize)
+    }
+    // só re-inicializa ao trocar de aba, (des)travar ou terminar de carregar — não a cada traço salvo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, locked, loading, gate, resizeSigCanvas])
 
   async function save() {
     setSaving(true); setErr(""); setSaved(false)
@@ -369,9 +468,14 @@ export default function VistoriaPage() {
               </div>
             ))}
             {!locked && cur.photoUrls.length < MAX_PHOTOS && (
-              <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ aspectRatio: "4/3", borderRadius: 10, border: "1px dashed var(--c-border-2)", background: "var(--c-bg)", color: "var(--c-text-3)", cursor: uploading ? "wait" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, fontFamily: "inherit" }}>
+              <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ aspectRatio: "4/3", borderRadius: 10, border: "1px dashed var(--c-border-2)", background: "var(--c-bg)", color: "var(--c-text-3)", cursor: uploading ? "wait" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, fontFamily: "inherit", textAlign: "center", padding: "0 6px" }}>
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-                {uploading ? "Enviando…" : "Adicionar foto"}
+                {/* #47 feedback de progresso por foto (paralelo: mostra quantas já concluíram) */}
+                {uploading
+                  ? uploadProgress && uploadProgress.total > 1
+                    ? `Enviando ${uploadProgress.done}/${uploadProgress.total}…`
+                    : "Enviando…"
+                  : "Adicionar foto"}
               </button>
             )}
           </div>

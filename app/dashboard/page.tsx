@@ -14,7 +14,7 @@ import { apiGet } from "@/lib/api"
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
 import RevenueActionsCard from "@/components/dashboard/RevenueActionsCard"
 import WelcomeModal from "@/components/dashboard/WelcomeModal"
-import { formatScheduleTime } from "@/lib/dateUtils"
+import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,22 +76,31 @@ function MetricCard({
   const animated = useAnimatedNumber(loading ? 0 : rawValue, { duration: 1000 })
   const display = isCurrency ? formatAnimatedCurrency(Math.round(animated)) : String(Math.round(animated))
   const [hov, setHov] = useState(false)
+  // #43 — feedback de toque no mobile (sem hover): leve press só em card clicável.
+  const [pressed, setPressed] = useState(false)
+  const interactive = !!onClick
+  const active = hov || (pressed && interactive)
+  const endPress = () => setPressed(false)
 
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       onClick={onClick}
+      onPointerDown={interactive ? () => setPressed(true) : undefined}
+      onPointerUp={interactive ? endPress : undefined}
+      onPointerCancel={interactive ? endPress : undefined}
+      onPointerLeave={interactive ? endPress : undefined}
       style={{
         backgroundColor: "var(--c-surface)",
-        border: `1px solid ${hov ? accentColor + "50" : "var(--c-border)"}`,
+        border: `1px solid ${active ? accentColor + "50" : "var(--c-border)"}`,
         borderRadius: 16,
         padding: 20,
         position: "relative",
         overflow: "hidden",
         transition: "all 0.2s ease",
-        transform: hov ? "translateY(-2px)" : "translateY(0)",
-        boxShadow: hov ? "0 8px 24px var(--c-shadow)" : "none",
+        transform: pressed && interactive ? "scale(0.98)" : hov ? "translateY(-2px)" : "translateY(0)",
+        boxShadow: active ? "0 8px 24px var(--c-shadow)" : "none",
         minWidth: 0,
         cursor: onClick ? "pointer" : "default",
       }}
@@ -253,6 +262,8 @@ export default function DashboardPage() {
   const [error,             setError]             = useState<string | null>(null)
   const [ctaHov,            setCtaHov]            = useState(false)
   const [hovRow,            setHovRow]            = useState<string | null>(null)
+  // #43 — linha "pressionada" no toque (mobile não tem hover)
+  const [pressedRow,        setPressedRow]        = useState<string | null>(null)
 
   // O7 — coordenação Welcome ↔ Checklist + botão flutuante "Continuar configuração"
   const [reopenSignal, setReopenSignal] = useState(0)
@@ -320,6 +331,18 @@ export default function DashboardPage() {
     .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
 
   const firstName = user?.name?.split(" ")[0] ?? "você"
+
+  // #51 — abrir o contexto direto do agendamento em vez da lista genérica.
+  // Carro já em atendimento → vai pro Pátio (fila operacional, onde ele está vivo).
+  // Pendente/confirmado → Agendamentos do dia certo (?date=) p/ achar e fechar a comanda.
+  const openSchedule = useCallback((s: Schedule) => {
+    if (s.status === "IN_PROGRESS") {
+      router.push("/dashboard/patio")
+      return
+    }
+    const date = formatScheduleDate(s.scheduledAt)
+    router.push(`/dashboard/agendamentos?date=${date}`)
+  }, [router])
 
   return (
     <div className="animate-dash-fade-in">
@@ -477,18 +500,25 @@ export default function DashboardPage() {
                 const st          = getStatusConfig(s.status)
                 const serviceName = s.scheduleServices?.[0]?.service?.name ?? "Serviço"
                 const isHov       = hovRow === s.id
+                const isPressed   = pressedRow === s.id
                 return (
                   <div
                     key={s.id}
                     onMouseEnter={() => setHovRow(s.id)}
                     onMouseLeave={() => setHovRow(null)}
-                    onClick={() => router.push("/dashboard/agendamentos")}
+                    onClick={() => openSchedule(s)}
+                    // #43 — feedback de toque no mobile (sem hover): leve press ao tocar.
+                    onPointerDown={() => setPressedRow(s.id)}
+                    onPointerUp={() => setPressedRow(null)}
+                    onPointerCancel={() => setPressedRow(null)}
+                    onPointerLeave={() => setPressedRow(null)}
                     style={{
                       display: "flex", alignItems: "center", gap: 12,
                       padding: "10px 8px", borderRadius: 10,
-                      backgroundColor: isHov ? "var(--c-surface-2)" : "transparent",
+                      backgroundColor: isHov || isPressed ? "var(--c-surface-2)" : "transparent",
                       borderBottom: i < nextSchedules.length - 1 ? "1px solid var(--c-border)" : "none",
-                      cursor: "pointer", transition: "background-color 0.12s",
+                      cursor: "pointer", transition: "background-color 0.12s, transform 0.1s ease",
+                      transform: isPressed ? "scale(0.99)" : "scale(1)",
                     }}
                   >
                     <div style={{ width: 3, height: 36, borderRadius: 2, backgroundColor: st.color, flexShrink: 0 }} />
@@ -705,7 +735,7 @@ export default function DashboardPage() {
                     return (
                       <tr
                         key={s.id}
-                        onClick={() => router.push("/dashboard/agendamentos")}
+                        onClick={() => openSchedule(s)}
                         style={{
                           cursor: "pointer", transition: "background-color 0.1s",
                           backgroundColor: idx % 2 === 0 ? "transparent" : "var(--c-surface-2)",
@@ -754,14 +784,22 @@ export default function DashboardPage() {
               {todaySchedules.map((s) => {
                 const st          = getStatusConfig(s.status)
                 const serviceName = s.scheduleServices?.[0]?.service?.name ?? "—"
+                const isPressed   = pressedRow === s.id
                 return (
                   <div
                     key={s.id}
-                    onClick={() => router.push("/dashboard/agendamentos")}
+                    onClick={() => openSchedule(s)}
+                    // #43 — feedback de toque no mobile
+                    onPointerDown={() => setPressedRow(s.id)}
+                    onPointerUp={() => setPressedRow(null)}
+                    onPointerCancel={() => setPressedRow(null)}
+                    onPointerLeave={() => setPressedRow(null)}
                     style={{
                       backgroundColor: "var(--c-surface-2)",
-                      border: "1px solid var(--c-border)",
+                      border: `1px solid ${isPressed ? "var(--c-border-2)" : "var(--c-border)"}`,
                       borderRadius: 12, padding: 16, cursor: "pointer",
+                      transition: "transform 0.1s ease, border-color 0.1s ease",
+                      transform: isPressed ? "scale(0.985)" : "scale(1)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>

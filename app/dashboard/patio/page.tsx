@@ -22,6 +22,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import PromptModal from "@/components/shared/PromptModal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
+import { formatScheduleTime } from "@/lib/dateUtils"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
@@ -43,11 +44,12 @@ type ColumnKey = "wait" | "doing" | "done"
 type VistoriaState = "on" | "pro" | "off"
 
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+// Usa o helper central (trata agendamento como UTC) p/ ficar em sincronia com o resto.
+// Mantém o fallback "—" p/ valores ausentes/inválidos, que o helper não cobre.
 const hhmm = (iso: string | null | undefined) => {
   if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return "—"
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+  if (Number.isNaN(new Date(iso).getTime())) return "—"
+  return formatScheduleTime(iso)
 }
 
 interface Column {
@@ -183,15 +185,38 @@ function DraggableCard({
     id: s.id,
     data: { from: col.key },
   })
+  // #43 — feedback de toque no celular: leve "press" enquanto o dedo está sobre o card.
+  // Convive com o drag (só aplica press quando NÃO está arrastando) e não mexe no hover.
+  const [pressed, setPressed] = useState(false)
+  // dnd-kit captura o ponteiro ao arrastar (o onPointerUp pode não disparar no card);
+  // ao começar o drag limpamos o press p/ não "grudar" depois do drop.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isDragging) setPressed(false)
+  }, [isDragging])
+  const dragTransform = CSS.Translate.toString(transform)
+  const pressTransform = pressed && !isDragging ? "scale(0.98)" : undefined
   const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
+    transform: [dragTransform, pressTransform].filter(Boolean).join(" ") || undefined,
     // o card original some quando vira overlay (evita duplicata visual)
-    opacity: isDragging ? 0 : 1,
+    opacity: isDragging ? 0 : pressed ? 0.85 : 1,
     cursor: "grab",
     touchAction: "manipulation",
+    transition: isDragging ? "none" : "transform .1s ease, opacity .1s ease",
   }
+  const endPress = () => setPressed(false)
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      // capture-phase: não colide com o onPointerDown que o dnd-kit injeta via {...listeners}
+      onPointerDownCapture={() => setPressed(true)}
+      onPointerUp={endPress}
+      onPointerCancel={endPress}
+      onPointerLeave={endPress}
+    >
       <CardBody s={s} col={col} moving={moving} onAdvance={onAdvance} vistoria={vistoria} />
     </div>
   )

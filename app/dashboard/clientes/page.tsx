@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search, Plus, User, Car, Phone, Mail,
-  ChevronRight, Edit3, X, AlertCircle, Calendar,
+  ChevronRight, Edit3, X, AlertCircle, Calendar, MessageCircle,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
 import { toast } from "sonner"
@@ -576,7 +576,7 @@ export default function ClientesPage() {
                         return (
                           <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                             style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#10B981", textDecoration: "none", fontWeight: 600 }}>
-                            💬 WhatsApp
+                            <MessageCircle size={12} /> WhatsApp
                           </a>
                         )
                       })()}
