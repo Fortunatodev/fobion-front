@@ -79,7 +79,7 @@ export default function CarlaWidget() {
           {/* header */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: "1px solid var(--c-border)", background: "linear-gradient(135deg,rgba(0,102,255,0.12),rgba(124,58,237,0.12))" }}>
             <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Sparkles size={16} color="var(--c-text)" />
+              <Sparkles size={16} color="var(--c-on-primary)" />
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Carla · assistente</p>
@@ -112,7 +112,7 @@ export default function CarlaWidget() {
               <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%" }}>
                 <div style={{
                   background: m.role === "user" ? "#0066FF" : "var(--c-border)",
-                  color: m.role === "user" ? "var(--c-text)" : "var(--c-text-2)",
+                  color: m.role === "user" ? "var(--c-on-primary)" : "var(--c-text-2)",
                   borderRadius: 12, padding: "9px 12px", fontSize: 13, lineHeight: 1.5,
                 }}>{m.content}</div>
               </div>
@@ -131,7 +131,7 @@ export default function CarlaWidget() {
                 placeholder="Escreva sua pergunta…"
                 style={{ flex: 1, height: 40, padding: "0 14px", background: "var(--c-bg)", border: "1px solid var(--c-border-2)", borderRadius: 10, color: "var(--c-text)", fontSize: 13, outline: "none", fontFamily: "inherit" }}
               />
-              <button onClick={send} disabled={sending || !input.trim()} style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: input.trim() ? "#0066FF" : "var(--c-border)", color: input.trim() ? "var(--c-text)" : "var(--c-text-4)", cursor: input.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={send} disabled={sending || !input.trim()} style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: input.trim() ? "#0066FF" : "var(--c-border)", color: input.trim() ? "var(--c-on-primary)" : "var(--c-text-4)", cursor: input.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Send size={16} />
               </button>
             </div>

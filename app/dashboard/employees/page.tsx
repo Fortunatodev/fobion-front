@@ -571,7 +571,8 @@ function EmployeesContent() {
           <div style={{
             position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
             backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20,
-            width: 440, padding: 28, zIndex: 101,
+            width: "min(440px, calc(100vw - 32px))", padding: 28, zIndex: 101,
+            maxHeight: "90vh", overflowY: "auto",
             boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
             animation: "fadeIn 0.2s ease",
           }}>
