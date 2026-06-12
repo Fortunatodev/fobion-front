@@ -252,6 +252,13 @@ export default function SlugPage() {
   const theme    = business.themeColor ?? "#0066FF"
   const themeRgb = hexToRgb(theme)
 
+  // WhatsApp da loja (CTA do empty state do catálogo): só dígitos; número
+  // nacional (10-11 dígitos = DDD + telefone) ganha DDI 55.
+  const phoneDigits = (business.phone || "").replace(/\D/g, "")
+  const waLink = phoneDigits
+    ? `https://wa.me/${phoneDigits.length >= 10 && phoneDigits.length <= 11 ? `55${phoneDigits}` : phoneDigits}`
+    : null
+
   return (
     <>
       <style>{`
@@ -417,7 +424,38 @@ export default function SlugPage() {
           </div>
 
           {business.services.length === 0 ? (
-            <p style={{ textAlign: "center", fontSize: 16, color: "var(--c-text-4)", padding: "64px 0" }}>Nenhum serviço disponível no momento.</p>
+            <div style={{
+              maxWidth: 520, margin: "0 auto", textAlign: "center",
+              background: "var(--c-surface)", border: "1px solid var(--c-border)",
+              borderRadius: 20, padding: isMobile ? "40px 24px" : "56px 40px",
+            }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: `rgba(${themeRgb},0.1)`, border: `1px solid rgba(${themeRgb},0.18)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+                <Clock size={24} color={theme} />
+              </div>
+              <p style={{ fontSize: 17, fontWeight: 600, color: "var(--c-text)", margin: "0 0 8px" }}>
+                Estamos preparando o catálogo
+              </p>
+              <p style={{ fontSize: 14, color: "var(--c-text-3)", lineHeight: 1.6, margin: 0 }}>
+                {waLink
+                  ? "Os serviços desta loja aparecem aqui em breve. Fale direto com a equipe:"
+                  : "Os serviços desta loja aparecem aqui em breve."}
+              </p>
+              {waLink && (
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    height: 48, padding: "0 28px", borderRadius: 14, marginTop: 20,
+                    background: theme, color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700,
+                    textDecoration: "none", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`,
+                  }}
+                >
+                  <Phone size={16} /> Chamar no WhatsApp
+                </a>
+              )}
+            </div>
           ) : (
             <>
               {/* Banner de assinante ativo */}

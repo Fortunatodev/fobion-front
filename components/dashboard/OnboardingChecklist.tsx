@@ -56,7 +56,7 @@ export const ONBOARDING_STEPS: OnboardingStepMeta[] = [
     label: "Cadastre seu 1º serviço (com preço)",
     why: "É a base de tudo: sem serviço, não dá pra agendar nem cobrar.",
     cta: "Cadastrar serviço",
-    href: "/dashboard/servicos",
+    href: "/dashboard/servicos?novo=1",
     color: "#0066FF",
   },
   {

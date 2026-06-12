@@ -248,6 +248,18 @@ export default function ServicosPage() {
     setShowModal("create")
   }
 
+  // Deep-link de ativação: /dashboard/servicos?novo=1 abre direto o modal de
+  // criação (CTA "Cadastrar serviço" do onboarding). Lê window.location direto
+  // (sem useSearchParams → sem Suspense boundary) e limpa o param via
+  // replaceState pra F5/voltar não reabrir o modal.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("novo") === "1") {
+      openCreate()
+      window.history.replaceState(null, "", window.location.pathname)
+    }
+    // mount-only de propósito: openCreate só zera o form e abre o modal
+  }, [])
+
   const openEdit = (s: Service) => {
     setSelected(s)
     setFormName(s.name)
