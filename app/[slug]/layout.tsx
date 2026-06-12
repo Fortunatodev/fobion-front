@@ -9,8 +9,7 @@ import {
   AUTH_CHANGE_EVENT,
 } from "@/lib/customer-auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+import { fetchPublicBusiness } from "@/lib/public-business"
 
 const NAV_LINKS = (slug: string, businessPlan?: string, plansCount = 0) => {
   const links: Array<{ href: string; label: string }> = [
@@ -70,21 +69,18 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("scroll", handler)
   }, [])
 
-  // ✅ CORRIGIDO: busca nome + avatar do dono no mesmo fetch, com error handling
+  // ✅ Fetch único via lib/public-business (cacheado por slug — mesmo request
+  // alimenta page.tsx e agendar/page.tsx sem repetir a chamada)
   useEffect(() => {
     if (!slug) return
     let cancelled = false
-    fetch(`${API}/api/public/${slug}`)
-      .then((r) => {
-        if (!r.ok) return null        // 404 ou 500 — usa slug como fallback
-        return r.json()
-      })
-      .then((d) => {
-        if (cancelled || !d) return
-        setBusinessName(d?.business?.name || slug)
-        setOwnerAvatarUrl(d?.business?.ownerAvatarUrl ?? d?.ownerAvatarUrl ?? null)
-        setBusinessPlan(d?.business?.plan ?? null)
-        setPlansCount(Array.isArray(d?.business?.plans) ? d.business.plans.length : 0)
+    fetchPublicBusiness(slug)
+      .then((biz) => {
+        if (cancelled || !biz) return  // 404 — o render usa o slug como fallback
+        setBusinessName(biz.name || slug)
+        setOwnerAvatarUrl(biz.ownerAvatarUrl ?? null)
+        setBusinessPlan(biz.plan ?? null)
+        setPlansCount(Array.isArray(biz.plans) ? biz.plans.length : 0)
       })
       .catch(() => { if (!cancelled) setBusinessName(slug) })
     return () => { cancelled = true }
@@ -132,7 +128,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
         <nav style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
           transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
-          backgroundColor: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
+          backgroundColor: scrolled ? "var(--c-bg)" : "transparent",
           backdropFilter:  scrolled ? "blur(24px)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(24px)" : "none",
           borderBottom:    scrolled ? "1px solid var(--c-border)" : "1px solid transparent",
@@ -150,10 +146,10 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
                   <img
                     src={ownerAvatarUrl}
                     alt={businessName}
-                    style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", display: "block" }}
+                    style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--c-border)", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", display: "block" }}
                   />
                 ) : (
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", border: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", border: "2px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white" }}>
                     {(businessName || slug).charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -236,7 +232,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
           <div
             style={{
               position: "fixed", inset: 0, zIndex: 40,
-              backgroundColor: "rgba(10,10,10,0.98)",
+              backgroundColor: "var(--c-elevated)",
               backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
               display: "flex", flexDirection: "column",
               fontFamily: "inherit",
@@ -247,7 +243,7 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
             {/* ✅ Perfil do dono no topo do menu mobile */}
             <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 20px", borderBottom: "1px solid var(--c-surface)", marginBottom: 8 }}>
               {ownerAvatarUrl ? (
-                <img src={ownerAvatarUrl} alt={businessName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.1)" }} />
+                <img src={ownerAvatarUrl} alt={businessName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--c-border)" }} />
               ) : (
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "white", flexShrink: 0 }}>
                   {(businessName || slug).charAt(0).toUpperCase()}

@@ -2,8 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { LazyMotion, domAnimation, AnimatePresence, m } from "motion/react"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
 import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift, Star } from "lucide-react"
 import { isCustomerAuthenticated, customerApiGet } from "@/lib/customer-auth"
+import { fetchPublicBusiness, PublicBusinessHttpError, type PublicBusinessData } from "@/lib/public-business"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 import type { PublicBusiness, PlanServiceRule, Service, CustomerPlan, PublicReview, ReviewStats } from "@/types"
 
@@ -116,10 +119,7 @@ function calcEffectivePrice(
 
 // ── Extended type ─────────────────────────────────────────────────────────────
 
-type BusinessWithTheme = PublicBusiness & {
-  ownerAvatarUrl?: string | null
-  themeColor?:     string | null
-}
+type BusinessWithTheme = PublicBusinessData
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -135,6 +135,9 @@ export default function SlugPage() {
   const [isMobile,         setIsMobile]         = useState(false)
   const [reviewStats,      setReviewStats]      = useState<ReviewStats | null>(null)
   const [reviews,          setReviews]          = useState<PublicReview[]>([])
+
+  // Micro-animação: entradas/saídas suaves no grid de serviços
+  const [servicesGridRef] = useAutoAnimate<HTMLDivElement>()
 
   // ── Subscription info (para desconto na vitrine) ──────────────────────────
   const [activeSub, setActiveSub] = useState<{
@@ -173,27 +176,25 @@ export default function SlugPage() {
           .then(res => res.ok ? (res.json() as Promise<{ stats: ReviewStats; reviews: PublicReview[] }>) : null)
           .catch(() => null)
       try {
-        const r = await fetch(`${API}/api/public/${slug}`)
+        const biz = await fetchPublicBusiness(slug)
         if (cancelled) return
-        if (r.status === 404) {
+        if (!biz) {
           setError("Loja não encontrada.")
           setLoading(false)
           return
         }
-        if (!r.ok) {
-          setError("Erro ao carregar loja. Tente novamente.")
-          setLoading(false)
-          return
-        }
-        const d = await r.json()
-        setBusiness(d.business)
+        setBusiness(biz)
         const rev = await reviewsPromise
         if (!cancelled && rev?.stats) {
           setReviewStats(rev.stats)
           setReviews(rev.reviews ?? [])
         }
-      } catch {
-        if (!cancelled) setError("Sem conexão com o servidor.")
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof PublicBusinessHttpError
+            ? "Erro ao carregar loja. Tente novamente."
+            : "Sem conexão com o servidor.")
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -240,10 +241,12 @@ export default function SlugPage() {
   const hasAnyDiscount = activeSub !== null && totalWithDiscount < totalCents
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Inter',-apple-system,sans-serif" }}>
-      <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid var(--c-border)", borderTopColor: "#0066FF", animation: "sp 0.7s linear infinite" }} />
-      <p style={{ fontSize: 14, color: "var(--c-text-4)" }}>Carregando vitrine...</p>
+    // Skeleton estático do hero (avatar + título + descrição) — mesma silhueta da vitrine
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <style>{`@keyframes skPulse { 0%,100%{opacity:.4} 50%{opacity:.9} }`}</style>
+      <div style={{ width: 88, height: 88, borderRadius: "50%", backgroundColor: "var(--c-surface-2)", animation: "skPulse 1.4s ease infinite" }} />
+      <div style={{ width: "min(320px, 70vw)", height: 28, borderRadius: 8, backgroundColor: "var(--c-surface-2)", animation: "skPulse 1.4s ease 0.1s infinite" }} />
+      <div style={{ width: "min(220px, 50vw)", height: 14, borderRadius: 7, backgroundColor: "var(--c-surface-2)", animation: "skPulse 1.4s ease 0.2s infinite" }} />
     </div>
   )
 
@@ -288,20 +291,27 @@ export default function SlugPage() {
 
   const coverImage = business.coverImage || null
 
+  // Tema claro: sem foto de capa o hero herda os tokens do tema; com coverImage
+  // o overlay é escuro SEMPRE, então o texto sobre a foto fica claro fixo pra
+  // continuar legível nos dois temas.
+  const heroText  = coverImage ? "#FFFFFF" : "var(--c-text)"
+  const heroDesc  = coverImage ? "rgba(255,255,255,0.55)" : "var(--c-text-2)"
+  const heroMuted = coverImage ? "rgba(255,255,255,0.55)" : "var(--c-text-3)"
+
   return (
     <>
       <style>{`
         @keyframes pulseGreen {
-          0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 8px rgba(16,185,129,.6); }
-          50%      { opacity:.8; transform:scale(1.2); box-shadow:0 0 16px rgba(16,185,129,.8); }
+          0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(16,185,129,0.6); }
+          50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(16,185,129,0); }
+        }
+        @keyframes pulseRed {
+          0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(239,68,68,0.6); }
+          50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(239,68,68,0); }
         }
         @keyframes scrollPulse {
           0%,100% { opacity:0; transform:scaleY(0); transform-origin:top; }
           50%      { opacity:1; transform:scaleY(1); }
-        }
-        @keyframes slideUp {
-          from { opacity:0; transform:translateY(20px); }
-          to   { opacity:1; transform:translateY(0); }
         }
         @keyframes floatOrb1 {
           0%,100% { transform:translate(-50%,0); }
@@ -338,19 +348,7 @@ export default function SlugPage() {
           <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: isMobile ? "96px 20px 48px" : "0 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
 
             {/* Badge status */}
-       {/* Badge status */}
-{/* Badge status */}
 <div style={{ marginBottom: 24, display: "inline-flex" }}>
-  <style>{`
-    @keyframes pulseGreen {
-      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(16,185,129,0.6); }
-      50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(16,185,129,0); }
-    }
-    @keyframes pulseRed {
-      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(239,68,68,0.6); }
-      50%      { opacity:.9; transform:scale(1.15); box-shadow:0 0 0 5px rgba(239,68,68,0); }
-    }
-  `}</style>
   <div style={{
     display: "flex", gap: 8, alignItems: "center",
     backgroundColor: open ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
@@ -391,8 +389,6 @@ export default function SlugPage() {
   </div>
 </div>
 
-
-
             {/* Avatar */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <div style={{ position: "relative" }}>
@@ -409,7 +405,7 @@ export default function SlugPage() {
               </div>
             </div>
 
-            <h1 style={{ fontSize: "clamp(28px, 8vw, 72px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-2px", lineHeight: 1.05, margin: "16px 0 20px", width: "100%" }}>
+            <h1 style={{ fontSize: "clamp(28px, 8vw, 72px)", fontWeight: 900, color: heroText, letterSpacing: "-2px", lineHeight: 1.05, margin: "16px 0 20px", width: "100%" }}>
               {business.name}
             </h1>
 
@@ -427,23 +423,23 @@ export default function SlugPage() {
               >
                 <Star size={13} color="#F59E0B" fill="#F59E0B" />
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#F59E0B" }}>{avgRatingLabel}</span>
-                <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>
+                <span style={{ fontSize: 13, color: heroMuted }}>
                   · {totalReviews} {totalReviews === 1 ? "avaliação" : "avaliações"}
                 </span>
               </button>
             )}
 
             {business.description && (
-              <p style={{ fontSize: isMobile ? 14 : 17, color: "rgba(255,255,255,0.55)", maxWidth: 520, lineHeight: 1.7, margin: "0 0 32px" }}>
+              <p style={{ fontSize: isMobile ? 14 : 17, color: heroDesc, maxWidth: 520, lineHeight: 1.7, margin: "0 0 32px" }}>
                 {business.description}
               </p>
             )}
 
             {/* Info badges */}
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 8 : 16, justifyContent: "center", alignItems: "center", marginBottom: 28, flexWrap: "wrap" }}>
-              {business.phone   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><Phone size={12} /> {business.phone}</span>}
-              {business.email   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><Mail size={12} /> {business.email}</span>}
-              {business.address && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--c-text-3)" }}><MapPin size={12} /> {business.address}</span>}
+              {business.phone   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: heroMuted }}><Phone size={12} /> {business.phone}</span>}
+              {business.email   && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: heroMuted }}><Mail size={12} /> {business.email}</span>}
+              {business.address && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: heroMuted }}><MapPin size={12} /> {business.address}</span>}
             </div>
 
             {/* CTAs */}
@@ -464,7 +460,7 @@ export default function SlugPage() {
 
             {/* Âncora de preço real: só com serviço ativo precificado */}
             {minPrice !== null && (
-              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "16px 0 0" }}>
+              <p style={{ fontSize: 13, color: heroMuted, margin: "16px 0 0" }}>
                 {activeServices.length} serviço{activeServices.length > 1 ? "s" : ""} · a partir de {formatCurrency(minPrice)}
               </p>
             )}
@@ -472,7 +468,7 @@ export default function SlugPage() {
             {!isMobile && (
               <div style={{ marginTop: 64, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 1, height: 40, background: `linear-gradient(${theme}, transparent)`, animation: "scrollPulse 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: 10, color: "var(--c-text-4)", letterSpacing: 1 }}>ROLE</span>
+                <span style={{ fontSize: 10, color: coverImage ? "rgba(255,255,255,0.45)" : "var(--c-text-4)", letterSpacing: 1 }}>ROLE</span>
               </div>
             )}
           </div>
@@ -542,7 +538,7 @@ export default function SlugPage() {
                   </p>
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
+              <div ref={servicesGridRef} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
                 {business.services.map(service => (
                   <ServiceCard
                     key={service.id}
@@ -677,27 +673,31 @@ export default function SlugPage() {
       </div>
 
       {/* ── BARRA FLUTUANTE ── */}
-      {selectedServices.length > 0 && (
-        <FloatingBar
-          count={selectedServices.length}
-          totalCents={totalCents}
-          totalWithDiscount={totalWithDiscount}
-          hasDiscount={hasAnyDiscount}
-          planName={activeSub?.planName ?? null}
-          totalMinutes={totalMinutes}
-          theme={theme}
-          themeRgb={themeRgb}
-          isMobile={isMobile}
-          onClear={() => setSelectedServices([])}
-          onSchedule={() => {
-            // Guest checkout direto: anônimo agenda sem login (o agendamento
-            // público já funciona 100%). Quem quiser logar pra aplicar descontos
-            // tem o link "Já tem conta?" dentro do wizard de agendamento.
-            const qs = selectedServices.map(id => `services=${id}`).join("&")
-            router.push(`/${slug}/agendar?${qs}`)
-          }}
-        />
-      )}
+      <LazyMotion features={domAnimation} strict>
+        <AnimatePresence>
+          {selectedServices.length > 0 && (
+            <FloatingBar
+              count={selectedServices.length}
+              totalCents={totalCents}
+              totalWithDiscount={totalWithDiscount}
+              hasDiscount={hasAnyDiscount}
+              planName={activeSub?.planName ?? null}
+              totalMinutes={totalMinutes}
+              theme={theme}
+              themeRgb={themeRgb}
+              isMobile={isMobile}
+              onClear={() => setSelectedServices([])}
+              onSchedule={() => {
+                // Guest checkout direto: anônimo agenda sem login (o agendamento
+                // público já funciona 100%). Quem quiser logar pra aplicar descontos
+                // tem o link "Já tem conta?" dentro do wizard de agendamento.
+                const qs = selectedServices.map(id => `services=${id}`).join("&")
+                router.push(`/${slug}/agendar?${qs}`)
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </LazyMotion>
     </>
   )
 }
@@ -891,7 +891,13 @@ function FloatingBar({
   onClear: () => void; onSchedule: () => void
 }) {
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)", backgroundColor: "rgba(10,10,10,0.97)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid var(--c-border)", padding: isMobile ? "12px 16px" : "16px 24px" }}>
+    <m.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 24 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, backgroundColor: "var(--c-bg)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid var(--c-border)", padding: isMobile ? "12px 16px" : "16px 24px" }}
+    >
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 10 : 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -939,6 +945,6 @@ function FloatingBar({
           </button>
         </div>
       </div>
-    </div>
+    </m.div>
   )
 }

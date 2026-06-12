@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, Ma
 import { toast } from "sonner"
 import type { PublicBusiness, PlanServiceRule, Vehicle } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
+import { fetchPublicBusiness } from "@/lib/public-business"
 
 type PublicService = PublicBusiness["services"][number]
 
@@ -204,15 +205,13 @@ function AgendarContent() {
     return () => window.removeEventListener(AUTH_CHANGE_EVENT, handler)
   }, [])
 
-  // ── Load business ─────────────────────────────────────────────────────────
+  // ── Load business (cache compartilhado c/ vitrine — não refaz o request) ──
   useEffect(() => {
     if (!slug) return
     async function load() {
       try {
-        const res  = await fetch(`${API}/api/public/${slug}`)
-        if (!res.ok) throw new Error()
-        const data = await res.json()
-        const biz: PublicBusiness & { themeColor?: string } = data.business ?? data
+        const biz = await fetchPublicBusiness(slug)
+        if (!biz) throw new Error()
         setBusiness(biz)
         setTheme(biz.themeColor ?? "#0066FF")
         const ids      = searchParams.getAll("services")
@@ -552,7 +551,7 @@ function AgendarContent() {
         {/* ── Top bar ── */}
         <div style={{
           position: "sticky", top: 0, zIndex: 40,
-          backgroundColor: "rgba(10,10,10,0.97)", backdropFilter: "blur(12px)",
+          backgroundColor: "var(--c-bg)", backdropFilter: "blur(12px)",
           borderBottom: "1px solid var(--c-border)",
         }}>
           <div style={{
@@ -772,7 +771,7 @@ function AgendarContent() {
 
                   {/* Calendário */}
                   <div style={{
-                    backgroundColor: "#0B0B0F", border: "1px solid var(--c-surface-2)",
+                    backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-surface-2)",
                     borderRadius: 14, padding: isMobile ? 12 : 16,
                     marginBottom: isMobile ? 16 : 0,
                   }}>
@@ -927,7 +926,7 @@ function AgendarContent() {
                               title={disabled ? "Horário indisponível" : undefined}
                               style={{
                                 height: 34, borderRadius: 10, fontSize: 13, fontWeight: sel ? 700 : 500,
-                                background:  sel     ? theme   : disabled ? "var(--c-elevated)" : "#020617",
+                                background:  sel     ? theme   : disabled ? "var(--c-elevated)" : "var(--c-surface)",
                                 border:      sel     ? `1px solid ${theme}` : disabled ? "1px solid var(--c-surface-2)" : "1px solid var(--c-surface-2)",
                                 color:       sel     ? "var(--c-text)"  : disabled ? "var(--c-text-4)" : "var(--c-text-2)",
                                 opacity:     disabled ? 0.35   : 1,
