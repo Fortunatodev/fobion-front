@@ -397,7 +397,7 @@ export default function SlugPage() {
                 Ver serviços
               </button>
               <button
-                onClick={() => authed ? document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" }) : router.push(`/${slug}/login`)}
+                onClick={() => document.getElementById("servicos")?.scrollIntoView({ behavior: "smooth" })}
                 style={{ width: isMobile ? "100%" : "auto", height: 48, padding: "0 28px", borderRadius: 14, background: theme, color: "var(--c-on-primary)", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: `0 4px 24px rgba(${themeRgb}, 0.35)`, fontFamily: "inherit" }}
               >
                 Agendar agora →
@@ -600,13 +600,11 @@ export default function SlugPage() {
           isMobile={isMobile}
           onClear={() => setSelectedServices([])}
           onSchedule={() => {
-            if (!authed) {
-              localStorage.setItem("forbion_pending_services", JSON.stringify(selectedServices))
-              router.push(`/${slug}/login?redirect=agendar`)
-            } else {
-              const qs = selectedServices.map(id => `services=${id}`).join("&")
-              router.push(`/${slug}/agendar?${qs}`)
-            }
+            // Guest checkout direto: anônimo agenda sem login (o agendamento
+            // público já funciona 100%). Quem quiser logar pra aplicar descontos
+            // tem o link "Já tem conta?" dentro do wizard de agendamento.
+            const qs = selectedServices.map(id => `services=${id}`).join("&")
+            router.push(`/${slug}/agendar?${qs}`)
           }}
         />
       )}

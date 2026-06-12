@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useReducer } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle, Hourglass } from "lucide-react"
 import { toast } from "sonner"
-import type { PublicBusiness, PlanServiceRule } from "@/types"
+import type { PublicBusiness, PlanServiceRule, Vehicle } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
 
 type PublicService = PublicBusiness["services"][number]
@@ -185,6 +185,9 @@ function AgendarContent() {
   const [vehicleModel,  setVehicleModel]  = useState("")
   const [vehicleColor,  setVehicleColor]  = useState("")
   const [vehicleType,   setVehicleType]   = useState("CAR")
+  // Veículos do cliente logado (prefill + alternância por chips)
+  const [myVehicles,        setMyVehicles]        = useState<Vehicle[]>([])
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
   const [submitting,    setSubmitting]    = useState(false)
   const [submitError,   setSubmitError]   = useState<string | null>(null)
   const [requiresApproval,  setRequiresApproval]  = useState(false)
@@ -240,6 +243,17 @@ function AgendarContent() {
       .finally(() => setLoadingEmployees(false))
   }, [business])
 
+  // ── Prefill de veículo (cliente logado) ───────────────────────────────────
+  // Preenche os campos com um veículo já cadastrado — continuam editáveis.
+  const applyVehiclePrefill = useCallback((v: Vehicle) => {
+    setSelectedVehicleId(v.id)
+    setVehiclePlate(v.plate && v.plate !== "SEM-PLACA" ? v.plate : "")
+    setVehicleBrand(v.brand ?? "")
+    setVehicleModel(v.model ?? "")
+    setVehicleColor(v.color ?? "")
+    if (VEHICLE_TYPES.includes(v.type)) setVehicleType(v.type)
+  }, [])
+
   // ── Pre-fill customer data if logged in ───────────────────────────────────
   useEffect(() => {
     if (!isCustomerAuthenticated()) return
@@ -249,11 +263,17 @@ function AgendarContent() {
     if (slug && payload.businessSlug && payload.businessSlug !== slug) return
     setIsLoggedIn(true)
     if (payload.name) setCustomerName(payload.name)
-    // email + phone + subscriber status from /customer/me
-    customerApiGet<{ customer: { email?: string; phone: string; subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
+    // email + phone + vehicles + subscriber status from /customer/me
+    customerApiGet<{ customer: { email?: string; phone: string; vehicles?: Vehicle[]; subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
       .then(({ customer }) => {
         if (customer?.phone) setCustomerPhone(customer.phone)
         if (customer?.email) setCustomerEmail(customer.email)
+        // Veículos cadastrados — pré-preenche com o primeiro
+        const vehicles = customer?.vehicles ?? []
+        if (vehicles.length > 0) {
+          setMyVehicles(vehicles)
+          applyVehiclePrefill(vehicles[0])
+        }
         // Check for active subscription with per-service rules
         const sub = customer?.subscriptions?.find(s => s.status === "ACTIVE")
         if (sub?.customerPlan) {
@@ -694,9 +714,55 @@ function AgendarContent() {
                 <p style={{ fontSize: 15, fontWeight: 600, color: "var(--c-text)", margin: "0 0 4px" }}>
                   Escolha a data e o horário
                 </p>
-                <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: "0 0 18px" }}>
+                <p style={{ fontSize: 12, color: "var(--c-text-2)", margin: "0 0 12px" }}>
                   Selecione o dia no calendário e depois o horário disponível.
                 </p>
+
+                {/* Atalhos Hoje / Amanhã — mesma dStr LOCAL do grid (sem toISOString/UTC) */}
+                {(() => {
+                  const toLocalDStr = (d: Date) =>
+                    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                  const now = new Date()
+                  const chips: Array<{ label: string; date: Date }> = [
+                    { label: "Hoje",   date: now },
+                    { label: "Amanhã", date: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) },
+                  ]
+                  return (
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      {chips.map(({ label, date }) => {
+                        const dStr       = toLocalDStr(date)
+                        const sel        = dStr === selectedDate
+                        const hoursEntry = business!.hours?.find(h => h.dayOfWeek === date.getDay())
+                        const closed     = hoursEntry ? !hoursEntry.isOpen : false
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            disabled={closed}
+                            title={closed ? "A loja está fechada neste dia" : undefined}
+                            onClick={() => {
+                              if (closed) return
+                              // mantém o mês visível em sincronia (virada de mês à noite)
+                              setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1))
+                              handleSelectDate(dStr)
+                            }}
+                            style={{
+                              height: 32, padding: "0 16px", borderRadius: 100, fontSize: 12,
+                              fontWeight: 600, fontFamily: "inherit", transition: "all 0.15s",
+                              border: sel ? `1px solid ${theme}` : "1px solid var(--c-border-2)",
+                              background: sel ? `rgba(${themeRgb},0.12)` : "transparent",
+                              color: closed ? "var(--c-text-4)" : sel ? theme : "var(--c-text-2)",
+                              opacity: closed ? 0.4 : 1,
+                              cursor: closed ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
 
                 <div style={isMobile ? {} : {
                   display: "grid",
@@ -961,6 +1027,30 @@ function AgendarContent() {
                   <FInput label="Telefone / WhatsApp" value={customerPhone} onChange={setCustomerPhone} placeholder="(11) 99999-9999" type="tel" />
                   <FInput label={isLoggedIn ? "E-mail (da sua conta)" : "E-mail"} value={customerEmail} onChange={setCustomerEmail} placeholder="joao@email.com" type="email" readOnly={isLoggedIn} />
                 </div>
+                {!isLoggedIn && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Salva a seleção pra voltar direto pro agendamento após o login
+                      // (o callback de auth lê forbion_pending_services e restaura ?services=)
+                      localStorage.setItem(
+                        "forbion_pending_services",
+                        JSON.stringify(selectedServices.map(s => s.id))
+                      )
+                      router.push(`/${slug}/login?redirect=agendar`)
+                    }}
+                    style={{
+                      marginTop: 12, padding: 0, background: "none", border: "none",
+                      cursor: "pointer", fontFamily: "inherit", fontSize: 12,
+                      color: "var(--c-text-3)", textAlign: "left",
+                    }}
+                  >
+                    Já tem conta?{" "}
+                    <span style={{ color: theme, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                      Entre para aplicar seus descontos
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Dados veículo */}
@@ -971,6 +1061,39 @@ function AgendarContent() {
                 <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-4)", margin: "0 0 14px", letterSpacing: "0.04em" }}>
                   DADOS DO VEÍCULO
                 </p>
+
+                {/* Veículos já cadastrados do cliente logado — alterna o prefill */}
+                {isLoggedIn && myVehicles.length > 1 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "0 0 8px" }}>
+                      Seus veículos — toque para preencher:
+                    </p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {myVehicles.map(v => {
+                        const sel        = v.id === selectedVehicleId
+                        const plateLabel = v.plate && v.plate !== "SEM-PLACA" ? v.plate : null
+                        const label      = [plateLabel, v.model].filter(Boolean).join(" · ") || "Veículo"
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => applyVehiclePrefill(v)}
+                            style={{
+                              height: 32, padding: "0 14px", borderRadius: 8, fontSize: 12,
+                              fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
+                              border: sel ? `1px solid ${theme}` : "1px solid var(--c-border-2)",
+                              background: sel ? `rgba(${themeRgb},0.1)` : "transparent",
+                              color: sel ? theme : "var(--c-text-3)",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Tipo */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
