@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift } from "lucide-react"
+import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift, Star } from "lucide-react"
 import { isCustomerAuthenticated, customerApiGet } from "@/lib/customer-auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
-import type { PublicBusiness, PlanServiceRule, Service, CustomerPlan } from "@/types"
+import type { PublicBusiness, PlanServiceRule, Service, CustomerPlan, PublicReview, ReviewStats } from "@/types"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -133,6 +133,8 @@ export default function SlugPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [authed,           setAuthed]           = useState(false)
   const [isMobile,         setIsMobile]         = useState(false)
+  const [reviewStats,      setReviewStats]      = useState<ReviewStats | null>(null)
+  const [reviews,          setReviews]          = useState<PublicReview[]>([])
 
   // ── Subscription info (para desconto na vitrine) ──────────────────────────
   const [activeSub, setActiveSub] = useState<{
@@ -164,6 +166,12 @@ export default function SlugPage() {
     if (!slug) return
     let cancelled = false
     async function load() {
+      // Prova social: dispara em paralelo com o fetch da loja. Falha aqui é
+      // silenciosa — a vitrine nunca quebra por causa das avaliações.
+      const reviewsPromise: Promise<{ stats: ReviewStats; reviews: PublicReview[] } | null> =
+        fetch(`${API}/api/public/business/${slug}/reviews?limit=6`)
+          .then(res => res.ok ? (res.json() as Promise<{ stats: ReviewStats; reviews: PublicReview[] }>) : null)
+          .catch(() => null)
       try {
         const r = await fetch(`${API}/api/public/${slug}`)
         if (cancelled) return
@@ -179,6 +187,11 @@ export default function SlugPage() {
         }
         const d = await r.json()
         setBusiness(d.business)
+        const rev = await reviewsPromise
+        if (!cancelled && rev?.stats) {
+          setReviewStats(rev.stats)
+          setReviews(rev.reviews ?? [])
+        }
       } catch {
         if (!cancelled) setError("Sem conexão com o servidor.")
       } finally {
@@ -259,6 +272,22 @@ export default function SlugPage() {
     ? `https://wa.me/${phoneDigits.length >= 10 && phoneDigits.length <= 11 ? `55${phoneDigits}` : phoneDigits}`
     : null
 
+  // ── Prova social REAL: só renderiza com review de verdade no banco ────────
+  const avgRating        = reviewStats?.averageRating ?? null
+  const totalReviews     = reviewStats?.totalReviews ?? 0
+  const showReviewBadge   = totalReviews > 0 && avgRating !== null
+  const showReviewSection = totalReviews > 0 && reviews.length > 0
+  const avgRatingLabel    = avgRating !== null
+    ? avgRating.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    : ""
+
+  // ── Âncora de preço real no hero: só serviços ativos com preço ────────────
+  const activeServices = business.services.filter(s => s.isActive)
+  const pricedServices = activeServices.filter(s => s.price > 0)
+  const minPrice       = pricedServices.length > 0 ? Math.min(...pricedServices.map(s => s.price)) : null
+
+  const coverImage = business.coverImage || null
+
   return (
     <>
       <style>{`
@@ -289,15 +318,24 @@ export default function SlugPage() {
       <div style={{ backgroundColor: "var(--c-bg)", color: "var(--c-text)", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
         {/* ── HERO ── */}
-        <section style={{ position: "relative", minHeight: "92vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Mobile: altura compacta (auto) pro catálogo aparecer com ~1 swipe */}
+        <section style={{ position: "relative", minHeight: isMobile ? "auto" : "92vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
 
-          <div style={{ position: "absolute", inset: 0, backgroundColor: "var(--c-bg)", pointerEvents: "none" }}>
+          {/* Fundo: coverImage da loja com overlay escuro pra legibilidade; sem cover → visual original */}
+          <div style={{
+            position: "absolute", inset: 0, backgroundColor: "var(--c-bg)", pointerEvents: "none",
+            ...(coverImage ? {
+              backgroundImage: `linear-gradient(180deg, rgba(8,8,10,0.78) 0%, rgba(8,8,10,0.86) 60%, rgba(8,8,10,0.96) 100%), url(${coverImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            } : {}),
+          }}>
             <div style={{ position: "absolute", top: "-20%", left: "50%", width: isMobile ? 400 : 800, height: isMobile ? 400 : 800, borderRadius: "50%", background: `radial-gradient(circle, rgba(${themeRgb},0.08) 0%, transparent 70%)`, animation: "floatOrb1 12s ease-in-out infinite" }} />
             <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: isMobile ? 260 : 500, height: isMobile ? 260 : 500, borderRadius: "50%", background: `radial-gradient(circle, rgba(${themeRgb},0.05) 0%, transparent 70%)`, animation: "floatOrb2 15s ease-in-out infinite" }} />
             <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
           </div>
 
-          <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: isMobile ? "100px 20px 60px" : "0 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: isMobile ? "96px 20px 48px" : "0 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
 
             {/* Badge status */}
        {/* Badge status */}
@@ -375,6 +413,26 @@ export default function SlugPage() {
               {business.name}
             </h1>
 
+            {/* Prova social: média real do banco — só aparece se houver review */}
+            {showReviewBadge && (
+              <button
+                onClick={() => document.getElementById("avaliacoes")?.scrollIntoView({ behavior: "smooth" })}
+                aria-label={`Ver avaliações: nota média ${avgRatingLabel} de ${totalReviews} avaliações`}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  margin: "0 0 20px", padding: "7px 14px", borderRadius: 100,
+                  backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.22)",
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                <Star size={13} color="#F59E0B" fill="#F59E0B" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#F59E0B" }}>{avgRatingLabel}</span>
+                <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>
+                  · {totalReviews} {totalReviews === 1 ? "avaliação" : "avaliações"}
+                </span>
+              </button>
+            )}
+
             {business.description && (
               <p style={{ fontSize: isMobile ? 14 : 17, color: "rgba(255,255,255,0.55)", maxWidth: 520, lineHeight: 1.7, margin: "0 0 32px" }}>
                 {business.description}
@@ -404,6 +462,13 @@ export default function SlugPage() {
               </button>
             </div>
 
+            {/* Âncora de preço real: só com serviço ativo precificado */}
+            {minPrice !== null && (
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "16px 0 0" }}>
+                {activeServices.length} serviço{activeServices.length > 1 ? "s" : ""} · a partir de {formatCurrency(minPrice)}
+              </p>
+            )}
+
             {!isMobile && (
               <div style={{ marginTop: 64, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 1, height: 40, background: `linear-gradient(${theme}, transparent)`, animation: "scrollPulse 2s ease-in-out infinite" }} />
@@ -414,7 +479,7 @@ export default function SlugPage() {
         </section>
 
         {/* ── SERVIÇOS ── */}
-        <section id="servicos" style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
+        <section id="servicos" style={{ scrollMarginTop: 76, padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: isMobile ? 32 : 48 }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: theme, letterSpacing: 3, backgroundColor: `rgba(${themeRgb},0.08)`, border: `1px solid rgba(${themeRgb},0.15)`, padding: "5px 12px", borderRadius: 100 }}>
               SERVIÇOS
@@ -497,7 +562,7 @@ export default function SlugPage() {
 
         {/* ── PLANOS ── */}
         {hasPlans && (
-          <section id="planos" style={{ backgroundColor: "var(--c-elevated)", borderTop: "1px solid var(--c-surface-2)" }}>
+          <section id="planos" style={{ scrollMarginTop: 76, backgroundColor: "var(--c-elevated)", borderTop: "1px solid var(--c-surface-2)" }}>
             <div style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
               <div style={{ textAlign: "center", marginBottom: isMobile ? 32 : 48 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#7C3AED", letterSpacing: 3, backgroundColor: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)", padding: "5px 12px", borderRadius: 100 }}>
@@ -516,7 +581,7 @@ export default function SlugPage() {
         )}
 
         {/* ── HORÁRIOS ── */}
-        <section id="horarios" style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
+        <section id="horarios" style={{ scrollMarginTop: 76, padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: isMobile ? 32 : 64, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 280px" }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: "var(--c-text-4)", letterSpacing: 3, backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", padding: "5px 12px", borderRadius: 100 }}>
@@ -570,6 +635,31 @@ export default function SlugPage() {
           </div>
         </section>
 
+        {/* ── AVALIAÇÕES (prova social real — só com review no banco) ── */}
+        {showReviewSection && (
+          <section id="avaliacoes" style={{ scrollMarginTop: 76, backgroundColor: "var(--c-elevated)", borderTop: "1px solid var(--c-surface-2)" }}>
+            <div style={{ padding: isMobile ? "64px 16px" : "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
+              <div style={{ textAlign: "center", marginBottom: isMobile ? 32 : 48 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#F59E0B", letterSpacing: 3, backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)", padding: "5px 12px", borderRadius: 100 }}>
+                  AVALIAÇÕES
+                </span>
+                <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 900, color: "var(--c-text)", letterSpacing: "-1px", margin: "12px 0 0" }}>O que dizem nossos clientes</h2>
+                {avgRating !== null && (
+                  <p style={{ fontSize: isMobile ? 13 : 15, color: "var(--c-text-3)", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <Star size={14} color="#F59E0B" fill="#F59E0B" />
+                    <span><strong style={{ color: "var(--c-text)" }}>{avgRatingLabel}</strong> de média em {totalReviews} {totalReviews === 1 ? "avaliação" : "avaliações"}</span>
+                  </p>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
+                {reviews.map(review => (
+                  <ReviewCard key={review.id} review={review} theme={theme} isMobile={isMobile} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── FOOTER ── */}
         <footer style={{ borderTop: "1px solid var(--c-surface)" }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
@@ -613,6 +703,66 @@ export default function SlugPage() {
 }
 
 /* ── Sub-componentes ─────────────────────────────────────────────────────────── */
+
+function ReviewCard({
+  review, theme, isMobile,
+}: {
+  review: PublicReview; theme: string; isMobile: boolean
+}) {
+  const name = review.customer.name.trim() || "Cliente"
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(p => p.charAt(0).toUpperCase())
+    .join("")
+  const serviceNames = review.schedule.scheduleServices.map(ss => ss.service.name)
+
+  return (
+    <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, padding: isMobile ? "16px 16px 18px" : "20px 20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Cabeçalho: avatar + nome + estrelas */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        {review.customer.picture ? (
+          <img src={review.customer.picture} alt={name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--c-border)", flexShrink: 0, display: "block" }} />
+        ) : (
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${theme}, ${theme}99)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "white", flexShrink: 0 }}>
+            {initials}
+          </div>
+        )}
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
+          <div style={{ display: "flex", gap: 2, marginTop: 4 }} aria-label={`Nota ${review.rating} de 5`}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <Star
+                key={i}
+                size={13}
+                color={i <= review.rating ? "#F59E0B" : "var(--c-border-2)"}
+                fill={i <= review.rating ? "#F59E0B" : "none"}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Comentário (se houver) */}
+      {review.comment && (
+        <p style={{ fontSize: 13, color: "var(--c-text-2)", lineHeight: 1.6, margin: 0 }}>
+          “{review.comment}”
+        </p>
+      )}
+
+      {/* Serviços do agendamento como chips */}
+      {serviceNames.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: "auto" }}>
+          {serviceNames.map((sn, idx) => (
+            <span key={`${review.id}-${idx}`} style={{ fontSize: 11, color: "var(--c-text-3)", backgroundColor: "var(--c-surface-2)", border: "1px solid var(--c-border)", padding: "3px 8px", borderRadius: 8 }}>
+              {sn}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function ServiceCard({
   service, isSelected, onToggle, theme, themeRgb, isMobile, activeSub,
