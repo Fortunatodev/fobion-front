@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Component, type CSSProperties, type R
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import {
   DndContext,
@@ -22,6 +22,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import PromptModal from "@/components/shared/PromptModal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
+import TabTutorial from "@/components/shared/TabTutorial"
 import { formatScheduleTime } from "@/lib/dateUtils"
 
 /**
@@ -418,6 +419,17 @@ export default function PatioPage() {
         </div>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Arraste os carros entre as colunas, ou use os botões.</p>
+
+      <TabTutorial
+        tabKey="patio"
+        title="Como usar o Pátio"
+        subtitle="Os carros que estão na loja agora"
+        steps={[
+          { icon: Car, title: "1. Veja o que está na loja", text: "O Pátio mostra os carros em atendimento neste momento, como uma fila operacional do seu dia." },
+          { icon: ArrowRight, title: "2. Mova pelo fluxo", text: "Avance cada carro pelas etapas do serviço até a entrega. Tudo atualiza em tempo real." },
+          { icon: CheckCircle, title: "3. Entregue o carro", text: "Ao concluir, feche a comanda: o carro sai do pátio e a venda é registrada automaticamente." },
+        ]}
+      />
 
       {loading && (
         <>

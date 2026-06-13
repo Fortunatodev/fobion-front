@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -437,6 +438,18 @@ export default function ServicosPage() {
             Novo serviço
           </button>
         </div>
+
+        {/* ── Tutorial reutilizável ── */}
+        <TabTutorial
+          tabKey="servicos"
+          title="Como usar os Serviços"
+          subtitle="Seu catálogo e as regras do negócio"
+          steps={[
+            { icon: Tag, title: "1. Cadastre seus serviços", text: "Nome, preço e duração de cada serviço. É o que o cliente vê e escolhe ao agendar pela sua loja." },
+            { icon: ShieldCheck, title: "2. Garantia e retorno", text: "Defina os dias de garantia/re-chamada. Ao fechar a comanda, o sistema te lembra de chamar o cliente de volta na hora certa." },
+            { icon: Percent, title: "3. Comissão da equipe", text: "Defina o repasse por serviço. Quando um funcionário executa, a comissão dele é calculada automaticamente nos Repasses." },
+          ]}
+        />
 
         {/* ── Error banner ── */}
         {error && (

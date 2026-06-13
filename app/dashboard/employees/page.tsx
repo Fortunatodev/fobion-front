@@ -8,6 +8,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
@@ -384,6 +385,18 @@ function EmployeesContent() {
             <Plus size={15} /> Adicionar funcionário
           </button>
         </div>
+
+        {/* ── Tutorial reutilizável ── */}
+        <TabTutorial
+          tabKey="employees"
+          title="Como usar a Equipe"
+          subtitle="Sua equipe e como cada um recebe"
+          steps={[
+            { icon: Plus, title: "1. Cadastre os funcionários", text: "Adicione cada profissional com nome e e-mail. Eles aparecem na agenda e o cliente pode escolher quem atende." },
+            { icon: Wallet, title: "2. Defina como ele recebe", text: "Ao editar, escolha: só comissão, só salário ou salário + comissão — com valor, frequência e dia de vencimento." },
+            { icon: Percent, title: "3. Comissão por serviço", text: "Em \"Repasses\" do funcionário, ajuste a porcentagem por serviço. O cálculo é automático ao fechar cada comanda." },
+          ]}
+        />
 
         {/* ── Success toast ── */}
         {success && (

@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw } from "lucide-react"
+import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 /**
  * V2-B3 — Orçamentos. Cliente do CRM + itens do catálogo → proposta → envia no
@@ -199,6 +200,16 @@ export default function OrcamentosPage() {
           <Plus size={15} /> Novo orçamento
         </button>
       </div>
+      <TabTutorial
+        tabKey="orcamentos"
+        title="Como usar os Orçamentos"
+        subtitle="Proposta no WhatsApp que vira venda"
+        steps={[
+          { icon: FileText, title: "1. Monte a proposta", text: "Escolha o cliente e os serviços (vitrificação, PPF, polimento...). O total é somado automaticamente." },
+          { icon: Send, title: "2. Envie no WhatsApp", text: "Mande a proposta pronta pro cliente. Dá pra escolher e salvar mensagens de abertura no próprio envio." },
+          { icon: CheckCircle, title: "3. Aprovou? Vira venda", text: "Marque como aprovado e depois como vendido. Você acompanha o status de cada proposta enviada." },
+        ]}
+      />
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Monte propostas (ticket alto: vitrificação, PPF), envie no WhatsApp e converta em venda.</p>
 
       {/* B19 — funil/conversão de orçamentos (métrica que a CERA exibe) */}

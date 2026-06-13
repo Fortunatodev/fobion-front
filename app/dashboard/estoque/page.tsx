@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw } from "lucide-react"
+import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 /** V2-B4 — Estoque de produtos. CRUD + ajuste de entrada/saída + alerta de mínimo + KPIs. */
 interface Product {
@@ -158,6 +159,17 @@ export default function EstoquePage() {
         </div>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>Ceras, shampoos, insumos — controle entrada e saída.</p>
+
+      <TabTutorial
+        tabKey="estoque"
+        title="Como usar o Estoque"
+        subtitle="Seus produtos sob controle"
+        steps={[
+          { icon: Package, title: "1. Cadastre os produtos", text: "Shampoo, cera, feltros... registre o que você usa e revende, com custo e preço de venda." },
+          { icon: TrendingDown, title: "2. Acompanhe a quantidade", text: "Veja quanto tem de cada item e ajuste conforme usa nos serviços ou compra mais." },
+          { icon: AlertTriangle, title: "3. Alerta de reposição", text: "Defina o estoque mínimo de cada produto. Quando ficar baixo, a gente te avisa pra repor antes de faltar." },
+        ]}
+      />
 
       {/* KPIs */}
       {!loading && products.length > 0 && (

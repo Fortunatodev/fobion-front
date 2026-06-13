@@ -6,12 +6,14 @@ import {
   Search, Crown, Plus, X,
   CheckCircle2, XCircle,
   AlertCircle, Clock, Lock,
+  RefreshCw,
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -408,6 +410,18 @@ function AssinantesContent() {
           </div>
           <NewSubBtn onClick={() => setShowModal(true)} isMobile={isMobile} />
         </div>
+
+        {/* ── TUTORIAL ──────────────────────────────────────────────────── */}
+        <TabTutorial
+          tabKey="assinantes"
+          title="Como usar os Assinantes"
+          subtitle="A receita recorrente do seu clube"
+          steps={[
+            { icon: Crown,     title: "1. Quem é assinante",         text: "Veja todos os clientes ativos no seu clube de assinatura, com o plano de cada um." },
+            { icon: RefreshCw, title: "2. Cobranças e renovação",    text: "Acompanhe as cobranças e as renovações de cada assinante mês a mês." },
+            { icon: XCircle,   title: "3. Cancelamentos",            text: "Veja quem cancelou pra agir rápido e tentar trazer o cliente de volta." },
+          ]}
+        />
 
         {/* ── FILTERS ───────────────────────────────────────────────────── */}
         <div style={{

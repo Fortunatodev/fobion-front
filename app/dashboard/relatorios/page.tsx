@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAnimatedNumber, formatAnimatedCurrency } from "@/lib/useAnimatedNumber"
 import {
-  BarChart2, TrendingUp, TrendingDown, Users, Calendar,
+  BarChart2, BarChart3, TrendingUp, TrendingDown, Users, Calendar,
   DollarSign, CheckCircle, XCircle, AlertCircle, Crown,
   Zap, Target, Star, ArrowUpRight, ArrowDownRight,
   Activity, Repeat, ShieldCheck, Lightbulb, Clock,
-  CreditCard, Banknote, QrCode, Download,
+  CreditCard, Banknote, QrCode, Download, Wallet,
 } from "lucide-react"
 import {
   ResponsiveContainer, AreaChart as RArea, Area,
@@ -17,6 +17,7 @@ import {
 import { apiGet } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -637,6 +638,17 @@ function PainelDeSaude() {
             </div>
           </div>
         </div>
+
+        <TabTutorial
+          tabKey="relatorios"
+          title="Como ler os Relatórios"
+          subtitle="Os números do negócio sem complicação"
+          steps={[
+            { icon: BarChart3, title: "1. Veja o desempenho", text: "Receita, agendamentos, ticket médio e crescimento — no período que você escolher." },
+            { icon: TrendingUp, title: "2. Entenda o que muda", text: "Compare períodos e veja na hora o que está crescendo ou caindo no seu negócio." },
+            { icon: Wallet, title: "3. Repasses e retornos", text: "Daqui você acessa os repasses da equipe e a lista de clientes a recuperar." },
+          ]}
+        />
 
         {error && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>

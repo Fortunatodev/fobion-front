@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardCheck, Search, AlertCircle, RefreshCw, ChevronRight, Car } from "lucide-react"
+import { ClipboardCheck, Search, AlertCircle, RefreshCw, ChevronRight, Car, Camera, Share2 } from "lucide-react"
 import { apiGet } from "@/lib/api"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 /**
  * Índice de Vistorias — a vistoria é POR COMANDA (entrada/saída do veículo).
@@ -76,6 +77,17 @@ export default function VistoriaIndexPage() {
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>
         A vistoria é feita por atendimento (entrada e saída do veículo). Escolha a comanda e registre fotos, avarias e a assinatura.
       </p>
+
+      <TabTutorial
+        tabKey="vistoria"
+        title="Como usar a Vistoria"
+        subtitle="Documente o estado do carro e evite dor de cabeça"
+        steps={[
+          { icon: ClipboardCheck, title: "1. Registre a entrada", text: "Antes de começar o serviço, registre o estado do carro. Fica tudo documentado, com data e hora." },
+          { icon: Camera, title: "2. Fotos e avarias", text: "Tire fotos e marque arranhões e amassados no desenho do veículo. Prova do estado na chegada." },
+          { icon: Share2, title: "3. Compartilhe com o cliente", text: "Gere o link da vistoria e mande pro cliente — transparência que evita discussão na entrega." },
+        ]}
+      />
 
       <div style={{ position: "relative", marginBottom: 16, maxWidth: 360 }}>
         <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--c-text-4)" }} />

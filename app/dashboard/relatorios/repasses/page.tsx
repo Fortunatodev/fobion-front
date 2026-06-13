@@ -9,6 +9,7 @@ import {
 import Link from "next/link"
 import { toast } from "sonner"
 import { apiGet, apiPost } from "@/lib/api"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 type Period = "7d" | "30d" | "90d" | "12m"
 type Status = "PENDING" | "PAID" | "REFUNDED"
@@ -329,6 +330,18 @@ export default function RepassesReportPage() {
             </p>
           </div>
         </div>
+
+        <TabTutorial
+          tabKey="repasses"
+          title="Como pagar a equipe"
+          subtitle="Salários e comissões sem se perder"
+          steps={[
+            { icon: BadgeDollarSign, title: "1. Veja quanto deve", text: "No topo aparece quanto pagar a cada funcionário agora: salário do período + comissões ainda não pagas." },
+            { icon: CalendarClock, title: "2. Fique de olho no vencimento", text: "Quem tem salário mensal mostra o próximo vencimento. Vermelho = atrasado, amarelo = está chegando." },
+            { icon: CheckCircle, title: "3. Pague num toque", text: "Clique em \"Pagar agora\": registra salário + comissões num lote só e guarda no histórico." },
+            { icon: History, title: "4. Histórico completo", text: "Tudo que você já pagou fica salvo — com data, forma de pagamento e valor. Bom pra conferir depois." },
+          ]}
+        />
 
         {/* ERROR */}
         {error && (

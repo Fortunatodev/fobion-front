@@ -2,10 +2,11 @@
 
 import { Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Heart, ShieldCheck, Users } from "lucide-react"
+import { BellRing, Heart, MessageCircle, ShieldCheck, Users } from "lucide-react"
 import RelationshipQueue from "@/components/dashboard/RelationshipQueue"
 import RecallsPanel from "@/components/dashboard/RecallsPanel"
 import RetencaoPanel from "@/components/dashboard/RetencaoPanel"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 /**
  * Aba Relacionamento — o CRM do dono, pra TODOS os planos (sem gate).
@@ -41,6 +42,17 @@ function RelacionamentoContent() {
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>
         Cuide dos seus clientes: quem chamar hoje, retornos a vencer e quem sumiu — com mensagem pronta no WhatsApp.
       </p>
+
+      <TabTutorial
+        tabKey="relacionamento"
+        title="Como usar o Relacionamento"
+        subtitle="Quem chamar hoje, em 1 toque"
+        steps={[
+          { icon: Users, title: "1. Sua fila de clientes", text: "Reunimos quem precisa de atenção hoje: retornos vencendo, clientes que sumiram e pós-serviço sem avaliação." },
+          { icon: MessageCircle, title: "2. Chame no WhatsApp", text: "Cada cliente tem um botão de WhatsApp com mensagem pronta. Escolha um modelo, ajuste o texto e envie." },
+          { icon: BellRing, title: "3. Marque follow-ups", text: "Precisa lembrar de falar com alguém depois? Crie um follow-up com data — a gente te lembra no dia certo." },
+        ]}
+      />
 
       {/* Sub-abas */}
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--c-border)", marginBottom: 24, overflowX: "auto" }}>

@@ -11,6 +11,7 @@ import { apiGet, apiPut } from "@/lib/api"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -636,6 +637,17 @@ export default function AgendaPage() {
           </div>
           <NewAgBtn onClick={() => router.push("/dashboard/agendamentos")} />
         </div>
+
+        <TabTutorial
+          tabKey="agenda"
+          title="Como usar a Agenda"
+          subtitle="Seus horários no controle"
+          steps={[
+            { icon: Calendar, title: "1. Veja o seu dia", text: "A agenda mostra todos os agendamentos do dia. Toque num horário pra abrir os detalhes do atendimento." },
+            { icon: Clock, title: "2. Configure seus horários", text: "Na aba Horários, defina os dias e as horas em que sua loja atende. O cliente só consegue agendar dentro disso." },
+            { icon: Plus, title: "3. Agende na hora", text: "Recebeu um cliente pelo telefone? Crie o agendamento manualmente escolhendo o serviço e um horário livre." },
+          ]}
+        />
 
         {/* ── SELETOR DE FUNCIONÁRIO ── */}
         {employees.length > 0 && (

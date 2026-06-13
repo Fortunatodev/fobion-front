@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation"
 import {
   Search, Plus, User, Car, Phone, Mail,
   ChevronRight, Edit3, X, AlertCircle, Calendar, MessageCircle,
+  UserPlus, History,
 } from "lucide-react"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
 import { toast } from "sonner"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -334,6 +336,18 @@ export default function ClientesPage() {
             Novo cliente
           </ButtonPrimary>
         </div>
+
+        {/* ── TUTORIAL ────────────────────────────────────────────────────── */}
+        <TabTutorial
+          tabKey="clientes"
+          title="Como usar os Clientes"
+          subtitle="Sua base de clientes na palma da mão"
+          steps={[
+            { icon: UserPlus, title: "1. Cadastre clientes e carros", text: "Guarde nome, telefone e os veículos de cada cliente. Esses dados são reaproveitados nos agendamentos." },
+            { icon: History, title: "2. Veja o histórico", text: "Na ficha do cliente você vê as visitas, o quanto ele já gastou, o ticket médio e o próximo retorno previsto." },
+            { icon: MessageCircle, title: "3. Fale com ele", text: "Botão de WhatsApp direto da ficha pra chamar o cliente quando quiser, sem sair do sistema." },
+          ]}
+        />
 
         {/* ── SEARCH + STATS ──────────────────────────────────────────────── */}
         <div

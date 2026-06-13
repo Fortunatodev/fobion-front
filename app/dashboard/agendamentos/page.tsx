@@ -9,12 +9,14 @@ import {
   Banknote, QrCode,
   User, FileText, Bike, Truck, CarFront,
   Link2,
+  CalendarCheck, PlayCircle, CheckCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
 import { buildWhatsAppLink } from "@/lib/utils"
+import TabTutorial from "@/components/shared/TabTutorial"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1858,6 +1860,29 @@ export default function AgendamentosPage() {
             <Plus size={15} /> Novo agendamento
           </button>
         </div>
+
+        <TabTutorial
+          tabKey="agendamentos"
+          title="Como funcionam os Agendamentos"
+          subtitle="Do agendamento ao pagamento"
+          steps={[
+            {
+              icon: CalendarCheck,
+              title: "1. Acompanhe o dia",
+              text: "Aqui ficam os agendamentos de cada dia: pendentes, confirmados, em andamento e concluídos.",
+            },
+            {
+              icon: PlayCircle,
+              title: "2. Inicie o atendimento",
+              text: "Quando o carro chega, mude o status pra 'em andamento'. Ele passa a aparecer no Pátio.",
+            },
+            {
+              icon: CheckCircle,
+              title: "3. Feche a comanda",
+              text: "Ao terminar, feche a comanda e registre o pagamento. Isso gera a sua receita e os repasses da equipe.",
+            },
+          ]}
+        />
 
         {/* ── NAVEGAÇÃO DE DATA ── */}
         <div style={{
