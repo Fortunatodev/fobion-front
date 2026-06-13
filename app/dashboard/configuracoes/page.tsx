@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/UserContext"
 import type { BusinessPlan } from "@/types"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
+import EmailCard from "@/components/settings/EmailCard"
 import PricingCards from "@/components/shared/PricingCards"
 import SlotsPreview from "@/components/dashboard/SlotsPreview"
 import PublicStorePreview from "@/components/dashboard/PublicStorePreview"
@@ -1475,6 +1476,9 @@ function ConfiguracoesContent() {
                 </button>
               )}
             </div>
+
+            {/* Troca do e-mail de login */}
+            <EmailCard isMobile={isMobile} />
 
             {/* IMP-101 — troca/definição de senha */}
             <PasswordCard isMobile={isMobile} />
