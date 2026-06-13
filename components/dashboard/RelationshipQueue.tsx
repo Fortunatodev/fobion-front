@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart } from "lucide-react"
+import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User } from "lucide-react"
 import { apiGet, apiPatch } from "@/lib/api"
 import { buildWaLink, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
+import RelationshipModal from "@/components/dashboard/RelationshipModal"
 import { toast } from "sonner"
 
 /**
@@ -31,6 +32,7 @@ export default function RelationshipQueue() {
   const [error, setError] = useState("")
   const [filtro, setFiltro] = useState<FilaTipo | "todos">("todos")
   const [done, setDone] = useState<Set<string>>(new Set())
+  const [ficha, setFicha] = useState<{ id: string; nome: string; phone: string | null } | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -180,6 +182,13 @@ export default function RelationshipQueue() {
                     >
                       <CalendarPlus size={17} /> Agendar
                     </button>
+                    <button
+                      onClick={() => setFicha({ id: item.customerId, nome: item.nome, phone: item.phone })}
+                      title="Abrir ficha de relacionamento"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <User size={17} /> Ficha
+                    </button>
                     {canConcluir && !isDone && (
                       <button
                         onClick={() => concluir(item)}
@@ -196,6 +205,14 @@ export default function RelationshipQueue() {
           })}
         </div>
       )}
+
+      <RelationshipModal
+        open={ficha !== null}
+        onClose={() => setFicha(null)}
+        customerId={ficha?.id ?? null}
+        customerName={ficha?.nome ?? ""}
+        phone={ficha?.phone ?? null}
+      />
     </div>
   )
 }
