@@ -158,9 +158,9 @@ function CancelBtn({ onClick }: { onClick: () => void }) {
       style={{
         height: 40, padding: "0 18px", borderRadius: 10,
         fontSize: 13, fontWeight: 600, cursor: "pointer",
-        background: "transparent", border: "1px solid var(--c-border-2)",
+        background: hov ? "var(--c-border)" : "transparent", border: "1px solid var(--c-border-2)",
         color: hov ? "var(--c-text)" : "var(--c-text-2)",
-        transition: "color 0.15s", fontFamily: "inherit",
+        transition: "background 0.15s, color 0.15s", fontFamily: "inherit",
       }}
     >
       Cancelar
@@ -629,13 +629,14 @@ function AssinantesContent() {
                     </div>
 
                     {/* Badges: status + expiring soon */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0, alignSelf: "flex-start" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0, alignSelf: "center" }}>
                       <span style={{
                         fontSize: 11, fontWeight: 600,
                         color: cfg.color, backgroundColor: cfg.bg,
                         border: `1px solid ${cfg.border}`,
-                        borderRadius: 8, padding: "4px 10px",
+                        borderRadius: 999, padding: "4px 11px",
                         whiteSpace: "nowrap",
+                        display: "inline-flex", alignItems: "center",
                       }}>
                         {cfg.label}
                       </span>

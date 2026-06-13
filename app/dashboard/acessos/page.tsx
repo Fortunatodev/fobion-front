@@ -343,13 +343,14 @@ export default function AcessosPage() {
                     </p>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
                       <span style={{
-                        fontSize: 10, fontWeight: 600, borderRadius: 99, padding: "3px 8px",
+                        fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "4px 10px",
                         color: meta.color,
                         backgroundColor: `${meta.color}1A`,
                         border: `1px solid ${meta.color}33`,
-                        display: "inline-flex", alignItems: "center", gap: 4,
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        lineHeight: 1, minHeight: 22,
                       }}>
-                        {member.role === "OWNER" && <Crown size={10} />}
+                        {member.role === "OWNER" && <Crown size={11} />}
                         {meta.label}
                       </span>
                       <span style={{ fontSize: 11, color: "var(--c-text-4)" }}>
