@@ -5,6 +5,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 
 /**
  * V2-B3 — Orçamentos. Cliente do CRM + itens do catálogo → proposta → envia no
@@ -52,6 +53,7 @@ export default function OrcamentosPage() {
   const [error, setError] = useState("")
   const [modal, setModal] = useState(false)
   const [services, setServices] = useState<ServiceItem[]>([])
+  const [pickerQuote, setPickerQuote] = useState<Quote | null>(null)
 
   // exclusão
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -61,7 +63,6 @@ export default function OrcamentosPage() {
   // form
   const [fName, setFName] = useState("")
   const [fPlate, setFPlate] = useState("")
-  const [fPhone, setFPhone] = useState("")
   const [fCustomerId, setFCustomerId] = useState<string | null>(null)
   const [fVehicleId, setFVehicleId] = useState<string | null>(null)
   const [fNotes, setFNotes] = useState("")
@@ -104,11 +105,11 @@ export default function OrcamentosPage() {
   }, [custQuery])
 
   function pickCustomer(c: CustomerResult) {
-    setFCustomerId(c.id); setFName(c.name); setFPhone(c.phone)
+    setFCustomerId(c.id); setFName(c.name)
     if (c.vehicles.length >= 1) { setFPlate(c.vehicles[0].plate); setFVehicleId(c.vehicles[0].id) }
     setShowCust(false); setCustQuery(""); setCustResults([])
   }
-  function clearCustomer() { setFCustomerId(null); setFVehicleId(null); setFName(""); setFPlate(""); setFPhone("") }
+  function clearCustomer() { setFCustomerId(null); setFVehicleId(null); setFName(""); setFPlate("") }
 
   function addCatalogItem(s: ServiceItem) {
     setFItems((p) => {
@@ -123,7 +124,7 @@ export default function OrcamentosPage() {
   const total = fItems.reduce((a, it) => a + (Number(it.price) > 0 ? Math.round(Number(it.price) * 100) : 0), 0)
 
   function resetForm() {
-    setFName(""); setFPlate(""); setFPhone(""); setFCustomerId(null); setFVehicleId(null)
+    setFName(""); setFPlate(""); setFCustomerId(null); setFVehicleId(null)
     setFNotes(""); setFValid(""); setFItems([{ name: "", price: "" }]); setCustQuery(""); setCustResults([])
   }
 
@@ -161,10 +162,10 @@ export default function OrcamentosPage() {
       toast.error(e instanceof Error ? e.message : "Erro ao atualizar o status.")
     }
   }
-  function sendWhatsApp(q: Quote, markSent = false) {
-    const msg = quoteMessage(q)
-    window.open(`https://api.whatsapp.com/send/?text=${encodeURIComponent(msg)}`, "_blank")
-    if (markSent && q.status === "DRAFT") setStatus(q.id, "SENT")
+  // Abre o seletor de mensagens já com a proposta itemizada pronta. O dono pode
+  // trocar por um modelo salvo, ajustar e enviar. Ao enviar, marca como enviado.
+  function openSendPicker(q: Quote) {
+    setPickerQuote(q)
   }
   function remove(id: string) {
     setDeleteTarget(id); setConfirmOpen(true)
@@ -273,7 +274,7 @@ export default function OrcamentosPage() {
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                   {(q.status === "DRAFT" || q.status === "SENT") && (
                     <>
-                      <button onClick={() => sendWhatsApp(q, true)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> {q.status === "DRAFT" ? "Enviar no WhatsApp" : "Reenviar"}</button>
+                      <button onClick={() => openSendPicker(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> {q.status === "DRAFT" ? "Enviar no WhatsApp" : "Reenviar"}</button>
                       <button onClick={() => setStatus(q.id, "APPROVED")} style={pill("rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)", "#10B981")}><Check size={13} /> Aprovar</button>
                       <button onClick={() => setStatus(q.id, "REJECTED")} style={ghostBtn}><X size={13} /> Recusar</button>
                     </>
@@ -281,7 +282,7 @@ export default function OrcamentosPage() {
                   {q.status === "APPROVED" && (
                     <>
                       <button onClick={() => setStatus(q.id, "CONVERTED")} style={pill("rgba(245,158,11,0.12)", "rgba(245,158,11,0.25)", "#F59E0B")}><ShoppingCart size={13} /> Marcar como vendido</button>
-                      <button onClick={() => sendWhatsApp(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> Reenviar</button>
+                      <button onClick={() => openSendPicker(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> Reenviar</button>
                     </>
                   )}
                   <button onClick={() => remove(q.id)} style={{ ...pill("transparent", "rgba(239,68,68,0.2)", "#EF4444"), marginLeft: "auto", padding: "0 10px" }}><Trash2 size={13} /></button>
@@ -378,6 +379,21 @@ export default function OrcamentosPage() {
         confirmLabel="Excluir"
         variant="danger"
         loading={deleting}
+      />
+
+      <MessageTemplatePicker
+        open={pickerQuote !== null}
+        onClose={() => setPickerQuote(null)}
+        context="orcamento"
+        phone={null}
+        initialText={pickerQuote ? quoteMessage(pickerQuote) : undefined}
+        vars={pickerQuote ? {
+          nomeCompleto: pickerQuote.customerName,
+          primeiroNome: pickerQuote.customerName ? pickerQuote.customerName.split(" ")[0] : null,
+          placa: pickerQuote.plate,
+          valor: fmt(pickerQuote.totalPrice),
+        } as TemplateVars : {}}
+        onSend={() => { if (pickerQuote && pickerQuote.status === "DRAFT") setStatus(pickerQuote.id, "SENT") }}
       />
     </div>
   )

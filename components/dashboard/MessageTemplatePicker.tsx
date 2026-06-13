@@ -48,13 +48,17 @@ const fieldStyle: React.CSSProperties = {
 }
 
 export default function MessageTemplatePicker({
-  open, onClose, context, vars, phone,
+  open, onClose, context, vars, phone, initialText, onSend,
 }: {
   open: boolean
   onClose: () => void
   context: string
   vars: TemplateVars
   phone: string | null
+  /** Texto inicial pronto (ex.: proposta de orçamento itemizada). Se ausente, usa o 1º modelo. */
+  initialText?: string
+  /** Disparado quando o dono clica em enviar/abrir o WhatsApp (ex.: marcar orçamento como enviado). */
+  onSend?: () => void
 }) {
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(false)
@@ -70,15 +74,16 @@ export default function MessageTemplatePicker({
       .then((r) => {
         const list = r.templates ?? []
         setTemplates(list)
-        if (list[0]) setText(render(list[0].body, vars))
+        // Texto inicial: o pronto recebido (proposta itemizada) tem prioridade; senão o 1º modelo.
+        if (initialText) setText(initialText)
+        else if (list[0]) setText(render(list[0].body, vars))
       })
       .catch(() => toast.error("Não consegui carregar as mensagens."))
       .finally(() => setLoading(false))
-  // vars muda a cada render; intencional usar só context (as variáveis do cliente são estáveis na abertura)
+  // vars muda a cada render; intencional usar só context+initialText (estáveis na abertura)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context])
+  }, [context, initialText])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) load() }, [open, load])
 
   const temFone = waDigits(phone) !== null
@@ -183,7 +188,7 @@ export default function MessageTemplatePicker({
         <button type="button" onClick={copiar} style={{ display: "flex", alignItems: "center", gap: 7, height: 42, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           <Copy size={16} /> Copiar
         </button>
-        <a href={waHref} target="_blank" rel="noopener noreferrer" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 7, height: 42, padding: "0 18px", borderRadius: 10, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+        <a href={waHref} target="_blank" rel="noopener noreferrer" onClick={() => { onSend?.(); onClose() }} style={{ display: "flex", alignItems: "center", gap: 7, height: 42, padding: "0 18px", borderRadius: 10, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
           <MessageCircle size={17} /> {temFone ? "Enviar no WhatsApp" : "Abrir WhatsApp"}
         </a>
       </div>

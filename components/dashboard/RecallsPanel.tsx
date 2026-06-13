@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { apiGet } from "@/lib/api"
 import { ShieldCheck, MessageCircle, Calendar, AlertCircle, RefreshCw } from "lucide-react"
+import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 
 /**
  * V2-B3 — Recalls / Garantias (motor de recompra). Lista as garantias PENDENTES
@@ -23,20 +24,16 @@ function daysUntil(iso: string): number {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000)
 }
 
-function waLink(phone: string | null, name: string | null, service: string, dueDays: number): string | null {
-  if (!phone) return null
-  const digits = phone.replace(/\D/g, "")
-  if (digits.length < 10) return null
-  const withCountry = digits.startsWith("55") ? digits : `55${digits}`
-  const venc = dueDays <= 0 ? "venceu" : `vence em ${dueDays} dias`
-  const msg = encodeURIComponent(`Olá${name ? `, ${name.split(" ")[0]}` : ""}! A garantia do(a) ${service} do seu carro ${venc}. Que tal agendar o retorno pra manter a proteção em dia?`)
-  return `https://wa.me/${withCountry}?text=${msg}`
+function hasPhone(phone: string | null): boolean {
+  return !!phone && phone.replace(/\D/g, "").length >= 10
 }
 
 export default function RecallsPanel() {
   const [recalls, setRecalls] = useState<Recall[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [picker, setPicker] = useState<Recall | null>(null)
+  const [loja, setLoja] = useState("")
 
   const load = useCallback(() => {
     setLoading(true)
@@ -49,6 +46,13 @@ export default function RecallsPanel() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
+
+  // Nome da loja pra variável {loja} das mensagens (1 fetch leve).
+  useEffect(() => {
+    apiGet<{ business?: { name?: string } }>("/auth/me")
+      .then((r) => setLoja(r.business?.name ?? ""))
+      .catch(() => {})
+  }, [])
 
   return (
     <div>
@@ -96,7 +100,7 @@ export default function RecallsPanel() {
             const overdue = d <= 0
             const soon = !overdue && d <= 14
             const color = overdue ? "#EF4444" : soon ? "#F59E0B" : "#10B981"
-            const link = waLink(r.customerPhone, r.customerName, r.serviceName, d)
+            const temFone = hasPhone(r.customerPhone)
             return (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "12px 16px" }}>
                 <div style={{ width: 4, height: 36, borderRadius: 2, background: color, flexShrink: 0 }} />
@@ -112,10 +116,10 @@ export default function RecallsPanel() {
                 <span style={{ fontSize: 11, fontWeight: 600, color, flexShrink: 0 }}>
                   {overdue ? "Vencida" : soon ? "Vence em breve" : "No prazo"}
                 </span>
-                {link ? (
-                  <a href={link} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", borderRadius: 9, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#10B981", fontSize: 12, fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>
+                {temFone ? (
+                  <button onClick={() => setPicker(r)} style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", borderRadius: 9, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#10B981", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
                     <MessageCircle size={14} /> Reagendar
-                  </a>
+                  </button>
                 ) : (
                   <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>sem telefone</span>
                 )}
@@ -124,6 +128,27 @@ export default function RecallsPanel() {
           })}
         </div>
       )}
+
+      <MessageTemplatePicker
+        open={picker !== null}
+        onClose={() => setPicker(null)}
+        context="garantia"
+        phone={picker?.customerPhone ?? null}
+        vars={picker ? buildRecallVars(picker, loja) : {}}
+      />
     </div>
   )
+}
+
+/** Variáveis pra renderizar a mensagem de garantia/recall a partir do item + loja. */
+function buildRecallVars(r: Recall, loja: string): TemplateVars {
+  const dias = daysUntil(r.dueDate)
+  return {
+    primeiroNome: r.customerName ? r.customerName.split(" ")[0] : null,
+    nomeCompleto: r.customerName,
+    servico: r.serviceName,
+    placa: r.plate,
+    loja,
+    diasRestantes: dias <= 0 ? 0 : dias,
+  }
 }

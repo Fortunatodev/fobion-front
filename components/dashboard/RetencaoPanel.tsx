@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { apiGet } from "@/lib/api"
 import { AlertTriangle, Users, Crown, Repeat, UserPlus, Clock, MessageCircle, AlertCircle, RefreshCw } from "lucide-react"
+import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 
 /**
  * V2-B3 — Painel de Retenção (RFM). Referência: WashAI.
@@ -28,13 +29,8 @@ interface RetencaoData {
 
 const fmt = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
-function waLink(phone: string | null, name: string) {
-  if (!phone) return null
-  const digits = phone.replace(/\D/g, "")
-  if (digits.length < 10) return null
-  const withCountry = digits.startsWith("55") ? digits : `55${digits}`
-  const msg = encodeURIComponent(`Olá, ${name.split(" ")[0]}! Sentimos sua falta aqui. Que tal agendar um cuidado pro seu carro? Temos um horário pra você.`)
-  return `https://wa.me/${withCountry}?text=${msg}`
+function hasPhone(phone: string | null): boolean {
+  return !!phone && phone.replace(/\D/g, "").length >= 10
 }
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
@@ -58,6 +54,8 @@ export default function RetencaoPanel() {
   const [data, setData] = useState<RetencaoData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [picker, setPicker] = useState<Recuperavel | null>(null)
+  const [loja, setLoja] = useState("")
 
   const load = useCallback(() => {
     setLoading(true)
@@ -72,6 +70,13 @@ export default function RetencaoPanel() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
+
+  // Nome da loja pra variável {loja} das mensagens.
+  useEffect(() => {
+    apiGet<{ business?: { name?: string } }>("/auth/me")
+      .then((r) => setLoja(r.business?.name ?? ""))
+      .catch(() => {})
+  }, [])
 
   return (
     <div>
@@ -139,7 +144,7 @@ export default function RetencaoPanel() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.recuperaveis.map((c) => {
-                const link = waLink(c.phone, c.name)
+                const temFone = hasPhone(c.phone)
                 const b = BUCKET_LABEL[c.bucket] ?? { label: c.bucket, color: "var(--c-text-3)" }
                 return (
                   <div key={c.customerId} style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "12px 16px" }}>
@@ -152,10 +157,10 @@ export default function RetencaoPanel() {
                         Última visita há {c.lastVisitDays} dias · {c.visits} visita{c.visits !== 1 ? "s" : ""} · gastou {fmt(c.totalSpent)} · ticket médio {fmt(c.avgTicket)}
                       </p>
                     </div>
-                    {link ? (
-                      <a href={link} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", borderRadius: 9, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#10B981", fontSize: 12, fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>
+                    {temFone ? (
+                      <button onClick={() => setPicker(c)} style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", borderRadius: 9, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#10B981", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
                         <MessageCircle size={14} /> WhatsApp
-                      </a>
+                      </button>
                     ) : (
                       <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>sem telefone</span>
                     )}
@@ -166,6 +171,14 @@ export default function RetencaoPanel() {
           )}
         </>
       )}
+
+      <MessageTemplatePicker
+        open={picker !== null}
+        onClose={() => setPicker(null)}
+        context={picker?.bucket === "perdido" ? "perdido" : "inativo"}
+        phone={picker?.phone ?? null}
+        vars={picker ? { primeiroNome: picker.name.split(" ")[0], nomeCompleto: picker.name, loja } as TemplateVars : {}}
+      />
     </div>
   )
 }
