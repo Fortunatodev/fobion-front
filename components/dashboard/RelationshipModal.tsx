@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { MessageCircle, X } from "lucide-react"
 import Modal from "@/components/shared/Modal"
 import { apiGet, apiPatch, apiPut } from "@/lib/api"
-import { buildWaLink } from "@/lib/crm"
+import { buildWaLink, hasPhone } from "@/lib/crm"
 import { toast } from "sonner"
 
 /**
@@ -111,7 +111,8 @@ export default function RelationshipModal({
     }
   }
 
-  const waLink = buildWaLink({ tipo: "follow_up", nome: customerName, phone, motivo: "" })
+  const waLink = buildWaLink({ tipo: "follow_up", nome: customerName, phone })
+  const temFone = hasPhone(phone)
 
   return (
     <Modal open={open} onClose={onClose} size="lg" title={`Relacionamento · ${customerName}`} description="Resumo, anotações e quando re-chamar este cliente.">
@@ -182,11 +183,9 @@ export default function RelationshipModal({
       )}
 
       <div style={{ borderTop: "1px solid var(--c-border)", marginTop: 20, paddingTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12 }}>
-        {waLink ? (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 16px", borderRadius: 10, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-            <MessageCircle size={16} /> WhatsApp
-          </a>
-        ) : <span />}
+        <a href={waLink} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 16px", borderRadius: 10, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+          <MessageCircle size={16} /> {temFone ? "WhatsApp" : "Abrir WhatsApp"}
+        </a>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} disabled={saving} style={{ height: 40, padding: "0 16px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Fechar</button>
           <button onClick={salvar} disabled={saving || loading} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: "#0066FF", border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1, fontFamily: "inherit" }}>{saving ? "Salvando…" : "Salvar"}</button>

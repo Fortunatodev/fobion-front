@@ -442,8 +442,10 @@ function NovoAgendamentoModal({
   isMobile,
   onClose,
   onSuccess,
+  prefill,
 }: {
   isMobile: boolean; onClose: () => void; onSuccess: () => void
+  prefill?: { customerId: string; customerName: string; serviceIds: string[] } | null
 }) {
   const { user } = useUser()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
@@ -525,6 +527,22 @@ function NovoAgendamentoModal({
       }
     }
     load()
+  }, [])
+
+  // Pré-preenche do reagendamento (vindo do Relacionamento): serviços + cliente.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (!prefill) return
+    if (prefill.serviceIds.length) setSelectedServices(prefill.serviceIds)
+    if (prefill.customerId && prefill.customerName) {
+      apiGet<{ customers: CustomerResult[] }>(`/customers?search=${encodeURIComponent(prefill.customerName)}&limit=10`)
+        .then((r) => {
+          const c = (r.customers ?? []).find((x) => x.id === prefill.customerId)
+          if (c) handleSelectCustomer(c)
+        })
+        .catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Load employees when slug is available ──────────────────────────────────
@@ -1644,6 +1662,8 @@ export default function AgendamentosPage() {
   const [actionLoading,    setActionLoading]    = useState<string | null>(null)
   const [showCloseModal,   setShowCloseModal]   = useState(false)
   const [showNovoModal,    setShowNovoModal]    = useState(false)   // ← novo
+  // Reagendamento pré-montado vindo do Relacionamento (?customerId&customerName&serviceIds)
+  const [prefill, setPrefill] = useState<{ customerId: string; customerName: string; serviceIds: string[] } | null>(null)
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [paymentMethod,    setPaymentMethod]    = useState("PIX")
   const [searchFocused,    setSearchFocused]    = useState(false)
@@ -1678,6 +1698,23 @@ export default function AgendamentosPage() {
   }, [selectedDate, filterStatus])
 
   useEffect(() => { fetchSchedules() }, [fetchSchedules])
+
+  // Deep-link de reagendamento pré-montado (vindo do Relacionamento). Lê via
+  // window.location.search (não useSearchParams — evita Suspense no Next 15) e
+  // limpa a URL pra não reabrir no F5.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const customerId = sp.get("customerId")
+    if (!customerId) return
+    setPrefill({
+      customerId,
+      customerName: sp.get("customerName") ?? "",
+      serviceIds: (sp.get("serviceIds") ?? "").split(",").filter(Boolean),
+    })
+    setShowNovoModal(true)
+    window.history.replaceState(null, "", window.location.pathname)
+  }, [])
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -2182,8 +2219,9 @@ export default function AgendamentosPage() {
       {showNovoModal && (
         <NovoAgendamentoModal
           isMobile={isMobile}
-          onClose={() => setShowNovoModal(false)}
+          onClose={() => { setShowNovoModal(false); setPrefill(null) }}
           onSuccess={fetchSchedules}
+          prefill={prefill}
         />
       )}
 

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User } from "lucide-react"
+import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User, Copy } from "lucide-react"
 import { apiGet, apiPatch } from "@/lib/api"
-import { buildWaLink, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
+import { buildWaLink, waMessage, hasPhone, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
 import RelationshipModal from "@/components/dashboard/RelationshipModal"
 import { toast } from "sonner"
 
@@ -59,7 +59,29 @@ export default function RelationshipQueue() {
   }
 
   function agendar(item: FilaItem) {
-    router.push(`/dashboard/agendamentos?customerId=${item.customerId}&customerName=${encodeURIComponent(item.nome)}`)
+    // Reagendamento pré-montado: passa cliente + serviço (quando o item for recall).
+    const params = new URLSearchParams({ customerId: item.customerId, customerName: item.nome })
+    if (item.serviceId) params.set("serviceIds", item.serviceId)
+    router.push(`/dashboard/agendamentos?${params.toString()}`)
+  }
+
+  async function copiarMensagem(item: FilaItem) {
+    try {
+      await navigator.clipboard.writeText(waMessage(item))
+      toast.success("Mensagem copiada!")
+    } catch {
+      toast.error("Não consegui copiar.")
+    }
+  }
+
+  // "Cliente vai voltar": marca o recall/follow-up como resolvido (best-effort) e
+  // leva pro agendamento já pré-montado (cliente + serviço) — 2 cliques e confirma.
+  function reagendar(item: FilaItem) {
+    const key = `${item.tipo}:${item.refId}`
+    if (item.tipo === "recall") void apiPatch(`/crm/recalls/${item.refId}`, { status: "DONE" }).catch(() => {})
+    else if (item.tipo === "follow_up") void apiPatch(`/crm/followups/${item.refId}`, { status: "DONE" }).catch(() => {})
+    setDone((prev) => new Set(prev).add(key))
+    agendar(item)
   }
 
   const itens = (data?.itens ?? []).filter((i) => filtro === "todos" || i.tipo === filtro)
@@ -143,6 +165,7 @@ export default function RelationshipQueue() {
             const key = `${item.tipo}:${item.refId}`
             const isDone = done.has(key)
             const link = buildWaLink(item)
+            const temFone = hasPhone(item.phone)
             const canConcluir = item.tipo === "recall" || item.tipo === "follow_up"
             return (
               <div
@@ -166,21 +189,25 @@ export default function RelationshipQueue() {
 
                   {/* Quick actions — alvos grandes (mobile-first) */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                    {link ? (
-                      <a
-                        href={link} target="_blank" rel="noopener noreferrer"
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 16px", borderRadius: 11, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}
-                      >
-                        <MessageCircle size={17} /> WhatsApp
-                      </a>
-                    ) : (
-                      <span style={{ display: "flex", alignItems: "center", height: 44, fontSize: 12, color: "var(--c-text-4)" }}>sem telefone</span>
-                    )}
+                    <a
+                      href={link} target="_blank" rel="noopener noreferrer"
+                      title={temFone ? "Abrir conversa do cliente" : "Sem telefone — abre o WhatsApp pra você escolher o contato"}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 16px", borderRadius: 11, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}
+                    >
+                      <MessageCircle size={17} /> {temFone ? "WhatsApp" : "Abrir WhatsApp"}
+                    </a>
                     <button
-                      onClick={() => agendar(item)}
+                      onClick={() => copiarMensagem(item)}
+                      title="Copiar a mensagem pronta"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <Copy size={16} /> Copiar
+                    </button>
+                    <button
+                      onClick={() => (canConcluir ? reagendar(item) : agendar(item))}
                       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 16px", borderRadius: 11, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                     >
-                      <CalendarPlus size={17} /> Agendar
+                      <CalendarPlus size={17} /> {canConcluir ? "Reagendar" : "Agendar"}
                     </button>
                     <button
                       onClick={() => setFicha({ id: item.customerId, nome: item.nome, phone: item.phone })}
@@ -192,10 +219,10 @@ export default function RelationshipQueue() {
                     {canConcluir && !isDone && (
                       <button
                         onClick={() => concluir(item)}
-                        title="Marcar como feito"
+                        title="Cliente não vai voltar / já resolvi — tirar da fila"
                         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                       >
-                        <Check size={17} /> Feito
+                        <Check size={17} /> Concluir
                       </button>
                     )}
                   </div>
