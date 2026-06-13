@@ -4,9 +4,14 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User, Copy } from "lucide-react"
 import { apiGet, apiPatch } from "@/lib/api"
-import { buildWaLink, waMessage, hasPhone, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
+import { waMessage, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
 import RelationshipModal from "@/components/dashboard/RelationshipModal"
+import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 import { toast } from "sonner"
+
+function firstName(nome: string): string {
+  return nome?.split(" ").filter(Boolean)[0] ?? ""
+}
 
 /**
  * Aba "Pra cuidar hoje" — fila única de relacionamento (GET /crm/fila): recalls
@@ -33,6 +38,8 @@ export default function RelationshipQueue() {
   const [filtro, setFiltro] = useState<FilaTipo | "todos">("todos")
   const [done, setDone] = useState<Set<string>>(new Set())
   const [ficha, setFicha] = useState<{ id: string; nome: string; phone: string | null } | null>(null)
+  const [picker, setPicker] = useState<FilaItem | null>(null)
+  const [loja, setLoja] = useState("")
 
   const load = useCallback(() => {
     setLoading(true)
@@ -45,6 +52,13 @@ export default function RelationshipQueue() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
+
+  // Nome da loja pra variável {loja} das mensagens (1 fetch leve).
+  useEffect(() => {
+    apiGet<{ business?: { name?: string } }>("/auth/me")
+      .then((r) => { if (r.business?.name) setLoja(r.business.name) })
+      .catch(() => {})
+  }, [])
 
   async function concluir(item: FilaItem) {
     const key = `${item.tipo}:${item.refId}`
@@ -164,8 +178,6 @@ export default function RelationshipQueue() {
             const meta = TIPO_META[item.tipo]
             const key = `${item.tipo}:${item.refId}`
             const isDone = done.has(key)
-            const link = buildWaLink(item)
-            const temFone = hasPhone(item.phone)
             const canConcluir = item.tipo === "recall" || item.tipo === "follow_up"
             return (
               <div
@@ -189,16 +201,16 @@ export default function RelationshipQueue() {
 
                   {/* Quick actions — alvos grandes (mobile-first) */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                    <a
-                      href={link} target="_blank" rel="noopener noreferrer"
-                      title={temFone ? "Abrir conversa do cliente" : "Sem telefone — abre o WhatsApp pra você escolher o contato"}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 16px", borderRadius: 11, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, textDecoration: "none" }}
+                    <button
+                      onClick={() => setPicker(item)}
+                      title="Escolher/editar a mensagem e enviar"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 16px", borderRadius: 11, background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                     >
-                      <MessageCircle size={17} /> {temFone ? "WhatsApp" : "Abrir WhatsApp"}
-                    </a>
+                      <MessageCircle size={17} /> WhatsApp
+                    </button>
                     <button
                       onClick={() => copiarMensagem(item)}
-                      title="Copiar a mensagem pronta"
+                      title="Copiar a mensagem padrão (rápido)"
                       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                     >
                       <Copy size={16} /> Copiar
@@ -240,6 +252,23 @@ export default function RelationshipQueue() {
         customerName={ficha?.nome ?? ""}
         phone={ficha?.phone ?? null}
       />
+
+      <MessageTemplatePicker
+        open={picker !== null}
+        onClose={() => setPicker(null)}
+        context={picker?.tipo ?? "generico"}
+        phone={picker?.phone ?? null}
+        vars={picker ? buildVars(picker, loja) : {}}
+      />
     </div>
   )
+}
+
+/** Variáveis pra renderizar a mensagem a partir do item da fila + nome da loja. */
+function buildVars(item: FilaItem, loja: string): TemplateVars {
+  return {
+    primeiroNome: firstName(item.nome),
+    nomeCompleto: item.nome,
+    loja,
+  }
 }
