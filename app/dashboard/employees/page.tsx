@@ -283,15 +283,11 @@ function EmployeesContent() {
     setFormError(null)
     try {
       if (isCreate) {
-        // POST cria com nome/e-mail/especialidades; a folha é aplicada em seguida
-        // (o endpoint de criação não recebe folha — começa em "só comissão").
-        const created = await apiPost<{ employee: Employee }>("/employees", {
-          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds,
+        // POST cria já com a folha (1 passo) — sem POST+PATCH (que duplicava o
+        // funcionário se o PATCH falhasse e o dono tentasse de novo). Bug P2.3.
+        await apiPost("/employees", {
+          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...payroll,
         })
-        const needsPayroll = payroll.salaryMode !== "COMMISSION_ONLY" || payroll.payCadence !== "MONTHLY" || payroll.payDueDay != null
-        if (created.employee?.id && needsPayroll) {
-          await apiPatch(`/employees/${created.employee.id}`, payroll)
-        }
       } else if (selected) {
         await apiPatch(`/employees/${selected.id}`, {
           name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...payroll,

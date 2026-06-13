@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { MessageCircle, Copy, Plus, Pencil, Trash2, Check, X } from "lucide-react"
 import Modal from "@/components/shared/Modal"
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api"
@@ -68,22 +68,37 @@ export default function MessageTemplatePicker({
   const [editBody, setEditBody] = useState("")
   const [creating, setCreating] = useState(false)
 
+  // vars/initialText sempre ATUAIS via ref: o load roda na abertura, mas o picker
+  // reabre pra outro cliente sem trocar de context — sem a ref, o closure capturava
+  // as variáveis do cliente ANTERIOR (texto saía vazio/errado). Bug P1.4/P1.5.
+  const varsRef = useRef(vars)
+  const initialTextRef = useRef(initialText)
+  // Mantém os refs em dia FORA do render (efeito sem deps = roda a cada commit,
+  // antes do efeito de abertura abaixo, então o load() lê sempre o valor atual).
+  useEffect(() => {
+    varsRef.current = vars
+    initialTextRef.current = initialText
+  })
+
   const load = useCallback(() => {
     setLoading(true)
+    // Reseta o editor de modelo a cada abertura (senão reabre pré-preenchido no
+    // modelo da vez anterior — bug P2.6).
+    setEditId(null); setCreating(false); setEditLabel(""); setEditBody("")
     apiGet<{ templates: Template[] }>(`/crm/templates?context=${encodeURIComponent(context)}`)
       .then((r) => {
         const list = r.templates ?? []
         setTemplates(list)
         // Texto inicial: o pronto recebido (proposta itemizada) tem prioridade; senão o 1º modelo.
-        if (initialText) setText(initialText)
-        else if (list[0]) setText(render(list[0].body, vars))
+        // Usa os refs pra pegar as variáveis do cliente ATUAL, não as da abertura anterior.
+        if (initialTextRef.current) setText(initialTextRef.current)
+        else if (list[0]) setText(render(list[0].body, varsRef.current))
       })
       .catch(() => toast.error("Não consegui carregar as mensagens."))
       .finally(() => setLoading(false))
-  // vars muda a cada render; intencional usar só context+initialText (estáveis na abertura)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context, initialText])
+  }, [context])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) load() }, [open, load])
 
   const temFone = waDigits(phone) !== null

@@ -604,10 +604,13 @@ function PainelDeSaude() {
       (d.total / 100).toFixed(2).replace(".", ","),
       String(agByDate.get(d.date) ?? 0),
     ])
+    // Total = soma EXATA das linhas exibidas (senão batia 36 no total e 26 nas linhas). Bug P1.9.
+    const totalFat = data.faturamentoPorDia.reduce((s, d) => s + d.total, 0)
+    const totalAg = data.faturamentoPorDia.reduce((s, d) => s + (agByDate.get(d.date) ?? 0), 0)
     rows.push([
       "Total",
-      (data.faturamentoTotal / 100).toFixed(2).replace(".", ","),
-      String(data.totalAgendamentos),
+      (totalFat / 100).toFixed(2).replace(".", ","),
+      String(totalAg),
     ])
     const csv = [header, ...rows]
       .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))

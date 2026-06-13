@@ -59,6 +59,8 @@ interface PayrollLine {
   payCadence:             PayCadence
   payDueDay:              number | null
   pendingCommissionCents: number
+  salaryOwedCents:        number   // salário ainda a pagar neste ciclo (0 se já pago)
+  salaryPaidThisCycle:    boolean
   lastPaidAt:             string | null
   nextDueDate:            string | null
   totalOwedNowCents:      number
@@ -212,9 +214,10 @@ export default function RepassesReportPage() {
 
   function openPay(line: PayrollLine) {
     setPayLine(line)
-    const hasSalary = line.salaryMode === "SALARY_ONLY" || line.salaryMode === "SALARY_PLUS_COMMISSION"
-    setPayIncludeSalary(hasSalary && (line.salaryCents ?? 0) > 0)
-    setPaySalary(centsToReais(line.salaryCents))
+    // Só pré-marca o salário se ainda está a pagar NESTE ciclo (evita repagar o salário
+    // que já foi quitado no mês). O dono ainda pode marcar manualmente se quiser.
+    setPayIncludeSalary(line.salaryOwedCents > 0)
+    setPaySalary(centsToReais(line.salaryOwedCents > 0 ? line.salaryCents : line.salaryCents))
     setPayMethod("PIX")
     setPayNotes("")
   }
@@ -423,7 +426,12 @@ export default function RepassesReportPage() {
                             </span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5, flexWrap: "wrap", fontSize: 12, color: "var(--c-text-3)", fontVariantNumeric: "tabular-nums" }}>
-                            {hasSalary && <span>Salário {fmt(line.salaryCents ?? 0)}</span>}
+                            {hasSalary && (
+                              <span>
+                                Salário {fmt(line.salaryCents ?? 0)}
+                                {line.salaryPaidThisCycle && <span style={{ color: "#34D399", marginLeft: 4 }}>· pago ✓</span>}
+                              </span>
+                            )}
                             {line.pendingCommissionCents > 0 && <span style={{ color: "#F59E0B" }}>Comissão {fmt(line.pendingCommissionCents)}</span>}
                             {due && (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: due.color }}>
@@ -441,16 +449,17 @@ export default function RepassesReportPage() {
                           </div>
                           <button
                             onClick={() => openPay(line)}
-                            disabled={nothingOwed && !hasSalary}
+                            disabled={nothingOwed}
+                            title={nothingOwed ? "Nada a pagar agora" : undefined}
                             style={{
                               height: 38, padding: "0 16px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                              cursor: nothingOwed && !hasSalary ? "not-allowed" : "pointer", border: "none", fontFamily: "inherit",
+                              cursor: nothingOwed ? "not-allowed" : "pointer", border: "none", fontFamily: "inherit",
                               whiteSpace: "nowrap",
-                              background: nothingOwed && !hasSalary ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #10B981, #059669)",
-                              color: nothingOwed && !hasSalary ? "var(--c-text-4)" : "#fff",
+                              background: nothingOwed ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #10B981, #059669)",
+                              color: nothingOwed ? "var(--c-text-4)" : "#fff",
                             }}
                           >
-                            Pagar agora
+                            {nothingOwed ? "Em dia" : "Pagar agora"}
                           </button>
                         </div>
                       </div>

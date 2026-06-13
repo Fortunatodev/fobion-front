@@ -71,12 +71,16 @@ export function waMessage(item: Pick<FilaItem, "tipo" | "nome">): string {
   }
 }
 
-/** Só os dígitos com DDI 55, ou null se telefone inválido. */
+/** Só os dígitos com DDI 55, ou null se telefone inválido.
+ *  Decide DDI por COMPRIMENTO, não por startsWith("55") — senão um número de
+ *  DDD 55 (Santa Maria/RS), ex.: 55 99999-8888, seria tratado como se já tivesse
+ *  DDI e ficaria sem o 55 nacional. 10/11 díg = nacional (prepend 55); 12/13 = com DDI. */
 export function waDigits(phone: string | null | undefined): string | null {
   if (!phone) return null
   const d = phone.replace(/\D/g, "")
   if (d.length < 10) return null
-  return d.startsWith("55") ? d : `55${d}`
+  if (d.length === 10 || d.length === 11) return `55${d}`
+  return d
 }
 
 /**

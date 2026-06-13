@@ -14,7 +14,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
  * a senha em branco — o backend permite quando não há hash.
  */
 export default function EmailCard({ isMobile = false }: { isMobile?: boolean }) {
-  const { user } = useUser()
+  const { user, setUser } = useUser()
   const [open, setOpen]       = useState(false)
   const [newEmail, setNewEmail] = useState("")
   const [current, setCurrent] = useState("")
@@ -46,6 +46,8 @@ export default function EmailCard({ isMobile = false }: { isMobile?: boolean }) 
       }
       setMsg({ kind: "ok", text: "E-mail alterado! Use o novo e-mail no próximo login." })
       toast.success("E-mail alterado com sucesso.")
+      // Reflete o novo e-mail na hora (senão a tela continua mostrando o antigo).
+      if (user && data.email) setUser({ ...user, email: data.email })
       setNewEmail(""); setCurrent("")
       setTimeout(() => { setOpen(false); setMsg(null) }, 2200)
     } catch (e) {

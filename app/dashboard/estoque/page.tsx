@@ -15,17 +15,23 @@ interface Product {
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const reais = (c: number) => (c / 100).toString()
 
-/** Sugestão de quanto comprar pra repor o produto a um nível saudável.
+/** minStock<=0 = "sem controle de mínimo" → não sugere reposição (P3.3). */
+function needsRestock(p: Product): boolean {
+  return p.minStock > 0 && p.stockQty <= p.minStock
+}
+
+/** Sugestão de quanto comprar pra repor a um nível saudável.
  *  alvo = max(minStock * 2, minStock + 1); compra = max(0, alvo - stockQty). */
 function suggestBuyQty(p: Product): number {
+  if (p.minStock <= 0) return 0
   const target = Math.max(p.minStock * 2, p.minStock + 1)
   return Math.max(0, target - p.stockQty)
 }
 
-/** Peso de criticidade pra ordenação: zerado (0) > baixo (1) > resto (2). */
+/** Peso de criticidade pra ordenação: zerado-com-mínimo (0) > baixo (1) > resto (2). */
 function stockRank(p: Product): number {
-  if (p.stockQty === 0) return 0
-  if (p.stockQty <= p.minStock) return 1
+  if (needsRestock(p) && p.stockQty === 0) return 0
+  if (needsRestock(p)) return 1
   return 2
 }
 
@@ -146,9 +152,9 @@ export default function EstoquePage() {
   // KPIs
   const totalUnits = products.reduce((s, p) => s + p.stockQty, 0)
   const stockValue = products.reduce((s, p) => s + p.costPrice * p.stockQty, 0)
-  const lowCount = products.filter((p) => p.stockQty > 0 && p.stockQty <= p.minStock).length
+  const lowCount = products.filter((p) => p.minStock > 0 && p.stockQty > 0 && p.stockQty <= p.minStock).length
   const zeroCount = products.filter((p) => p.stockQty === 0).length
-  const toRestockCount = products.filter((p) => p.stockQty <= p.minStock).length // zerado + baixo
+  const toRestockCount = products.filter(needsRestock).length // só com mínimo definido
 
   const KPIS = [
     { label: "Itens em estoque", value: String(totalUnits), color: "var(--c-text)", sub: `${products.length} produto${products.length !== 1 ? "s" : ""}` },
@@ -238,9 +244,9 @@ export default function EstoquePage() {
           )}
           {/* ordena por criticidade: zerados primeiro, depois baixos, depois o resto */}
           {[...products].sort((a, b) => stockRank(a) - stockRank(b)).map((p) => {
-            const low = p.stockQty <= p.minStock
+            const low = needsRestock(p)
             const zero = p.stockQty === 0
-            const buyQty = low ? suggestBuyQty(p) : 0
+            const buyQty = suggestBuyQty(p)
             return (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--c-elevated)", border: `1px solid ${zero ? "rgba(239,68,68,0.3)" : low ? "rgba(245,158,11,0.3)" : "var(--c-border)"}`, borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 180 }}>

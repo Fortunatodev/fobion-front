@@ -13,20 +13,24 @@ import { useUser } from "@/contexts/UserContext"
  * data). Some sozinho quando o plano deixa de ser trial. Cor escala com a pressa:
  * verde tranquilo → amarelo (≤3 dias) → vermelho (último dia).
  */
+// Dias restantes no FUSO LOCAL do dono (não UTC) — senão à noite no Brasil o
+// banner mostra 1 dia a mais e some cedo. Compara só a parte de data local.
 function daysLeft(iso: string): number {
-  const target = new Date(iso)
-  const now = new Date()
-  const ms = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate())
-           - Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const t = new Date(iso)
+  const n = new Date()
+  const ms = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime()
+           - new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime()
   return Math.round(ms / 86_400_000)
 }
 
+// Chave do "dispensado hoje" em data LOCAL (consistente com daysLeft).
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 export default function TrialCountdownBanner() {
-  const { planStatus } = useUser()
+  const { user, planStatus } = useUser()
   const router = useRouter()
   const [dismissedToday, setDismissedToday] = useState(false)
 
@@ -37,6 +41,10 @@ export default function TrialCountdownBanner() {
     } catch { /* ignore */ }
   }, [])
 
+  // Só o dono/admin decide assinar — funcionário não vê banner de cobrança (o CTA
+  // levaria a uma tela que não é dele). Bug P2.11.
+  const isManager = user?.role === "OWNER" || user?.role === "ADMIN"
+  if (!isManager) return null
   if (!planStatus?.isTrial || !planStatus.planExpiresAt || planStatus.isExpired) return null
   if (dismissedToday) return null
 
