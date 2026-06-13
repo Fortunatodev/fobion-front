@@ -1,0 +1,82 @@
+"use client"
+
+import { Suspense } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Heart, ShieldCheck, Users } from "lucide-react"
+import RelationshipQueue from "@/components/dashboard/RelationshipQueue"
+import RecallsPanel from "@/components/dashboard/RecallsPanel"
+import RetencaoPanel from "@/components/dashboard/RetencaoPanel"
+
+/**
+ * Aba Relacionamento — o CRM do dono, pra TODOS os planos (sem gate).
+ * 3 sub-abas: "Pra cuidar hoje" (fila única do dia), "Garantia & Recall" e
+ * "Retenção (RFM)". A URL (?aba=) é a fonte da verdade. Substitui a antiga
+ * Pós-venda (que era PRO) — agora liberada e turbinada com a fila do dia.
+ */
+
+type Aba = "hoje" | "garantia" | "retencao"
+
+const ABAS: { value: Aba; label: string; icon: React.ReactNode }[] = [
+  { value: "hoje",     label: "Pra cuidar hoje", icon: <Heart size={15} /> },
+  { value: "garantia", label: "Garantia & Recall", icon: <ShieldCheck size={15} /> },
+  { value: "retencao", label: "Retenção (RFM)", icon: <Users size={15} /> },
+]
+
+function RelacionamentoContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const raw = searchParams.get("aba")
+  const aba: Aba = raw === "garantia" ? "garantia" : raw === "retencao" ? "retencao" : "hoje"
+
+  function selectAba(next: Aba) {
+    router.replace(`/dashboard/relacionamento?aba=${next}`, { scroll: false })
+  }
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+        <Heart size={20} color="#EC4899" />
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Relacionamento</h1>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>
+        Cuide dos seus clientes: quem chamar hoje, retornos a vencer e quem sumiu — com mensagem pronta no WhatsApp.
+      </p>
+
+      {/* Sub-abas */}
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--c-border)", marginBottom: 24, overflowX: "auto" }}>
+        {ABAS.map((t) => {
+          const active = aba === t.value
+          return (
+            <button
+              key={t.value}
+              onClick={() => selectAba(t.value)}
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                height: 40, padding: "0 14px", whiteSpace: "nowrap",
+                background: "none", border: "none",
+                borderBottom: `2px solid ${active ? "#0066FF" : "transparent"}`,
+                color: active ? "var(--c-text)" : "var(--c-text-3)",
+                fontSize: 13, fontWeight: active ? 600 : 500,
+                cursor: "pointer", fontFamily: "inherit",
+                marginBottom: -1, transition: "color 0.15s, border-color 0.15s",
+              }}
+            >
+              <span style={{ color: active ? "#0066FF" : "var(--c-text-4)", display: "flex" }}>{t.icon}</span>
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {aba === "hoje" ? <RelationshipQueue /> : aba === "garantia" ? <RecallsPanel /> : <RetencaoPanel />}
+    </div>
+  )
+}
+
+export default function RelacionamentoPage() {
+  return (
+    <Suspense fallback={null}>
+      <RelacionamentoContent />
+    </Suspense>
+  )
+}

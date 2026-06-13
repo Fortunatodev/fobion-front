@@ -7,10 +7,11 @@ import {
   AlertCircle, BarChart3, Calendar,
   CircleDollarSign, Crown, Sparkles,
   Users, Clock,
-  TrendingUp, Star, UserPlus, Rocket,
+  TrendingUp, Star, UserPlus, Rocket, Heart, ChevronRight,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
+import { useCrmFilaCount } from "@/lib/useCrmFilaCount"
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
 import RevenueActionsCard from "@/components/dashboard/RevenueActionsCard"
 import WelcomeModal from "@/components/dashboard/WelcomeModal"
@@ -267,6 +268,7 @@ export default function DashboardPage() {
 
   // O7 — coordenação Welcome ↔ Checklist + botão flutuante "Continuar configuração"
   const [reopenSignal, setReopenSignal] = useState(0)
+  const crmCount = useCrmFilaCount()
   const [onbState, setOnbState] = useState<{ ready: boolean; collapsed: boolean; allDone: boolean }>({
     ready: false, collapsed: false, allDone: false,
   })
@@ -407,6 +409,32 @@ export default function DashboardPage() {
 
       {/* ── O4/O5/O7: checklist de ativação por outcome (some quando 100% ou recolhido) ── */}
       <OnboardingChecklist reopenSignal={reopenSignal} onStateChange={handleOnbState} />
+
+      {/* ── CRM: "pra cuidar hoje" — só aparece quando há clientes na fila ── */}
+      {crmCount > 0 && (
+        <button
+          onClick={() => router.push("/dashboard/relacionamento")}
+          style={{
+            width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+            display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
+            background: "linear-gradient(135deg, rgba(236,72,153,0.10), rgba(124,58,237,0.10))",
+            border: "1px solid rgba(236,72,153,0.25)", borderRadius: 14, padding: "14px 16px",
+          }}
+        >
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(236,72,153,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Heart size={20} color="#EC4899" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+              {crmCount} {crmCount === 1 ? "cliente pra cuidar hoje" : "clientes pra cuidar hoje"}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>
+              Retornos, quem sumiu e follow-ups — chame em 1 toque no WhatsApp.
+            </p>
+          </div>
+          <ChevronRight size={18} color="#EC4899" style={{ flexShrink: 0 }} />
+        </button>
+      )}
 
       {/* ── Metric cards (.metrics-grid) ──────────────────────────────── */}
       {/* 1 col → 2 col (640px) → 4 col (1280px) — via CSS puro no globals.css */}

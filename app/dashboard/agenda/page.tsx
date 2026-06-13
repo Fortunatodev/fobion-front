@@ -631,7 +631,7 @@ export default function AgendaPage() {
         {/* ── HEADER ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "flex-start", flexWrap: "wrap", gap: isMobile ? 12 : 16, marginBottom: 20, flexDirection: isMobile ? "column" : "row" }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Agenda</h1>
+            <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Calendário</h1>
             <p style={{ fontSize: 14, color: "var(--c-text-3)", marginTop: 6 }}>Visualize e gerencie seus agendamentos</p>
           </div>
           <NewAgBtn onClick={() => router.push("/dashboard/agendamentos")} />

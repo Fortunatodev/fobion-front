@@ -155,6 +155,14 @@ export async function apiPut<T>(url: string, data?: object): Promise<T> {
 }
 
 /**
+ * Realiza uma requisição PATCH tipada.
+ */
+export async function apiPatch<T>(url: string, data?: object): Promise<T> {
+  const response = await api.patch<T>(url, data)
+  return response.data
+}
+
+/**
  * Realiza uma requisição DELETE tipada.
  */
 export async function apiDelete<T>(url: string): Promise<T> {

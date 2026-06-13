@@ -6,19 +6,21 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Calendar, CalendarDays, Users, Wrench,
   CreditCard, UserCheck, Settings, BarChart2, LogOut,
-  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package, ShieldCheck, RotateCcw,
+  ChevronRight, UserCircle, Menu, X, Crown, Wallet, FileText, LayoutGrid, Package, ShieldCheck,
+  Heart, ClipboardCheck,
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 import NotificationBell from "@/components/dashboard/NotificationBell"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 import ThemeToggle from "@/components/shared/ThemeToggle"
+import { useCrmFilaCount } from "@/lib/useCrmFilaCount"
 
-// PRO-only paths — shown with a badge on BASIC plan
+// PRO-only paths — shown with a badge on BASIC plan.
+// (Relacionamento/Pós-venda saíram: relacionamento é de TODOS os planos.)
 const PRO_ONLY_PATHS = new Set([
   "/dashboard/planos",
   "/dashboard/assinantes",
   "/dashboard/relatorios",
-  "/dashboard/pos-venda",
 ])
 
 const navSections = [
@@ -26,26 +28,42 @@ const navSections = [
     label: "VISÃO GERAL",
     items: [
       // RBAC: Dashboard (resumo financeiro) e Pátio são gerenciais → escondidos do EMPLOYEE.
-      { href: "/dashboard",        label: "Dashboard", icon: LayoutDashboard, ownerOnly: true },
-      { href: "/dashboard/agenda", label: "Agenda",    icon: Calendar        },
-      { href: "/dashboard/patio",  label: "Pátio",     icon: LayoutGrid, ownerOnly: true },
+      { href: "/dashboard",        label: "Dashboard",  icon: LayoutDashboard, ownerOnly: true },
+      { href: "/dashboard/agenda", label: "Calendário", icon: Calendar        },
+      { href: "/dashboard/patio",  label: "Pátio",      icon: LayoutGrid, ownerOnly: true },
     ],
   },
   {
-    label: "GESTÃO",
+    label: "OPERAÇÃO DO DIA",
     items: [
-      // Operacional (visível pro funcionário): só Agendamentos. O resto é gestão (ownerOnly).
-      { href: "/dashboard/agendamentos", label: "Agendamentos", icon: CalendarDays },
-      { href: "/dashboard/clientes",     label: "Clientes",     icon: UserCircle, ownerOnly: true },
-      { href: "/dashboard/employees",    label: "Funcionários", icon: Users,       ownerOnly: true },
-      { href: "/dashboard/servicos",     label: "Serviços",     icon: Wrench, ownerOnly: true },
-      { href: "/dashboard/orcamentos",   label: "Orçamentos",   icon: FileText, ownerOnly: true },
-      { href: "/dashboard/estoque",      label: "Estoque",      icon: Package, ownerOnly: true },
-      { href: "/dashboard/planos",       label: "Planos",       icon: CreditCard,  ownerOnly: true },
-      { href: "/dashboard/assinantes",   label: "Assinantes",   icon: UserCheck,   ownerOnly: true },
-      { href: "/dashboard/relatorios",   label: "Relatórios",   icon: BarChart2,   ownerOnly: true },
-      { href: "/dashboard/pos-venda",    label: "Pós-venda",    icon: RotateCcw,   ownerOnly: true },
-      { href: "/dashboard/relatorios/repasses", label: "Repasses", icon: Wallet,   ownerOnly: true },
+      // Operacional (visível pro funcionário): só Comandas. Relacionamento/Vistoria = gestão.
+      { href: "/dashboard/agendamentos",   label: "Comandas",       icon: CalendarDays },
+      { href: "/dashboard/relacionamento", label: "Relacionamento", icon: Heart, ownerOnly: true, badgeKey: "crm" },
+      { href: "/dashboard/vistoria",       label: "Vistoria",       icon: ClipboardCheck, ownerOnly: true },
+    ],
+  },
+  {
+    label: "CLIENTES & CATÁLOGO",
+    items: [
+      { href: "/dashboard/clientes",   label: "Clientes",   icon: UserCircle, ownerOnly: true },
+      { href: "/dashboard/servicos",   label: "Serviços",   icon: Wrench,     ownerOnly: true },
+      { href: "/dashboard/estoque",    label: "Estoque",    icon: Package,    ownerOnly: true },
+      { href: "/dashboard/orcamentos", label: "Orçamentos", icon: FileText,   ownerOnly: true },
+    ],
+  },
+  {
+    label: "CRESCIMENTO",
+    items: [
+      { href: "/dashboard/relatorios", label: "Relatórios", icon: BarChart2, ownerOnly: true },
+      { href: "/dashboard/planos",     label: "Planos",     icon: CreditCard, ownerOnly: true },
+      { href: "/dashboard/assinantes", label: "Assinantes", icon: UserCheck,  ownerOnly: true },
+    ],
+  },
+  {
+    label: "FINANCEIRO",
+    items: [
+      { href: "/dashboard/relatorios/repasses", label: "Repasses",     icon: Wallet, ownerOnly: true },
+      { href: "/dashboard/employees",           label: "Funcionários", icon: Users,  ownerOnly: true },
     ],
   },
   {
@@ -61,6 +79,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname        = usePathname()
   const router          = useRouter()
   const { user, planStatus, logout } = useUser()
+  const crmCount = useCrmFilaCount()
 
   const isPro = planStatus?.plan === "PRO"
 
@@ -132,6 +151,16 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 >
                   <Icon size={15} style={{ flexShrink: 0, color: active ? "#0066FF" : "var(--c-text-4)" }} />
                   <span style={{ flex: 1 }}>{item.label}</span>
+                  {(item as { badgeKey?: string }).badgeKey === "crm" && crmCount > 0 && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, color: "#fff",
+                      backgroundColor: "#EF4444", borderRadius: 999,
+                      minWidth: 16, height: 16, padding: "0 4px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {crmCount > 99 ? "99+" : crmCount}
+                    </span>
+                  )}
                   {isProOnly && (
                     <span style={{
                       fontSize: 9, fontWeight: 700, color: "#F59E0B",

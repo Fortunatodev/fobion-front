@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, Fragment, type ReactNode } from "react"
-import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent, Tag } from "lucide-react"
+import { Plus, Pencil, Trash2, AlertCircle, ImageIcon, X, CheckCircle2, Search, Clock, ShieldCheck, Percent, Tag, Heart } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload"
@@ -20,6 +20,7 @@ interface Service {
   imageUrl?: string | null
   commissionPercent?: number | null
   warrantyDays?: number | null
+  recallDays?: number | null
   priceByVehicleType?: Record<string, number> | null
   createdAt: string
 }
@@ -142,7 +143,8 @@ export default function ServicosPage() {
   const [formActive,      setFormActive]      = useState(true)
   const [formImageUrl,    setFormImageUrl]    = useState("")
   const [formCommissionPct, setFormCommissionPct] = useState("")  // string vazia = sem repasse default
-  const [formWarranty, setFormWarranty] = useState("")  // V2-B3: garantia/recall em dias (vazio = sem)
+  const [formWarranty, setFormWarranty] = useState("")  // V2-B3: garantia (proteção) em dias (vazio = sem)
+  const [formRecall, setFormRecall] = useState("")  // CRM: re-chamar o cliente a cada N dias (vazio = não lembrar)
   // V2-B4: preço por porte (R$, string vazia = usa preço base). CAR/MOTO/TRUCK/SUV
   const [formPorte, setFormPorte] = useState<Record<"CAR" | "MOTORCYCLE" | "TRUCK" | "SUV", string>>({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
 
@@ -243,6 +245,7 @@ export default function ServicosPage() {
     setFormActive(true); setFormImageUrl("")
     setFormCommissionPct("")
     setFormWarranty("")
+    setFormRecall("")
     setFormPorte({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
     setFormError(null)
     setShowModal("create")
@@ -271,6 +274,7 @@ export default function ServicosPage() {
     setFormImageUrl(s.imageUrl || "")
     setFormCommissionPct(s.commissionPercent != null ? String(s.commissionPercent) : "")
     setFormWarranty(s.warrantyDays != null ? String(s.warrantyDays) : "")
+    setFormRecall(s.recallDays != null ? String(s.recallDays) : "")
     {
       const p = s.priceByVehicleType || {}
       const c = (v: number | undefined) => (v != null ? String(v / 100) : "")
@@ -323,8 +327,10 @@ export default function ServicosPage() {
         isActive:        formActive,
         imageUrl:        formImageUrl || null,
         commissionPercent,
-        // V2-B3: garantia/recall em dias (vazio = sem recall)
+        // V2-B3: garantia (proteção) em dias (vazio = sem garantia)
         warrantyDays:    formWarranty.trim() ? Math.max(0, Math.round(Number(formWarranty))) : null,
+        // CRM: re-chamar o cliente a cada N dias (vazio = não lembrar)
+        recallDays:      formRecall.trim() ? Math.max(0, Math.round(Number(formRecall))) : null,
         // V2-B4: preço por porte (só os preenchidos, em centavos). null se nenhum.
         priceByVehicleType: (() => {
           const out: Record<string, number> = {}
@@ -791,7 +797,7 @@ export default function ServicosPage() {
                 </div>
               </div>
 
-              {/* V2-B3: Garantia / Recall ──────────────────────────────── */}
+              {/* Garantia (proteção/legal) ──────────────────────────────── */}
               <div style={{
                 background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
                 borderRadius: 10, padding: "12px 14px",
@@ -799,11 +805,10 @@ export default function ServicosPage() {
               }}>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
-                    Garantia / Recall
+                    Garantia do serviço
                   </p>
                   <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
-                    Dias de garantia (ex.: vitrificação 180). Ao fechar a comanda, o sistema
-                    agenda um lembrete de retorno antes de vencer. Vazio = sem recall.
+                    Dias de garantia/proteção (ex.: vitrificação 180). Vazio = sem garantia.
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -822,9 +827,44 @@ export default function ServicosPage() {
                     }}
                   />
                   <span style={{ color: "var(--c-text-3)", fontSize: 13 }}>dias</span>
-                  {formWarranty && Number(formWarranty) > 0 && (
-                    <span style={{ marginLeft: 8, fontSize: 12, color: "#0066FF" }}>
-                      recall ~{Math.max(0, Number(formWarranty) - 7)} dias após o serviço
+                </div>
+              </div>
+
+              {/* CRM: Re-chamar o cliente (lembrete comercial de retorno) ──── */}
+              <div style={{
+                background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+                borderRadius: 10, padding: "12px 14px",
+                display: "flex", flexDirection: "column", gap: 8,
+              }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
+                    Lembrar o cliente de voltar
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
+                    Re-chamar o cliente a cada quantos dias (ex.: lavagem 30, vitrificação 90).
+                    Ao fechar a comanda, ele entra na sua aba Relacionamento perto da data. Vazio = não lembrar.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ color: "var(--c-text-3)", fontSize: 13 }}>a cada</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={3650}
+                    value={formRecall}
+                    onChange={(e) => setFormRecall(e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: 80, height: 36, padding: "0 10px",
+                      background: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                      borderRadius: 8, color: "var(--c-text)", fontSize: 13,
+                      outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                  <span style={{ color: "var(--c-text-3)", fontSize: 13 }}>dias</span>
+                  {formRecall && Number(formRecall) > 0 && (
+                    <span style={{ fontSize: 12, color: "#10B981" }}>
+                      entra na fila de relacionamento ~{Number(formRecall)} dias após o serviço
                     </span>
                   )}
                 </div>
@@ -1051,8 +1091,8 @@ function ServiceCard({
           </span>
         </div>
 
-        {/* Badges: categoria · porte variável · garantia · repasse (só dado que o back retorna) */}
-        {((service.category ?? "").trim() || range.varies || (service.warrantyDays ?? 0) > 0 || (service.commissionPercent ?? 0) > 0) && (
+        {/* Badges: categoria · porte variável · garantia · re-chamar · repasse (só dado que o back retorna) */}
+        {((service.category ?? "").trim() || range.varies || (service.warrantyDays ?? 0) > 0 || (service.recallDays ?? 0) > 0 || (service.commissionPercent ?? 0) > 0) && (
           <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             {(service.category ?? "").trim() && (
               <CardChip color="var(--c-text-2)" bg="var(--c-surface-2)" border="var(--c-border)" icon={<Tag size={11} />}>
@@ -1067,6 +1107,11 @@ function ServiceCard({
             {(service.warrantyDays ?? 0) > 0 && (
               <CardChip color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)" icon={<ShieldCheck size={11} />}>
                 Garantia {service.warrantyDays}d
+              </CardChip>
+            )}
+            {(service.recallDays ?? 0) > 0 && (
+              <CardChip color="#EC4899" bg="rgba(236,72,153,0.08)" border="rgba(236,72,153,0.22)" icon={<Heart size={11} />}>
+                Re-chamar {service.recallDays}d
               </CardChip>
             )}
             {(service.commissionPercent ?? 0) > 0 && (

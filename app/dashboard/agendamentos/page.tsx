@@ -1795,7 +1795,7 @@ export default function AgendamentosPage() {
         }}>
           <div>
             <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>
-              Agendamentos
+              Comandas
             </h1>
             <p style={{ fontSize: 13, color: "var(--c-text-4)", margin: "4px 0 0" }}>
               Gerencie os agendamentos do seu negócio
