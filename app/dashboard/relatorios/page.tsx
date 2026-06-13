@@ -44,6 +44,14 @@ interface Insights {
   peakHour?:              string
 }
 
+type InsightTone = "green" | "yellow" | "blue"
+
+interface WhatsHappening {
+  tone: InsightTone
+  icon: React.ReactNode
+  text: string
+}
+
 interface RelatoryData {
   period:                   string
   faturamentoTotal:         number
@@ -92,6 +100,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   IN_PROGRESS: { label: "Em andamento", color: "#7C3AED" },
   DONE:        { label: "Concluído",    color: "#10B981" },
   CANCELLED:   { label: "Cancelado",    color: "#EF4444" },
+}
+
+const TONE_COLORS: Record<InsightTone, string> = {
+  green:  "#10B981",
+  yellow: "#F59E0B",
+  blue:   "#0066FF",
 }
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
@@ -485,6 +499,53 @@ function InsightCard({ icon, title, description, accent }: {
   )
 }
 
+// ── "O que está acontecendo" (painel didático pro dono) ─────────────────────────
+
+function WhatsHappeningCard({ items, isMobile }: { items: WhatsHappening[]; isMobile: boolean }) {
+  if (items.length === 0) return null
+
+  return (
+    <Card style={{ padding: isMobile ? "18px 16px" : "22px 24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 16 }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+          background: "linear-gradient(135deg, rgba(0,102,255,0.18), rgba(124,58,237,0.1))",
+          border: "1px solid rgba(0,102,255,0.22)",
+          display: "flex", alignItems: "center", justifyContent: "center", color: "#0066FF",
+        }}>
+          <Activity size={16} />
+        </div>
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>O que está acontecendo</h3>
+          <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "1px 0 0" }}>Em português claro: o que os números dizem e o que fazer.</p>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {items.map((item, i) => {
+          const accent = TONE_COLORS[item.tone]
+          return (
+            <div key={i} style={{
+              display: "flex", gap: 11, alignItems: "flex-start",
+              backgroundColor: `${accent}0D`,
+              border: `1px solid ${accent}26`,
+              borderRadius: 12, padding: "12px 14px",
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: 8, flexShrink: 0, marginTop: 1,
+                background: `${accent}1F`,
+                display: "flex", alignItems: "center", justifyContent: "center", color: accent,
+              }}>
+                {item.icon}
+              </div>
+              <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: 0, lineHeight: 1.5 }}>{item.text}</p>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ── Page ─────────────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -565,6 +626,70 @@ function PainelDeSaude() {
   const maxAgDia  = data ? Math.max(...data.agendamentosPorDia.map(d => d.count), 1) : 1
   const spark7Ag = data?.agendamentosPorData?.slice(-7).map(d => d.count) ?? []
   const spark7Ft = data?.faturamentoPorDia?.slice(-7).map(d => d.total) ?? []
+
+  // ── "O que está acontecendo" (linguagem do dono leigo) ──────────────────────
+  // Frases curtas DIAGNÓSTICO + RECOMENDAÇÃO em PT-BR, derivadas SÓ dos dados que
+  // a página já tem em mãos. verde = bom · amarelo = atenção · azul = dica.
+  // Função pura: monta o array a partir de `d`, não dispara fetch nenhum.
+  function buildWhatsHappening(d: RelatoryData): WhatsHappening[] {
+    const out: WhatsHappening[] = []
+
+    // Pouquíssimo movimento: mensagem encorajadora e para por aqui.
+    if (d.totalAgendamentos < 3) {
+      out.push({
+        tone: "blue",
+        icon: <Lightbulb size={15} />,
+        text: "Ainda há poucos agendamentos no período. Cadastre seus clientes e divulgue o link da sua loja no WhatsApp pra começar a encher a agenda.",
+      })
+      return out
+    }
+
+    const growth = d.insights.revenueGrowth
+    if (growth > 0) {
+      out.push({
+        tone: "green",
+        icon: <TrendingUp size={15} />,
+        text: `Sua receita cresceu ${growth}% no período. Continue chamando os clientes de retorno pra manter o ritmo.`,
+      })
+    } else if (growth < 0) {
+      out.push({
+        tone: "yellow",
+        icon: <TrendingDown size={15} />,
+        text: `Sua receita caiu ${Math.abs(growth)}%. Veja os clientes a recuperar na aba Relacionamento e mande um WhatsApp pra trazer eles de volta.`,
+      })
+    }
+
+    // Ticket médio (vem em centavos) — dica de upsell.
+    if (d.ticketMedio > 0) {
+      out.push({
+        tone: "blue",
+        icon: <DollarSign size={15} />,
+        text: `Seu ticket médio é ${fmt(d.ticketMedio)}. Ofereça serviços de maior valor (vitrificação, PPF) nos orçamentos pra subir esse número.`,
+      })
+    }
+
+    // Serviço mais vendido — vira gancho de assinatura.
+    const topService = d.servicosMaisPopulares[0]
+    if (topService) {
+      out.push({
+        tone: "blue",
+        icon: <Star size={15} />,
+        text: `Seu serviço mais procurado é ${topService.name}. Crie um plano de assinatura em cima dele pra garantir receita todo mês.`,
+      })
+    }
+
+    // Conversão de assinantes — só quando há base de clientes razoável.
+    if (d.totalCustomers > 3 && d.insights.subscriberRatio < 15) {
+      out.push({
+        tone: "yellow",
+        icon: <Crown size={15} />,
+        text: `Só ${d.insights.subscriberRatio}% dos seus clientes são assinantes. Assinatura é dinheiro garantido todo mês — destaque seus planos pra quem já é cliente.`,
+      })
+    }
+
+    // No máximo 4 frases pra não cansar o leitor leigo.
+    return out.slice(0, 4)
+  }
 
   function buildInsights(d: RelatoryData) {
     const ins = d.insights
@@ -681,6 +806,11 @@ function PainelDeSaude() {
                 <SummaryCard label="Novos Clientes" value={data.novosClientes} sub={`${data.totalCustomers} total na base`} icon={<Users size={18} />} color="#10B981" />
                 <SummaryCard label="Conclusão" value={Math.round(data.taxaConclusao)} suffix="%" sub={`${data.agendamentosConcluidos} concluídos`} icon={<Target size={18} />} color={data.taxaConclusao >= 80 ? "#10B981" : data.taxaConclusao >= 60 ? "#F59E0B" : "#EF4444"} />
               </div>
+            </section>
+
+            {/* O QUE ESTÁ ACONTECENDO (painel didático pro dono leigo) */}
+            <section>
+              <WhatsHappeningCard items={buildWhatsHappening(data)} isMobile={isMobile} />
             </section>
 
             {/* GRAFICOS */}

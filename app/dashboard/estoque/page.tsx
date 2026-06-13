@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw, TrendingDown } from "lucide-react"
+import { Package, Plus, Minus, AlertTriangle, Trash2, Pencil, ArrowDownUp, X, Eye, EyeOff, AlertCircle, RefreshCw, TrendingDown, ShoppingCart } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import TabTutorial from "@/components/shared/TabTutorial"
@@ -14,6 +14,20 @@ interface Product {
 }
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const reais = (c: number) => (c / 100).toString()
+
+/** Sugestão de quanto comprar pra repor o produto a um nível saudável.
+ *  alvo = max(minStock * 2, minStock + 1); compra = max(0, alvo - stockQty). */
+function suggestBuyQty(p: Product): number {
+  const target = Math.max(p.minStock * 2, p.minStock + 1)
+  return Math.max(0, target - p.stockQty)
+}
+
+/** Peso de criticidade pra ordenação: zerado (0) > baixo (1) > resto (2). */
+function stockRank(p: Product): number {
+  if (p.stockQty === 0) return 0
+  if (p.stockQty <= p.minStock) return 1
+  return 2
+}
 
 type FormState = { name: string; sku: string; cost: string; sale: string; qty: string; min: string }
 const EMPTY_FORM: FormState = { name: "", sku: "", cost: "", sale: "", qty: "", min: "" }
@@ -134,6 +148,7 @@ export default function EstoquePage() {
   const stockValue = products.reduce((s, p) => s + p.costPrice * p.stockQty, 0)
   const lowCount = products.filter((p) => p.stockQty > 0 && p.stockQty <= p.minStock).length
   const zeroCount = products.filter((p) => p.stockQty === 0).length
+  const toRestockCount = products.filter((p) => p.stockQty <= p.minStock).length // zerado + baixo
 
   const KPIS = [
     { label: "Itens em estoque", value: String(totalUnits), color: "var(--c-text)", sub: `${products.length} produto${products.length !== 1 ? "s" : ""}` },
@@ -213,10 +228,19 @@ export default function EstoquePage() {
 
       {!loading && !error && products.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {/* ordena: baixo/zerado primeiro */}
-          {[...products].sort((a, b) => (a.stockQty <= a.minStock ? 0 : 1) - (b.stockQty <= b.minStock ? 0 : 1)).map((p) => {
+          {/* resumo: quantos itens precisam de reposição (já estão ordenados no topo) */}
+          {toRestockCount > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.22)", borderRadius: 10, padding: "9px 14px", marginBottom: 2 }}>
+              <ShoppingCart size={15} color="#F59E0B" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{toRestockCount} {toRestockCount === 1 ? "item pra repor" : "itens pra repor"}</span>
+              <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>· veja a sugestão de compra abaixo</span>
+            </div>
+          )}
+          {/* ordena por criticidade: zerados primeiro, depois baixos, depois o resto */}
+          {[...products].sort((a, b) => stockRank(a) - stockRank(b)).map((p) => {
             const low = p.stockQty <= p.minStock
             const zero = p.stockQty === 0
+            const buyQty = low ? suggestBuyQty(p) : 0
             return (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--c-elevated)", border: `1px solid ${zero ? "rgba(239,68,68,0.3)" : low ? "rgba(245,158,11,0.3)" : "var(--c-border)"}`, borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 180 }}>
@@ -228,6 +252,12 @@ export default function EstoquePage() {
                       : low && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> mínimo</span>}
                   </div>
                   <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>venda {money(p.salePrice)} · custo {money(p.costPrice)} · mín. {p.minStock}</p>
+                  {low && buyQty > 0 && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, fontWeight: 600, color: zero ? "#EF4444" : "#F59E0B", background: zero ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)", border: `1px solid ${zero ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`, borderRadius: 7, padding: "3px 9px" }}>
+                      <ShoppingCart size={11} />
+                      {zero ? `Acabou — comprar ~${buyQty} un.` : `Estoque baixo — comprar ~${buyQty} un.`}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   <button title="Saída de 1" onClick={() => quickAdjust(p.id, -1)} disabled={busy === p.id || p.stockQty <= 0} style={{ ...iconBtn("#EF4444", "var(--c-border-2)"), opacity: p.stockQty <= 0 ? 0.4 : 1, width: 30, height: 30 }}><Minus size={14} /></button>
