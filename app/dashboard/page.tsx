@@ -253,12 +253,14 @@ export default function DashboardPage() {
   const { user, planStatus } = useUser()
 
   const isPro = planStatus?.plan === "PRO"
+  const isManager = user?.role === "OWNER" || user?.role === "ADMIN"
 
   const [schedulesToday,    setSchedulesToday]    = useState<Schedule[]>([])
   const [totalCustomers,    setTotalCustomers]    = useState(0)
   const [activeSubscribers, setActiveSubscribers] = useState(0)
   const [summary,           setSummary]           = useState<DashboardSummary | null>(null)
   const [summaryLoading,    setSummaryLoading]    = useState(false)
+  const [payrollOwed,       setPayrollOwed]       = useState<{ totalCents: number; people: number; soonestDue: string | null } | null>(null)
   const [loading,           setLoading]           = useState(true)
   const [error,             setError]             = useState<string | null>(null)
   const [ctaHov,            setCtaHov]            = useState(false)
@@ -319,6 +321,24 @@ export default function DashboardPage() {
       .catch(() => setSummary(null))
       .finally(() => setSummaryLoading(false))
   }, [isPro])
+
+  // ── Folha a pagar (só dono/admin; ignora silenciosamente se sem plano) ──────
+  useEffect(() => {
+    if (!isManager) return
+    interface PayrollLine { totalOwedNowCents: number; nextDueDate: string | null }
+    interface PayrollSummaryResp { totalAPagarCents: number; funcionarios: PayrollLine[] }
+    apiGet<PayrollSummaryResp>("/commissions/summary")
+      .then((s) => {
+        const owed = (s.funcionarios ?? []).filter((f) => f.totalOwedNowCents > 0)
+        if (s.totalAPagarCents <= 0 || owed.length === 0) { setPayrollOwed(null); return }
+        const soonestDue = owed
+          .map((f) => f.nextDueDate)
+          .filter((d): d is string => !!d)
+          .sort()[0] ?? null
+        setPayrollOwed({ totalCents: s.totalAPagarCents, people: owed.length, soonestDue })
+      })
+      .catch(() => setPayrollOwed(null))
+  }, [isManager])
 
   const paidRevenue = schedulesToday
     .filter((s) => s.paymentStatus === "PAID")
@@ -470,6 +490,34 @@ export default function DashboardPage() {
           onClick={!isPro ? () => router.push("/dashboard/planos") : undefined}
         />
       </div>
+
+      {/* ── Folha a pagar (dono/admin) — lembrete acionável ── */}
+      {payrollOwed && (
+        <button
+          onClick={() => router.push("/dashboard/relatorios/repasses")}
+          style={{
+            width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+            display: "flex", alignItems: "center", gap: 14, marginBottom: 16,
+            padding: "16px 18px", borderRadius: 16,
+            background: "linear-gradient(135deg, rgba(245,158,11,0.10), rgba(239,68,68,0.05))",
+            border: "1px solid rgba(245,158,11,0.25)",
+          }}
+        >
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#F59E0B", flexShrink: 0 }}>
+            <CircleDollarSign size={22} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+              {formatCurrency(payrollOwed.totalCents)} a pagar para a equipe
+            </p>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "3px 0 0" }}>
+              {payrollOwed.people} {payrollOwed.people === 1 ? "funcionário" : "funcionários"} aguardando
+              {payrollOwed.soonestDue ? ` · vencimento mais próximo em ${new Date(payrollOwed.soonestDue).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}` : ""}
+            </p>
+          </div>
+          <ChevronRight size={18} color="var(--c-text-3)" style={{ flexShrink: 0 }} />
+        </button>
+      )}
 
       {/* ── V2-B3: ações de receita (retornos a cobrar + clientes a recuperar) ── */}
       <RevenueActionsCard />

@@ -2,9 +2,9 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search, Wrench } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search, Wrench, Wallet } from "lucide-react"
 import Link from "next/link"
-import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
@@ -17,6 +17,9 @@ interface Specialty {
   category: string | null
 }
 
+type SalaryMode = "COMMISSION_ONLY" | "SALARY_ONLY" | "SALARY_PLUS_COMMISSION"
+type PayCadence = "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "CUSTOM"
+
 interface Employee {
   id:                string
   name:              string
@@ -26,6 +29,36 @@ interface Employee {
   calendarConnected: boolean
   createdAt:         string
   specialties:       Specialty[]
+  salaryMode:        SalaryMode
+  salaryCents:       number | null
+  payCadence:        PayCadence
+  payDueDay:         number | null
+}
+
+const SALARY_MODE_LABEL: Record<SalaryMode, string> = {
+  COMMISSION_ONLY:       "Só comissão",
+  SALARY_ONLY:           "Só salário",
+  SALARY_PLUS_COMMISSION: "Salário + comissão",
+}
+
+const CADENCE_LABEL: Record<PayCadence, string> = {
+  WEEKLY:   "Toda semana",
+  BIWEEKLY: "A cada 15 dias",
+  MONTHLY:  "Todo mês",
+  CUSTOM:   "Quando eu quiser",
+}
+
+function reaisToCents(value: string): number | null {
+  const clean = value.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")
+  if (!clean) return null
+  const n = Number(clean)
+  if (isNaN(n) || n < 0) return null
+  return Math.round(n * 100)
+}
+
+function centsToReais(cents: number | null): string {
+  if (cents == null) return ""
+  return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 interface ServiceOption {
@@ -124,6 +157,11 @@ function EmployeesContent() {
   const [services,      setServices]      = useState<ServiceOption[]>([])
   const [formServiceIds, setFormServiceIds] = useState<string[]>([])
   const [serviceSearch, setServiceSearch] = useState("")
+  // ── Folha (como o funcionário é pago) ──
+  const [formSalaryMode, setFormSalaryMode] = useState<SalaryMode>("COMMISSION_ONLY")
+  const [formSalary,      setFormSalary]     = useState("")   // em reais, string
+  const [formCadence,     setFormCadence]    = useState<PayCadence>("MONTHLY")
+  const [formDueDay,      setFormDueDay]      = useState("")   // 1-31, string
 
   const withCalendar = useMemo(() => employees.filter(e => e.calendarConnected).length, [employees])
   const filteredServices = useMemo(() => {
@@ -179,12 +217,15 @@ function EmployeesContent() {
   function openCreate() {
     setFormName(""); setFormEmail(""); setFormError(null)
     setFormServiceIds([]); setServiceSearch("")
+    setFormSalaryMode("COMMISSION_ONLY"); setFormSalary(""); setFormCadence("MONTHLY"); setFormDueDay("")
     setSelected(null); setShowModal("create")
   }
 
   function openEdit(emp: Employee) {
     setFormName(emp.name); setFormEmail(emp.email); setFormError(null)
     setFormServiceIds(emp.specialties.map(s => s.id)); setServiceSearch("")
+    setFormSalaryMode(emp.salaryMode); setFormSalary(centsToReais(emp.salaryCents))
+    setFormCadence(emp.payCadence); setFormDueDay(emp.payDueDay != null ? String(emp.payDueDay) : "")
     setSelected(emp); setShowModal("edit")
   }
 
@@ -208,14 +249,52 @@ function EmployeesContent() {
       toast.error("Preencha o e-mail do funcionário.")
       return
     }
+    // ── Folha: valida salário e dia de vencimento antes de enviar ──
+    const wantsSalary = formSalaryMode === "SALARY_ONLY" || formSalaryMode === "SALARY_PLUS_COMMISSION"
+    let salaryCents: number | null = null
+    if (wantsSalary) {
+      salaryCents = reaisToCents(formSalary)
+      if (salaryCents == null || salaryCents <= 0) {
+        setFormError("Informe o valor do salário.")
+        toast.error("Informe o valor do salário.")
+        return
+      }
+    }
+    let payDueDay: number | null = null
+    if (formCadence === "MONTHLY" && formDueDay.trim()) {
+      const day = Number(formDueDay)
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        setFormError("Dia de vencimento deve ser de 1 a 31.")
+        toast.error("Dia de vencimento deve ser de 1 a 31.")
+        return
+      }
+      payDueDay = day
+    }
+    const payroll = {
+      salaryMode:  formSalaryMode,
+      salaryCents: wantsSalary ? salaryCents : null,
+      payCadence:  formCadence,
+      payDueDay,
+    }
+
     const isCreate = showModal === "create"
     setActionLoading("save")
     setFormError(null)
     try {
       if (isCreate) {
-        await apiPost("/employees", { name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds })
+        // POST cria com nome/e-mail/especialidades; a folha é aplicada em seguida
+        // (o endpoint de criação não recebe folha — começa em "só comissão").
+        const created = await apiPost<{ employee: Employee }>("/employees", {
+          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds,
+        })
+        const needsPayroll = payroll.salaryMode !== "COMMISSION_ONLY" || payroll.payCadence !== "MONTHLY" || payroll.payDueDay != null
+        if (created.employee?.id && needsPayroll) {
+          await apiPatch(`/employees/${created.employee.id}`, payroll)
+        }
       } else if (selected) {
-        await apiPut(`/employees/${selected.id}`, { name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds })
+        await apiPatch(`/employees/${selected.id}`, {
+          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...payroll,
+        })
       }
       closeModal()
       await fetchEmployees()
@@ -494,6 +573,24 @@ function EmployeesContent() {
                     )}
                   </div>
 
+                  {/* ── Como recebe (folha) ── */}
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600,
+                      borderRadius: 99, padding: "3px 9px", color: "#34D399",
+                      backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)",
+                    }}>
+                      <Wallet size={10} style={{ flexShrink: 0 }} />
+                      {SALARY_MODE_LABEL[emp.salaryMode]}
+                    </span>
+                    {emp.salaryCents != null && emp.salaryCents > 0 && (
+                      <span style={{ fontSize: 11, color: "var(--c-text-3)", fontVariantNumeric: "tabular-nums" }}>
+                        R$ {centsToReais(emp.salaryCents)} · {CADENCE_LABEL[emp.payCadence].toLowerCase()}
+                        {emp.payCadence === "MONTHLY" && emp.payDueDay ? ` (dia ${emp.payDueDay})` : ""}
+                      </span>
+                    )}
+                  </div>
+
                   {/* ── Action buttons (grid 2x2 estável, não quebra feio em card estreito) ── */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                     <button
@@ -653,6 +750,107 @@ function EmployeesContent() {
                       })}
                     </div>
                   </>
+                )}
+              </div>
+
+              {/* ── Pagamento (folha): como esse funcionário recebe ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, paddingTop: 4, borderTop: "1px dashed var(--c-border)", marginTop: 2 }}>
+                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: 6, paddingTop: 10 }}>
+                  <Wallet size={12} style={{ color: "var(--c-text-4)" }} /> Como ele recebe
+                </label>
+
+                {/* Modo de pagamento — 3 opções grandes e claras */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  {(Object.keys(SALARY_MODE_LABEL) as SalaryMode[]).map(mode => {
+                    const on = formSalaryMode === mode
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setFormSalaryMode(mode)}
+                        style={{
+                          padding: "9px 6px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                          fontSize: 11.5, fontWeight: 600, lineHeight: 1.25, textAlign: "center",
+                          border: on ? "1px solid rgba(0,102,255,0.5)" : "1px solid var(--c-border-2)",
+                          backgroundColor: on ? "rgba(0,102,255,0.12)" : "var(--c-surface-2)",
+                          color: on ? "#3B82F6" : "var(--c-text-2)",
+                          transition: "background-color 0.12s, border-color 0.12s",
+                        }}
+                      >
+                        {SALARY_MODE_LABEL[mode]}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Salário (só se o modo inclui salário) */}
+                {(formSalaryMode === "SALARY_ONLY" || formSalaryMode === "SALARY_PLUS_COMMISSION") && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)" }}>Salário fixo</label>
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--c-text-4)", pointerEvents: "none" }}>R$</span>
+                      <input
+                        inputMode="decimal"
+                        value={formSalary}
+                        onChange={e => setFormSalary(e.target.value)}
+                        placeholder="1.800,00"
+                        style={{
+                          height: 40, padding: "0 12px 0 36px", borderRadius: 10, width: "100%",
+                          border: "1px solid var(--c-border-2)", backgroundColor: "var(--c-surface-2)",
+                          color: "var(--c-text)", fontSize: 14, outline: "none", fontFamily: "inherit",
+                          boxSizing: "border-box", fontVariantNumeric: "tabular-nums",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Frequência de pagamento */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)" }}>Frequência do pagamento</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {(Object.keys(CADENCE_LABEL) as PayCadence[]).map(cad => {
+                      const on = formCadence === cad
+                      return (
+                        <button
+                          key={cad}
+                          type="button"
+                          onClick={() => setFormCadence(cad)}
+                          style={{
+                            height: 32, padding: "0 12px", borderRadius: 99, cursor: "pointer", fontFamily: "inherit",
+                            fontSize: 12, fontWeight: 600,
+                            border: on ? "1px solid rgba(124,58,237,0.45)" : "1px solid var(--c-border-2)",
+                            backgroundColor: on ? "rgba(124,58,237,0.12)" : "transparent",
+                            color: on ? "#A78BFA" : "var(--c-text-2)",
+                          }}
+                        >
+                          {CADENCE_LABEL[cad]}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Dia de vencimento (só faz sentido no mensal) */}
+                {formCadence === "MONTHLY" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <label style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-3)" }}>Vence todo dia (opcional)</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        inputMode="numeric"
+                        value={formDueDay}
+                        onChange={e => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                        placeholder="5"
+                        style={{
+                          height: 40, width: 80, padding: "0 12px", borderRadius: 10, textAlign: "center",
+                          border: "1px solid var(--c-border-2)", backgroundColor: "var(--c-surface-2)",
+                          color: "var(--c-text)", fontSize: 14, outline: "none", fontFamily: "inherit",
+                          boxSizing: "border-box", fontVariantNumeric: "tabular-nums",
+                        }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>de cada mês — pra te lembrarmos do vencimento</span>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
