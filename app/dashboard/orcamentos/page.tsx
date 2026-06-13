@@ -15,6 +15,7 @@ import TabTutorial from "@/components/shared/TabTutorial"
 interface QuoteItem { serviceId?: string | null; name: string; price: number }
 interface Quote {
   id: string; customerName: string | null; plate: string | null
+  customerPhone?: string | null
   items: QuoteItem[]; totalPrice: number; notes: string | null
   status: string; validUntil: string | null; createdAt: string
 }
@@ -396,7 +397,7 @@ export default function OrcamentosPage() {
         open={pickerQuote !== null}
         onClose={() => setPickerQuote(null)}
         context="orcamento"
-        phone={null}
+        phone={pickerQuote?.customerPhone ?? null}
         initialText={pickerQuote ? quoteMessage(pickerQuote) : undefined}
         vars={pickerQuote ? {
           nomeCompleto: pickerQuote.customerName,
