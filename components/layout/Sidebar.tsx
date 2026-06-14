@@ -38,7 +38,7 @@ const navSections = [
     items: [
       // Operacional (visível pro funcionário): só Comandas. Relacionamento/Vistoria = gestão.
       { href: "/dashboard/agendamentos",   label: "Comandas",       icon: CalendarDays },
-      { href: "/dashboard/relacionamento", label: "Relacionamento", icon: Heart, ownerOnly: true, badgeKey: "crm" },
+      { href: "/dashboard/relacionamento", label: "Pós-venda", icon: Heart, ownerOnly: true, badgeKey: "crm" },
       { href: "/dashboard/vistoria",       label: "Vistoria",       icon: ClipboardCheck, ownerOnly: true },
     ],
   },

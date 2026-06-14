@@ -37,7 +37,7 @@ function RelacionamentoContent() {
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <Heart size={20} color="#EC4899" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Relacionamento</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0, letterSpacing: "-0.5px" }}>Pós-venda</h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 20px" }}>
         Cuide dos seus clientes: quem chamar hoje, retornos a vencer e quem sumiu — com mensagem pronta no WhatsApp.
@@ -45,7 +45,7 @@ function RelacionamentoContent() {
 
       <TabTutorial
         tabKey="relacionamento"
-        title="Como usar o Relacionamento"
+        title="Como usar o Pós-venda"
         subtitle="Quem chamar hoje, em 1 toque"
         steps={[
           { icon: Users, title: "1. Sua fila de clientes", text: "Reunimos quem precisa de atenção hoje: retornos vencendo, clientes que sumiram e pós-serviço sem avaliação." },
