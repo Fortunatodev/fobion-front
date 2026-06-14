@@ -24,6 +24,7 @@ import PromptModal from "@/components/shared/PromptModal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
 import TabTutorial from "@/components/shared/TabTutorial"
 import { formatScheduleTime } from "@/lib/dateUtils"
+import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 
 /**
  * V2-B4 — Pátio (kanban operacional do dia). Aguardando → Em atendimento → Pronto.
@@ -340,6 +341,12 @@ export default function PatioPage() {
       .finally(() => setLoading(false))
   }, [])
   useEffect(fetchData, [fetchData])
+
+  // Tempo real: agendamento criado/atualizado/fechado/cancelado em qualquer tela
+  // re-sincroniza o Pátio na hora (casa com Calendário e Comanda).
+  useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
+    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) fetchData()
+  }, [fetchData]))
 
   async function advance(id: string, next: Status) {
     setMoving(id)

@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPut, apiPost } from "@/lib/api"
+import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
 import { buildWhatsAppLink } from "@/lib/utils"
@@ -1700,6 +1701,12 @@ export default function AgendamentosPage() {
   }, [selectedDate, filterStatus])
 
   useEffect(() => { fetchSchedules() }, [fetchSchedules])
+
+  // Tempo real: casa com Calendário e Pátio — qualquer mudança de agendamento
+  // re-sincroniza a lista de comandas na hora.
+  useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
+    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) fetchSchedules()
+  }, [fetchSchedules]))
 
   // Deep-link de reagendamento pré-montado (vindo do Relacionamento). Lê via
   // window.location.search (não useSearchParams — evita Suspense no Next 15) e

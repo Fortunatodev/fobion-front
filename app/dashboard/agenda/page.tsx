@@ -8,6 +8,7 @@ import {
   Loader2, ArrowRight, RefreshCw, Bell,
 } from "lucide-react"
 import { apiGet, apiPut } from "@/lib/api"
+import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
@@ -431,6 +432,30 @@ function DetailModal({
   )
 }
 
+// ── Avatar do profissional (funcionário com foto/iniciais, ou dono) ───────────
+
+function money(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
+function ProfessionalAvatar({ employee }: { employee?: { name: string | null; avatarUrl: string | null } | null }) {
+  const base: React.CSSProperties = {
+    width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 8, fontWeight: 700, color: "#fff", objectFit: "cover",
+  }
+  if (employee?.avatarUrl) {
+    return <img src={employee.avatarUrl} alt={employee.name ?? ""} style={base} />
+  }
+  const initials = (employee?.name ?? "")
+    .split(" ").filter(Boolean).slice(0, 2).map(n => n[0]).join("").toUpperCase()
+  return (
+    <div style={{ ...base, background: employee ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "var(--c-border-2)" }}>
+      {employee ? initials : "•"}
+    </div>
+  )
+}
+
 // ── ScheduleCard ──────────────────────────────────────────────────────────────
 
 function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
@@ -472,18 +497,25 @@ function ScheduleCard({ s, onClick }: { s: Schedule; onClick: () => void }) {
           <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {services || "—"}
           </p>
-          {s.employee?.name && (
-            <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "2px 0 0" }}>
-              {s.employee.name}
-            </p>
-          )}
+          {/* Quem executa: avatar do funcionário (fallback iniciais) ou chip "Você" (dono).
+              Antes mostrava só o nome em texto e nada no caso do proprietário. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, margin: "5px 0 0" }}>
+            <ProfessionalAvatar employee={s.employee} />
+            <span style={{ fontSize: 10, color: "var(--c-text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {s.employee?.name ?? "Você"}
+            </span>
+          </div>
         </div>
         <div style={{ flexShrink: 0, textAlign: "right" }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
-            {/* ✅ Usar formatScheduleTime */}
             {formatScheduleTime(s.scheduledAt)}
           </p>
           <StatusBadge status={s.status} />
+          {s.totalPrice > 0 && (
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text-3)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums" }}>
+              {money(s.totalPrice)}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -585,6 +617,15 @@ export default function AgendaPage() {
 
   useEffect(() => { fetchDay(selectedDate) }, [selectedDate, fetchDay])
 
+  // Tempo real: qualquer mudança de agendamento (criar/atualizar/fechar/cancelar) em
+  // QUALQUER tela (Pátio/Comanda) ou por outro usuário re-sincroniza o Calendário na
+  // hora — antes as 3 telas viviam dessincronizadas (faziam fetch isolado, sem SSE).
+  useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
+    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) {
+      fetchMonth(); fetchDay(selectedDate)
+    }
+  }, [fetchMonth, fetchDay, selectedDate]))
+
   // Quando um status muda no modal, atualiza as listas
   function handleStatusChange(updated: Schedule) {
     setModalSchedule(updated)
@@ -596,6 +637,21 @@ export default function AgendaPage() {
 
   const requestedCount = daySchedules.filter(s => s.status === "REQUESTED").length
   const confirmedCount = daySchedules.filter(s => s.status === "CONFIRMED").length
+
+  // Resumo do dia: receita já paga + quantos agendamentos por profissional (você vs
+  // cada funcionário) — o dono pediu esse "resumo embaixo" pra bater o olho.
+  const daySummary = (() => {
+    const realizados = daySchedules.filter(s => s.status !== "CANCELLED")
+    const receitaPaga = daySchedules
+      .filter(s => s.status === "DONE")  // DONE = comanda fechada/paga
+      .reduce((sum, s) => sum + (s.totalPrice ?? 0), 0)
+    const porProfissional = new Map<string, number>()
+    for (const s of realizados) {
+      const nome = s.employee?.name ?? "Você"
+      porProfissional.set(nome, (porProfissional.get(nome) ?? 0) + 1)
+    }
+    return { receitaPaga, porProfissional: [...porProfissional.entries()], totalRealizados: realizados.length }
+  })()
 
   function empBtnStyle(active: boolean): React.CSSProperties {
     return {
@@ -821,6 +877,24 @@ export default function AgendaPage() {
                   <span style={{ fontSize: 11, fontWeight: 600, color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 6, padding: "2px 8px" }}>
                     {confirmedCount} confirmado{confirmedCount !== 1 ? "s" : ""}
                   </span>
+                </div>
+              )}
+
+              {/* Resumo do dia: receita fechada + agendamentos por profissional */}
+              {!loadingDay && daySummary.totalRealizados > 0 && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--c-border)", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {daySummary.receitaPaga > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                      <span style={{ color: "var(--c-text-3)" }}>Receita fechada</span>
+                      <span style={{ color: "#10B981", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money(daySummary.receitaPaga)}</span>
+                    </div>
+                  )}
+                  {daySummary.porProfissional.map(([nome, qtd]) => (
+                    <div key={nome} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                      <span style={{ color: "var(--c-text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nome}</span>
+                      <span style={{ color: "var(--c-text-2)", fontWeight: 600 }}>{qtd} agend.</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
