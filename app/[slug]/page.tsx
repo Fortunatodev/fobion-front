@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { LazyMotion, domAnimation, AnimatePresence, m } from "motion/react"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
-import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift, Star } from "lucide-react"
+import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift, Star, MessageCircle } from "lucide-react"
 import { isCustomerAuthenticated, customerApiGet } from "@/lib/customer-auth"
 import { fetchPublicBusiness, PublicBusinessHttpError, type PublicBusinessData } from "@/lib/public-business"
 import ForbionLogo from "@/components/shared/ForbionLogo"
@@ -324,6 +324,25 @@ export default function SlugPage() {
         }
         * { box-sizing: border-box; }
       `}</style>
+
+      {/* WhatsApp flutuante — fala direto com a loja. Fica acima da barra fixa de agendar. */}
+      {waLink && (
+        <a
+          href={waLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Falar no WhatsApp"
+          title="Falar no WhatsApp"
+          style={{
+            position: "fixed", right: isMobile ? 16 : 24, bottom: isMobile ? 88 : 96, zIndex: 60,
+            width: 54, height: 54, borderRadius: "50%", background: "#25D366",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 6px 20px rgba(37,211,102,0.45)", textDecoration: "none",
+          }}
+        >
+          <MessageCircle size={26} color="#fff" fill="#fff" />
+        </a>
+      )}
 
       <div style={{ backgroundColor: "var(--c-bg)", color: "var(--c-text)", fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" }}>
 
