@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Component, type CSSProperties, type R
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User } from "lucide-react"
 import { toast } from "sonner"
 import {
   DndContext,
@@ -39,6 +39,7 @@ interface Schedule {
   vehicle?: { plate: string | null; model: string | null } | null
   scheduleServices?: Array<{ service: { name: string | null } | null } | null> | null
 }
+interface Employee { id: string; name: string }
 
 type Status = Schedule["status"]
 type ColumnKey = "wait" | "doing" | "done"
@@ -293,6 +294,9 @@ export default function PatioPage() {
   const [capacity, setCapacity] = useState(10)
   const [capModalOpen, setCapModalOpen] = useState(false)
   const [savingCap, setSavingCap] = useState(false)
+  // Filtro por funcionário (mesma lente do Calendário): "all" | "owner" | <employeeId>.
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [selectedEmp, setSelectedEmp] = useState<string>("all")
 
   // sensores: pointer com distância mínima (não rouba cliques) + touch com delay
   // (segura ~180ms p/ começar a arrastar no celular, sem atrapalhar taps/scroll)
@@ -331,15 +335,24 @@ export default function PatioPage() {
       .catch(() => { /* sem business → mantém padrões */ })
   }, [])
 
+  // Lista de funcionários pro seletor (mesma fonte do Calendário).
+  useEffect(() => {
+    apiGet<{ employees: Employee[] }>("/employees")
+      .then((r) => setEmployees(r.employees ?? []))
+      .catch(() => { /* sem equipe → seletor não aparece */ })
+  }, [])
+
   const fetchData = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10)
     setLoading(true)
     setError("")
-    apiGet<{ schedules: Schedule[] }>(`/schedules?date=${today}`)
+    const params: Record<string, string> = { date: today }
+    if (selectedEmp !== "all") params.employeeId = selectedEmp
+    apiGet<{ schedules: Schedule[] }>("/schedules", params)
       .then((r) => setSchedules(r.schedules ?? []))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar."))
       .finally(() => setLoading(false))
-  }, [])
+  }, [selectedEmp])
   useEffect(fetchData, [fetchData])
 
   // Tempo real: agendamento criado/atualizado/fechado/cancelado em qualquer tela
@@ -402,6 +415,17 @@ export default function PatioPage() {
     gap: 14,
   }
 
+  function empBtnStyle(active: boolean): CSSProperties {
+    return {
+      height: 30, padding: "0 12px", borderRadius: 8, fontSize: 12,
+      fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit",
+      border: active ? "1px solid rgba(0,102,255,0.4)" : "1px solid var(--c-border)",
+      background: active ? "rgba(0,102,255,0.1)" : "transparent",
+      color: active ? "#3B82F6" : "var(--c-text-3)",
+      display: "inline-flex", alignItems: "center", transition: "all 0.15s",
+    }
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 48px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 10, flexWrap: "wrap" }}>
@@ -426,6 +450,19 @@ export default function PatioPage() {
         </div>
       </div>
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 24px" }}>Fila operacional de hoje. Arraste os carros entre as colunas, ou use os botões.</p>
+
+      {/* ── SELETOR DE FUNCIONÁRIO (mesma lente do Calendário e da Comanda) ── */}
+      {employees.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20, padding: "10px 14px", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12 }}>
+          <button style={empBtnStyle(selectedEmp === "all")} onClick={() => setSelectedEmp("all")}>Todos</button>
+          <button style={empBtnStyle(selectedEmp === "owner")} onClick={() => setSelectedEmp("owner")}>
+            <User size={11} style={{ marginRight: 4 }} />Proprietário
+          </button>
+          {employees.map((e) => (
+            <button key={e.id} style={empBtnStyle(selectedEmp === e.id)} onClick={() => setSelectedEmp(e.id)}>{e.name}</button>
+          ))}
+        </div>
+      )}
 
       <TabTutorial
         tabKey="patio"

@@ -1662,6 +1662,9 @@ export default function AgendamentosPage() {
   const [selectedDate,     setSelectedDate]     = useState(() => new Date().toISOString().split("T")[0])
   const [filterStatus,     setFilterStatus]     = useState("")
   const [searchQuery,      setSearchQuery]      = useState("")
+  // Filtro por funcionário da LISTA (mesma lente do Calendário/Pátio): "all" | "owner" | <id>.
+  const [listEmployees,    setListEmployees]    = useState<{ id: string; name: string }[]>([])
+  const [empFilter,        setEmpFilter]        = useState<string>("all")
   const [actionLoading,    setActionLoading]    = useState<string | null>(null)
   const [showCloseModal,   setShowCloseModal]   = useState(false)
   const [showNovoModal,    setShowNovoModal]    = useState(false)   // ← novo
@@ -1682,6 +1685,13 @@ export default function AgendamentosPage() {
     return () => window.removeEventListener("resize", check)
   }, [])
 
+  // Funcionários pro seletor da lista (mesma fonte do Calendário). Falha silenciosa → sem seletor.
+  useEffect(() => {
+    apiGet<{ employees: { id: string; name: string }[] }>("/employees")
+      .then((r) => setListEmployees(r.employees ?? []))
+      .catch(() => { /* sem equipe */ })
+  }, [])
+
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchSchedules = useCallback(async () => {
@@ -1689,6 +1699,7 @@ export default function AgendamentosPage() {
     const params = new URLSearchParams()
     params.set("date", selectedDate)
     if (filterStatus) params.set("status", filterStatus)
+    if (empFilter !== "all") params.set("employeeId", empFilter)
     try {
       const res = await apiGet<{ schedules: Schedule[] }>(`/schedules?${params}`)
       setSchedules(res.schedules ?? [])
@@ -1698,7 +1709,7 @@ export default function AgendamentosPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedDate, filterStatus])
+  }, [selectedDate, filterStatus, empFilter])
 
   useEffect(() => { fetchSchedules() }, [fetchSchedules])
 
@@ -1965,6 +1976,27 @@ export default function AgendamentosPage() {
               )
             })}
           </div>
+
+          {/* ── SELETOR DE FUNCIONÁRIO (mesma lente do Calendário e do Pátio) ── */}
+          {listEmployees.length > 0 && (
+            <div style={{ display: "flex", gap: 5, marginTop: 8, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
+              {[{ id: "all", name: "Todos" }, { id: "owner", name: "Proprietário" }, ...listEmployees].map((e) => {
+                const active = empFilter === e.id
+                return (
+                  <button key={e.id} onClick={() => { setEmpFilter(e.id); setVisibleCount(LIST_PAGE_SIZE) }} style={{
+                    fontSize: 12, fontWeight: active ? 600 : 500, padding: "5px 12px", borderRadius: 8,
+                    cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0,
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    backgroundColor: active ? "rgba(0,102,255,0.1)" : "transparent",
+                    border: `1px solid ${active ? "rgba(0,102,255,0.4)" : "var(--c-border-2)"}`,
+                    color: active ? "#3B82F6" : "var(--c-text-4)", fontFamily: "inherit",
+                  }}>
+                    {e.id === "owner" && <User size={11} />}{e.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── RESUMO ── */}
@@ -2032,7 +2064,7 @@ export default function AgendamentosPage() {
 
         {/* ── EMPTY STATE ── */}
         {!loading && filteredSchedules.length === 0 && (
-          (searchQuery || filterStatus) ? (
+          (searchQuery || filterStatus || empFilter !== "all") ? (
             /* Há filtro/busca ativos: o dia pode ter agendamentos, só não batem. */
             <div style={{
               backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)",
@@ -2046,7 +2078,7 @@ export default function AgendamentosPage() {
                 Em {dateInfo.day} de {dateInfo.month}, nada bate com a busca ou o status selecionado.
               </p>
               <button
-                onClick={() => { setSearchQuery(""); setFilterStatus(""); setVisibleCount(LIST_PAGE_SIZE) }}
+                onClick={() => { setSearchQuery(""); setFilterStatus(""); setEmpFilter("all"); setVisibleCount(LIST_PAGE_SIZE) }}
                 style={{
                   marginTop: 16, height: 36, padding: "0 16px", borderRadius: 10,
                   background: "transparent", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600,
