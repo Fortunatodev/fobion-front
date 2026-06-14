@@ -1,8 +1,8 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search, Wrench, Wallet } from "lucide-react"
+import { Users, Plus, Pencil, X, AlertCircle, Calendar, Check, Loader2, Percent, Lock, Search, Wrench, Wallet, BarChart3, Camera } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -143,6 +143,7 @@ function EmployeesContent() {
   const { user, loading: userLoading } = useUser()
 
   const [employees,     setEmployees]     = useState<Employee[]>([])
+  const [perf,          setPerf]          = useState<Record<string, { count: number; commission: number }>>({})
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState<string | null>(null)
   const [success,       setSuccess]       = useState<string | null>(null)
@@ -153,6 +154,9 @@ function EmployeesContent() {
   const [hoveredId,     setHoveredId]     = useState<string | null>(null)
   const [formName,      setFormName]      = useState("")
   const [formEmail,     setFormEmail]     = useState("")
+  const [formAvatarUrl, setFormAvatarUrl] = useState<string | null>(null)
+  const [uploadingEmpAvatar, setUploadingEmpAvatar] = useState(false)
+  const empAvatarRef = useRef<HTMLInputElement>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<Employee | null>(null)
   const [search,        setSearch]        = useState("")
   const [services,      setServices]      = useState<ServiceOption[]>([])
@@ -199,7 +203,24 @@ function EmployeesContent() {
     }
   }, [])
 
-  useEffect(() => { fetchEmployees(); fetchServices() }, [fetchEmployees, fetchServices])
+  // Desempenho (últimos 30d) por funcionário — reusa o relatório de comissões.
+  // Mapa employeeId → { atendimentos, comissão gerada }. Falha silenciosa.
+  const fetchPerformance = useCallback(async () => {
+    try {
+      const res = await apiGet<{ employees: { employeeId: string; transactionCount: number; totalPending: number; totalPaid: number }[] }>(
+        "/commissions/report?period=30d",
+      )
+      const map: Record<string, { count: number; commission: number }> = {}
+      for (const row of res.employees ?? []) {
+        map[row.employeeId] = { count: row.transactionCount, commission: row.totalPending + row.totalPaid }
+      }
+      setPerf(map)
+    } catch {
+      // sem desempenho → cards seguem normais
+    }
+  }, [])
+
+  useEffect(() => { fetchEmployees(); fetchServices(); fetchPerformance() }, [fetchEmployees, fetchServices, fetchPerformance])
 
   // ── Handle ?calendar=success|error from OAuth callback redirect ───────────
   useEffect(() => {
@@ -216,18 +237,43 @@ function EmployeesContent() {
   }, [searchParams, router, fetchEmployees])
 
   function openCreate() {
-    setFormName(""); setFormEmail(""); setFormError(null)
+    setFormName(""); setFormEmail(""); setFormError(null); setFormAvatarUrl(null)
     setFormServiceIds([]); setServiceSearch("")
     setFormSalaryMode("COMMISSION_ONLY"); setFormSalary(""); setFormCadence("MONTHLY"); setFormDueDay("")
     setSelected(null); setShowModal("create")
   }
 
   function openEdit(emp: Employee) {
-    setFormName(emp.name); setFormEmail(emp.email); setFormError(null)
+    setFormName(emp.name); setFormEmail(emp.email); setFormError(null); setFormAvatarUrl(emp.avatarUrl)
     setFormServiceIds(emp.specialties.map(s => s.id)); setServiceSearch("")
     setFormSalaryMode(emp.salaryMode); setFormSalary(centsToReais(emp.salaryCents))
     setFormCadence(emp.payCadence); setFormDueDay(emp.payDueDay != null ? String(emp.payDueDay) : "")
     setSelected(emp); setShowModal("edit")
+  }
+
+  // Upload da foto do funcionário — mesmo endpoint do avatar do dono. Só atualiza o
+  // estado do form; o avatarUrl vai junto no salvar (POST/PATCH).
+  async function handleEmpAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (empAvatarRef.current) empAvatarRef.current.value = ""
+    if (!file) return
+    if (!file.type.startsWith("image/")) { toast.error("Escolha um arquivo de imagem."); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Imagem muito grande. Máximo 2MB."); return }
+    setUploadingEmpAvatar(true)
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("forbion_token") : null
+      const fd = new FormData(); fd.append("file", file)
+      const res = await fetch(`${API}/api/upload/service-image`, {
+        method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
+      })
+      if (!res.ok) throw new Error("Falha no upload.")
+      const { url } = await res.json() as { url: string }
+      setFormAvatarUrl(url)
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "Erro ao enviar a foto.")
+    } finally {
+      setUploadingEmpAvatar(false)
+    }
   }
 
   function closeModal() {
@@ -282,15 +328,17 @@ function EmployeesContent() {
     setActionLoading("save")
     setFormError(null)
     try {
+      // avatarUrl só vai quando há valor (o schema do back é opcional e valida o host).
+      const avatar = formAvatarUrl ? { avatarUrl: formAvatarUrl } : {}
       if (isCreate) {
         // POST cria já com a folha (1 passo) — sem POST+PATCH (que duplicava o
         // funcionário se o PATCH falhasse e o dono tentasse de novo). Bug P2.3.
         await apiPost("/employees", {
-          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...payroll,
+          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...avatar, ...payroll,
         })
       } else if (selected) {
         await apiPatch(`/employees/${selected.id}`, {
-          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...payroll,
+          name: formName.trim(), email: formEmail.trim(), serviceIds: formServiceIds, ...avatar, ...payroll,
         })
       }
       closeModal()
@@ -582,6 +630,23 @@ function EmployeesContent() {
                     )}
                   </div>
 
+                  {/* ── Desempenho (últimos 30 dias) ── */}
+                  {(() => {
+                    const p = perf[emp.id]
+                    const count = p?.count ?? 0
+                    const commission = p?.commission ?? 0
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "9px 12px", borderRadius: 10, background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)" }}>
+                        <BarChart3 size={14} color="var(--c-text-4)" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "var(--c-text-2)" }}>
+                          <strong style={{ color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{count}</strong> {count === 1 ? "atendimento" : "atendimentos"}
+                          {commission > 0 && <> · <strong style={{ color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>R$ {centsToReais(commission)}</strong> em comissão</>}
+                        </span>
+                        <span style={{ marginLeft: "auto", fontSize: 10.5, color: "var(--c-text-4)", flexShrink: 0 }}>30 dias</span>
+                      </div>
+                    )
+                  })()}
+
                   {/* ── Como recebe (folha) ── */}
                   <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 14 }}>
                     <span style={{
@@ -692,6 +757,30 @@ function EmployeesContent() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* ── Foto do funcionário ── */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }}>
+                  {formAvatarUrl ? (
+                    <img src={formAvatarUrl} alt="foto" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--c-border-2)" }} />
+                  ) : (
+                    <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#0066FF,#7C3AED)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "var(--c-on-primary)" }}>
+                      {getInitials(formName || "?")}
+                    </div>
+                  )}
+                  <label htmlFor="emp-avatar-upload" title="Enviar foto" style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: "#0066FF", border: "2px solid var(--c-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: uploadingEmpAvatar ? "not-allowed" : "pointer" }}>
+                    {uploadingEmpAvatar ? <Loader2 size={11} color="#fff" style={{ animation: "spinEmp 0.7s linear infinite" }} /> : <Camera size={11} color="#fff" />}
+                  </label>
+                  <input ref={empAvatarRef} id="emp-avatar-upload" type="file" accept="image/*" onChange={handleEmpAvatarUpload} style={{ display: "none" }} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>Foto do funcionário</p>
+                  <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: "2px 0 0" }}>Aparece na agenda e no card. JPG/PNG até 2MB.{formAvatarUrl ? "" : " Opcional."}</p>
+                  {formAvatarUrl && (
+                    <button onClick={() => setFormAvatarUrl(null)} style={{ marginTop: 6, background: "none", border: "none", color: "#EF4444", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: 0 }}>Remover foto</button>
+                  )}
+                </div>
+              </div>
+
               <Field label="Nome"   value={formName}  onChange={setFormName}  placeholder="Ex: João Silva"     required />
               <Field label="E-mail" value={formEmail} onChange={setFormEmail} placeholder="joao@exemplo.com" required type="email" />
 
