@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { ShieldCheck, Plus, X, Trash2, AlertCircle, Loader2, Crown, KeyRound, Lock, Mail } from "lucide-react"
+import { ShieldCheck, Plus, X, Trash2, AlertCircle, Loader2, Crown, KeyRound, Lock, Mail, Copy, Check, Briefcase, Wrench } from "lucide-react"
 import Link from "next/link"
 import { apiGet, apiPost, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import Modal from "@/components/shared/Modal"
 
 type TeamRole = "OWNER" | "ADMIN" | "EMPLOYEE"
 
@@ -26,6 +27,21 @@ interface CreateTeamResponse {
   message: string
   user:    TeamUser
 }
+
+interface ResetPasswordResponse {
+  message:      string
+  id:           string
+  name:         string
+  email:        string
+  tempPassword: string
+}
+
+// O que cada papel enxerga/faz — texto didático pro dono leigo (pedido: "explicar os papéis").
+const ROLE_HELP: { role: TeamRole; icon: typeof Crown; desc: string }[] = [
+  { role: "OWNER",    icon: Crown,     desc: "Você. Vê e controla tudo: financeiro, repasses, acessos e configurações da loja." },
+  { role: "ADMIN",    icon: Briefcase, desc: "Gerente de confiança. Gerencia agenda, clientes, serviços e equipe — mas não mexe nos acessos/donos." },
+  { role: "EMPLOYEE", icon: Wrench,    desc: "Operacional. Vê a própria agenda e os atendimentos do dia, sem acesso a financeiro nem configurações." },
+]
 
 const ROLE_META: Record<TeamRole, { label: string; color: string }> = {
   OWNER:    { label: "Dono",        color: "#F59E0B" },
@@ -107,6 +123,12 @@ export default function AcessosPage() {
   const [removeTarget, setRemoveTarget] = useState<TeamUser | null>(null)
   const [removing,     setRemoving]     = useState(false)
 
+  // Redefinir senha
+  const [resetTarget, setResetTarget] = useState<TeamUser | null>(null)
+  const [resetting,   setResetting]   = useState(false)
+  const [resetResult, setResetResult] = useState<{ name: string; email: string; tempPassword: string } | null>(null)
+  const [copiedPass,  setCopiedPass]  = useState(false)
+
   const loadTeam = useCallback(async () => {
     setLoading(true)
     try {
@@ -168,6 +190,32 @@ export default function AcessosPage() {
     }
   }
 
+  async function handleResetPassword() {
+    if (!resetTarget) return
+    setResetting(true)
+    try {
+      const res = await apiPost<ResetPasswordResponse>(`/auth/team/${resetTarget.id}/reset-password`, {})
+      setResetResult({ name: res.name, email: res.email, tempPassword: res.tempPassword })
+      setResetTarget(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível redefinir a senha.")
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  async function copyTempPassword() {
+    if (!resetResult) return
+    try {
+      await navigator.clipboard.writeText(resetResult.tempPassword)
+      setCopiedPass(true)
+      toast.success("Senha copiada.")
+      setTimeout(() => setCopiedPass(false), 2000)
+    } catch {
+      toast.error("Não consegui copiar. Anote a senha manualmente.")
+    }
+  }
+
   if (!userLoading && user?.role === "EMPLOYEE") {
     return <AccessDenied />
   }
@@ -203,6 +251,30 @@ export default function AcessosPage() {
           >
             {showForm ? <><X size={15} /> Cancelar</> : <><Plus size={15} /> Criar acesso</>}
           </button>
+        </div>
+
+        {/* ── O que cada papel pode fazer (didático) ── */}
+        <div style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 18, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <ShieldCheck size={16} color="var(--c-text-3)" />
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>O que cada papel pode fazer</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+            {ROLE_HELP.map(({ role, icon: Icon, desc }) => {
+              const meta = ROLE_META[role]
+              return (
+                <div key={role} style={{ display: "flex", gap: 10, padding: "12px 14px", borderRadius: 12, background: "var(--c-surface-2)", border: `1px solid ${meta.color}26` }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: `${meta.color}1A`, border: `1px solid ${meta.color}33`, display: "flex", alignItems: "center", justifyContent: "center", color: meta.color }}>
+                    <Icon size={15} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: meta.color, margin: "1px 0 3px" }}>{meta.label}</p>
+                    <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0, lineHeight: 1.45 }}>{desc}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* ── Form criar acesso ── */}
@@ -359,20 +431,37 @@ export default function AcessosPage() {
                     </div>
                   </div>
 
-                  {canRemove && (
-                    <button
-                      onClick={() => setRemoveTarget(member)}
-                      title="Remover acesso"
-                      aria-label={`Remover acesso de ${member.name}`}
-                      style={{
-                        width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                        border: "1px solid rgba(239,68,68,0.2)", backgroundColor: "transparent",
-                        color: "#EF4444", cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                  {member.role !== "OWNER" && (
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      <button
+                        onClick={() => setResetTarget(member)}
+                        title="Redefinir senha"
+                        aria-label={`Redefinir senha de ${member.name}`}
+                        style={{
+                          width: 36, height: 36, borderRadius: 9,
+                          border: "1px solid var(--c-border-2)", backgroundColor: "transparent",
+                          color: "var(--c-text-3)", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <KeyRound size={15} />
+                      </button>
+                      {canRemove && (
+                        <button
+                          onClick={() => setRemoveTarget(member)}
+                          title="Remover acesso"
+                          aria-label={`Remover acesso de ${member.name}`}
+                          style={{
+                            width: 36, height: 36, borderRadius: 9,
+                            border: "1px solid rgba(239,68,68,0.2)", backgroundColor: "transparent",
+                            color: "#EF4444", cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )
@@ -408,6 +497,51 @@ export default function AcessosPage() {
         variant="danger"
         loading={removing}
       />
+
+      {/* ── Confirmação de redefinição de senha ── */}
+      <ConfirmDialog
+        open={resetTarget !== null}
+        onClose={() => { if (!resetting) setResetTarget(null) }}
+        onConfirm={handleResetPassword}
+        title="Redefinir senha"
+        description={
+          resetTarget
+            ? `Gerar uma nova senha provisória para ${resetTarget.name} (${resetTarget.email})? A senha atual deixa de funcionar na hora e a pessoa entra com a nova.`
+            : ""
+        }
+        confirmLabel="Gerar nova senha"
+        cancelLabel="Cancelar"
+        loading={resetting}
+      />
+
+      {/* ── Senha provisória gerada (mostra uma vez, copiável) ── */}
+      <Modal
+        open={resetResult !== null}
+        onClose={() => { setResetResult(null); setCopiedPass(false) }}
+        title="Senha provisória gerada"
+        description={resetResult ? `Repasse esta senha para ${resetResult.name}. Ela pode trocá-la depois em Configurações.` : ""}
+      >
+        {resetResult && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 12, background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)" }}>
+              <code style={{ flex: 1, fontSize: 20, fontWeight: 700, letterSpacing: "0.06em", color: "var(--c-text)", fontFamily: "ui-monospace, monospace" }}>
+                {resetResult.tempPassword}
+              </code>
+              <button
+                onClick={copyTempPassword}
+                style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 9, border: "none", background: copiedPass ? "#10B981" : "linear-gradient(135deg,#0066FF,#7C3AED)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+              >
+                {copiedPass ? <Check size={15} /> : <Copy size={15} />}
+                {copiedPass ? "Copiado" : "Copiar"}
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--c-text-4)", margin: 0, display: "flex", gap: 6, alignItems: "flex-start", lineHeight: 1.5 }}>
+              <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              Anote agora — por segurança, não mostramos a senha de novo depois de fechar.
+            </p>
+          </div>
+        )}
+      </Modal>
     </>
   )
 }
