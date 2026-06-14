@@ -12,7 +12,13 @@ interface Product {
   id: string; name: string; sku: string | null
   costPrice: number; salePrice: number; stockQty: number; minStock: number
 }
+interface Movement {
+  id: string; type: string; quantity: number; resultingQty: number
+  reason: string | null; createdAt: string; product?: { name: string } | null
+}
 const fmt = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+/** Margem bruta % sobre o preço de venda. */
+const margin = (cost: number, sale: number) => (sale > 0 ? Math.round(((sale - cost) / sale) * 100) : 0)
 const reais = (c: number) => (c / 100).toString()
 
 /** minStock<=0 = "sem controle de mínimo" → não sugere reposição (P3.3). */
@@ -57,6 +63,13 @@ export default function EstoquePage() {
   const [adjFor, setAdjFor] = useState<Product | null>(null)
   const [adjDir, setAdjDir] = useState<"in" | "out">("in")
   const [adjQty, setAdjQty] = useState("")
+  const [adjReason, setAdjReason] = useState("")
+
+  // histórico de movimentação
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyFor, setHistoryFor] = useState<Product | null>(null)  // null = todos
+  const [movements, setMovements] = useState<Movement[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   // confirmação de remoção
   const [removeTarget, setRemoveTarget] = useState<Product | null>(null)
@@ -114,6 +127,17 @@ export default function EstoquePage() {
     finally { setBusy(null) }
   }
 
+  // Abre o histórico de movimentação (de um produto, ou de todos se product=null).
+  async function openHistory(product: Product | null) {
+    setHistoryFor(product); setHistoryOpen(true); setLoadingHistory(true); setMovements([])
+    try {
+      const qs = product ? `?productId=${product.id}` : ""
+      const r = await apiGet<{ movements: Movement[] }>(`/products/movements${qs}`)
+      setMovements(r.movements ?? [])
+    } catch { toast.error("Não consegui carregar o histórico.") }
+    finally { setLoadingHistory(false) }
+  }
+
   async function doAdjust() {
     if (!adjFor) return
     const n = Math.round(Number(adjQty))
@@ -122,7 +146,7 @@ export default function EstoquePage() {
     const target = adjFor
     setBusy(target.id)
     try {
-      await apiPut(`/products/${target.id}/stock`, { delta }); setAdjFor(null); setAdjQty(""); fetchData()
+      await apiPut(`/products/${target.id}/stock`, { delta, reason: adjReason.trim() || undefined }); setAdjFor(null); setAdjQty(""); setAdjReason(""); fetchData()
       toast.success(`${adjDir === "in" ? "Entrada" : "Saída"} de ${n} em "${target.name}".`)
     }
     catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao ajustar estoque.") }
@@ -173,6 +197,9 @@ export default function EstoquePage() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={() => setHideValues((v) => !v)} title={hideValues ? "Mostrar valores" : "Ocultar valores (balcão)"} style={{ width: 40, height: 40, borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {hideValues ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+          <button onClick={() => openHistory(null)} title="Histórico de movimentação" style={{ height: 40, padding: "0 14px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <ArrowDownUp size={15} /> Histórico
           </button>
           <button onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 18px", borderRadius: 10, background: "linear-gradient(135deg,#0066FF,#7C3AED)", color: "white", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
             <Plus size={15} /> Novo produto
@@ -257,7 +284,13 @@ export default function EstoquePage() {
                       ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#EF4444", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> zerado</span>
                       : low && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 600, color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 6, padding: "1px 7px" }}><AlertTriangle size={10} /> mínimo</span>}
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>venda {money(p.salePrice)} · custo {money(p.costPrice)} · mín. {p.minStock}</p>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "2px 0 0" }}>
+                    venda {money(p.salePrice)} · custo {money(p.costPrice)} · mín. {p.minStock}
+                    {!hideValues && p.salePrice > 0 && p.costPrice > 0 && (
+                      <span style={{ color: margin(p.costPrice, p.salePrice) >= 30 ? "#10B981" : "var(--c-text-4)", fontWeight: 600 }}> · margem {margin(p.costPrice, p.salePrice)}%</span>
+                    )}
+                    <button onClick={() => openHistory(p)} style={{ marginLeft: 8, background: "none", border: "none", color: "#0066FF", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0 }}>histórico</button>
+                  </p>
                   {low && buyQty > 0 && (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, fontWeight: 600, color: zero ? "#EF4444" : "#F59E0B", background: zero ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)", border: `1px solid ${zero ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`, borderRadius: 7, padding: "3px 9px" }}>
                       <ShoppingCart size={11} />
@@ -332,10 +365,51 @@ export default function EstoquePage() {
               <button onClick={() => setAdjDir("out")} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${adjDir === "out" ? "#EF4444" : "var(--c-border-2)"}`, background: adjDir === "out" ? "rgba(239,68,68,0.1)" : "transparent", color: adjDir === "out" ? "#EF4444" : "var(--c-text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Saída (−)</button>
             </div>
             <input className="est-num" autoFocus type="number" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doAdjust() }} placeholder="Quantidade" style={inp} />
+            <input value={adjReason} onChange={(e) => setAdjReason(e.target.value)} placeholder="Motivo (opcional): compra, uso, perda…" maxLength={120} style={{ ...inp, marginTop: 8 }} />
             <div className="est-foot">
               <button onClick={() => setAdjFor(null)} style={ghostBtn}>Cancelar</button>
               <button onClick={doAdjust} disabled={busy === adjFor.id || !adjQty} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: !adjQty ? "var(--c-surface-2)" : "#0066FF", color: !adjQty ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: !adjQty ? "not-allowed" : "pointer", fontFamily: "inherit" }}>Confirmar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: histórico de movimentação */}
+      {historyOpen && (
+        <div onClick={() => setHistoryOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 520, maxHeight: "calc(100vh - 48px)", overflowY: "auto", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>
+                Histórico {historyFor ? `· ${historyFor.name}` : "de movimentação"}
+              </h2>
+              <button onClick={() => setHistoryOpen(false)} style={{ background: "none", border: "none", color: "var(--c-text-3)", cursor: "pointer", padding: 2 }}><X size={18} /></button>
+            </div>
+            {loadingHistory ? (
+              <p style={{ fontSize: 13, color: "var(--c-text-3)" }}>Carregando…</p>
+            ) : movements.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--c-text-4)", textAlign: "center", padding: "24px 0" }}>Nenhuma movimentação ainda.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {movements.map((m) => {
+                  const entrada = m.quantity >= 0
+                  const cor = m.type === "CONSUMO" ? "#F59E0B" : entrada ? "#10B981" : "#EF4444"
+                  return (
+                    <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 9, background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: cor, minWidth: 64 }}>{m.type}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {!historyFor && m.product?.name && <p style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", margin: 0 }}>{m.product.name}</p>}
+                        <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: 0 }}>
+                          {new Date(m.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {m.reason ? ` · ${m.reason}` : ""}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: cor, fontVariantNumeric: "tabular-nums" }}>{entrada ? "+" : ""}{m.quantity}</span>
+                      <span style={{ fontSize: 11, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>→ {m.resultingQty}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
