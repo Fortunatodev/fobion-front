@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw, CheckCircle } from "lucide-react"
+import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw, CheckCircle, Calendar, Download } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
@@ -56,6 +56,10 @@ export default function OrcamentosPage() {
   const [modal, setModal] = useState(false)
   const [services, setServices] = useState<ServiceItem[]>([])
   const [pickerQuote, setPickerQuote] = useState<Quote | null>(null)
+  // converter orçamento → agendamento
+  const [convertQuote, setConvertQuote] = useState<Quote | null>(null)
+  const [convertDate, setConvertDate] = useState("")
+  const [converting, setConverting] = useState(false)
 
   // exclusão
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -169,6 +173,47 @@ export default function OrcamentosPage() {
   function openSendPicker(q: Quote) {
     setPickerQuote(q)
   }
+
+  // Converte o orçamento aprovado em AGENDAMENTO (vira venda na agenda). É o que faz
+  // a aba existir de verdade: orçamento → comanda agendada.
+  async function confirmConvert() {
+    if (!convertQuote || !convertDate || converting) return
+    setConverting(true)
+    try {
+      await apiPost(`/quotes/${convertQuote.id}/convert-to-schedule`, { scheduledAt: new Date(convertDate).toISOString() })
+      toast.success("Orçamento virou agendamento! Veja na Agenda/Comandas.")
+      setConvertQuote(null); setConvertDate(""); fetchQuotes()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui converter.")
+    } finally {
+      setConverting(false)
+    }
+  }
+
+  // PDF/proposta do orçamento numa via de impressão (salva como PDF pelo navegador).
+  function printQuote(q: Quote) {
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!))
+    const win = window.open("", "_blank", "width=620,height=820")
+    if (!win) { toast.error("Permita pop-ups pra baixar a proposta."); return }
+    const itensHtml = (q.items ?? []).map((i) => `<tr><td>${esc(i.name)}</td><td style="text-align:right">${fmt(i.price)}</td></tr>`).join("")
+    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Orçamento</title>
+<style>body{font-family:-apple-system,'Inter',sans-serif;max-width:480px;margin:32px auto;color:#111;padding:0 20px}
+h1{font-size:18px;margin:0 0 2px}.sub{color:#666;font-size:12px;margin:0 0 20px}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 0;border-bottom:1px solid #eee}
+.total td{font-weight:800;font-size:16px;border-top:2px solid #111;border-bottom:none;padding-top:12px}
+.foot{margin-top:28px;color:#999;font-size:11px;text-align:center}
+button{margin:24px auto 0;display:block;padding:10px 18px;border:none;border-radius:8px;background:#0066FF;color:#fff;font-size:14px;cursor:pointer}
+@media print{button{display:none}}</style></head><body>
+<h1>Orçamento</h1><p class="sub">${esc(q.customerName || "Cliente")}${q.plate ? " · " + esc(q.plate) : ""}</p>
+<table>${itensHtml}<tr class="total"><td>Total</td><td style="text-align:right">${fmt(q.totalPrice)}</td></tr></table>
+${q.validUntil ? `<p style="color:#666;font-size:12px;margin-top:12px">Válido até ${new Date(q.validUntil).toLocaleDateString("pt-BR")}</p>` : ""}
+${q.notes ? `<p style="font-size:12px;margin-top:8px">${esc(q.notes)}</p>` : ""}
+<div class="foot">Gerado pela Forbion</div>
+<button onclick="window.print()">Imprimir / Salvar PDF</button>
+</body></html>`)
+    win.document.close()
+  }
+
   function remove(id: string) {
     setDeleteTarget(id); setConfirmOpen(true)
   }
@@ -293,10 +338,12 @@ export default function OrcamentosPage() {
                   )}
                   {q.status === "APPROVED" && (
                     <>
+                      <button onClick={() => { setConvertQuote(q); setConvertDate("") }} style={pill("rgba(124,58,237,0.12)", "rgba(124,58,237,0.3)", "#A78BFA")}><Calendar size={13} /> Agendar</button>
                       <button onClick={() => setStatus(q.id, "CONVERTED")} style={pill("rgba(245,158,11,0.12)", "rgba(245,158,11,0.25)", "#F59E0B")}><ShoppingCart size={13} /> Marcar como vendido</button>
                       <button onClick={() => openSendPicker(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> Reenviar</button>
                     </>
                   )}
+                  <button onClick={() => printQuote(q)} title="Baixar proposta (PDF)" style={pill("transparent", "var(--c-border-2)", "var(--c-text-2)")}><Download size={13} /> PDF</button>
                   <button onClick={() => remove(q.id)} style={{ ...pill("transparent", "rgba(239,68,68,0.2)", "#EF4444"), marginLeft: "auto", padding: "0 10px" }}><Trash2 size={13} /></button>
                 </div>
               </div>
@@ -377,6 +424,26 @@ export default function OrcamentosPage() {
                 <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
                 <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: converter orçamento em agendamento (escolher data/hora) */}
+      {convertQuote && (
+        <div onClick={() => !converting && setConvertQuote(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 18, padding: 24, width: "min(420px, 100%)" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 6px" }}>Agendar este orçamento</h2>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 16px" }}>
+              Vira um agendamento na Agenda/Comandas pra <strong style={{ color: "var(--c-text-2)" }}>{convertQuote.customerName || "o cliente"}</strong> com os serviços do orçamento.
+            </p>
+            <label style={{ fontSize: 12, color: "var(--c-text-3)", display: "block", marginBottom: 6 }}>Data e hora</label>
+            <input type="datetime-local" value={convertDate} onChange={(e) => setConvertDate(e.target.value)} style={{ ...inp, width: "100%", marginBottom: 16 }} />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConvertQuote(null)} disabled={converting} style={{ ...ghostBtn, flex: 1 }}>Cancelar</button>
+              <button onClick={confirmConvert} disabled={!convertDate || converting} style={{ flex: 2, height: 40, borderRadius: 10, border: "none", background: !convertDate || converting ? "var(--c-border)" : "linear-gradient(135deg,#7C3AED,#0066FF)", color: !convertDate || converting ? "var(--c-text-4)" : "#fff", fontSize: 14, fontWeight: 700, cursor: !convertDate || converting ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+                {converting ? "Agendando…" : "Criar agendamento"}
+              </button>
             </div>
           </div>
         </div>
