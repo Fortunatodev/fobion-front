@@ -1178,7 +1178,12 @@ function AgendarContent() {
             const cheapestPlan = hasPlans
               ? business!.plans!.reduce((min, p) => (p.price < min.price ? p : min), business!.plans![0])
               : null
-            const ownerPhone = business!.phone?.replace(/\D/g, "") || ""
+            // DDI por comprimento (10/11 díg = nacional → prefixa 55; 12/13 já tem DDI).
+            // Antes prefixava 55 fixo no link → duplicava se o telefone já tinha país.
+            const ownerPhoneRaw = business!.phone?.replace(/\D/g, "") || ""
+            const ownerPhone = ownerPhoneRaw && (ownerPhoneRaw.length === 10 || ownerPhoneRaw.length === 11)
+              ? `55${ownerPhoneRaw}`
+              : ownerPhoneRaw
 
             return (
               <div style={{ animation: "fadeAg 0.25s ease" }}>
@@ -1354,7 +1359,7 @@ function AgendarContent() {
                   <button
                     onClick={() => {
                       const msg = `Oi, acabei de agendar ${svcNames} pra ${displayDateShort} às ${displaySlot}. Tenho uma dúvida:`
-                      window.open(`https://api.whatsapp.com/send/?phone=55${ownerPhone}&text=${encodeURIComponent(msg)}`, "_blank")
+                      window.open(`https://api.whatsapp.com/send/?phone=${ownerPhone}&text=${encodeURIComponent(msg)}`, "_blank")
                     }}
                     style={{
                       width: "100%", height: 44, borderRadius: 12, fontSize: 13, fontWeight: 500,

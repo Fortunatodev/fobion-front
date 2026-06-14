@@ -298,28 +298,18 @@ export interface PublicBusiness {
  */
 export interface PublicReview {
   id: string
-  scheduleId: string
-  businessId: string
-  customerId: string
   /** 1–5 estrelas */
   rating: number
   comment: string | null
   /** Foto antes/depois (UploadThing) */
   photoUrl: string | null
-  isPublic: boolean
   createdAt: string
-  updatedAt: string
   customer: {
     name: string
     picture: string | null
   }
   schedule: {
     scheduleServices: Array<{
-      id: string
-      scheduleId: string
-      serviceId: string
-      /** Preço em centavos no momento do agendamento */
-      priceSnapshot: number
       service: { name: string }
     }>
   }
