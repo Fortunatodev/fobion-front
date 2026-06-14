@@ -166,6 +166,14 @@ export default function RepassesReportPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showHistory, setShowHistory] = useState(false)
+  const [shopName, setShopName] = useState("")
+
+  // Nome da loja pro cabeçalho do comprovante.
+  useEffect(() => {
+    apiGet<{ business?: { name?: string } }>("/auth/me")
+      .then((r) => setShopName(r.business?.name ?? ""))
+      .catch(() => {})
+  }, [])
 
   // Modal "Pagar agora"
   const [payLine, setPayLine] = useState<PayrollLine | null>(null)
@@ -266,6 +274,39 @@ export default function RepassesReportPage() {
     return summary?.funcionarios.find(f => f.employeeId === employeeId)?.name
       ?? data?.employees.find(e => e.employeeId === employeeId)?.employeeName
       ?? "Funcionário"
+  }
+
+  // Comprovante de pagamento (recibo) numa janela de impressão — o dono salva como
+  // PDF via "Salvar como PDF" do navegador. Sem dependência nova; salário e comissão
+  // SEPARADOS, como pedido. esc() evita HTML injection do nome/observação.
+  function printReceipt(p: Payout) {
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!))
+    const win = window.open("", "_blank", "width=620,height=820")
+    if (!win) { toast.error("Permita pop-ups pra baixar o comprovante."); return }
+    const row = (label: string, val: string) => `<tr><td>${esc(label)}</td><td style="text-align:right">${esc(val)}</td></tr>`
+    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Comprovante de pagamento</title>
+<style>body{font-family:-apple-system,'Inter',sans-serif;max-width:480px;margin:32px auto;color:#111;padding:0 20px}
+h1{font-size:18px;margin:0 0 2px}.sub{color:#666;font-size:12px;margin:0 0 22px}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 0;border-bottom:1px solid #eee}
+.total td{font-weight:800;font-size:16px;border-top:2px solid #111;border-bottom:none;padding-top:12px}
+.foot{margin-top:28px;color:#999;font-size:11px;text-align:center}
+button{margin:24px auto 0;display:block;padding:10px 18px;border:none;border-radius:8px;background:#0066FF;color:#fff;font-size:14px;cursor:pointer}
+@media print{button{display:none}}</style></head><body>
+<h1>Comprovante de pagamento</h1><p class="sub">${esc(shopName || "Forbion")}</p>
+<table>
+${row("Funcionário", employeeName(p.employeeId))}
+${row("Período", `${fmtDate(p.periodStart)} a ${fmtDate(p.periodEnd)}`)}
+${row("Salário", fmt(p.salaryAmount))}
+${row("Comissão", fmt(p.commissionAmount))}
+${row("Forma de pagamento", p.paymentMethod || "—")}
+${row("Pago em", fmtDate(p.paidAt))}
+${p.notes ? row("Observação", p.notes) : ""}
+<tr class="total"><td>Total pago</td><td style="text-align:right">${fmt(p.totalAmount)}</td></tr>
+</table>
+<div class="foot">Gerado pela Forbion</div>
+<button onclick="window.print()">Imprimir / Salvar PDF</button>
+</body></html>`)
+    win.document.close()
   }
 
   function exportCSV() {
@@ -417,7 +458,9 @@ export default function RepassesReportPage() {
                       }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{line.name}</span>
+                            <Link href={`/dashboard/employees/${line.employeeId}/repasses`} style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", textDecoration: "none" }} title="Ver regras de comissão deste funcionário">
+                              {line.name}
+                            </Link>
                             <span style={{
                               fontSize: 10, fontWeight: 600, borderRadius: 99, padding: "2px 8px",
                               color: "#34D399", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)",
@@ -533,6 +576,13 @@ export default function RepassesReportPage() {
                               <p style={{ fontSize: 9, color: "var(--c-text-3)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</p>
                               <p style={{ fontSize: 14, fontWeight: 800, color: "#10B981", margin: "1px 0 0" }}>{fmt(p.totalAmount)}</p>
                             </div>
+                            <button
+                              onClick={() => printReceipt(p)}
+                              title="Baixar comprovante (PDF)"
+                              style={{ display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid var(--c-border-2)", background: "transparent", color: "var(--c-text-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                            >
+                              <Download size={13} /> Comprovante
+                            </button>
                           </div>
                         </div>
                       ))}
