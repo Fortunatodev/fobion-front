@@ -11,6 +11,7 @@ import EmailCard from "@/components/settings/EmailCard"
 import PricingCards from "@/components/shared/PricingCards"
 import SlotsPreview from "@/components/dashboard/SlotsPreview"
 import PublicStorePreview from "@/components/dashboard/PublicStorePreview"
+import TabTutorial from "@/components/shared/TabTutorial"
 import {
   Building2, Clock, User, Shield,
   AlertCircle, CheckCircle2,
@@ -729,6 +730,17 @@ function ConfiguracoesContent() {
             Gerencie as informações do seu negócio
           </p>
         </div>
+
+        <TabTutorial
+          tabKey="configuracoes"
+          title="Como usar as Configurações"
+          subtitle="Tudo da sua loja em um lugar"
+          steps={[
+            { icon: Building2, title: "1. Negócio", text: "Nome, telefone, logo e a cor da sua loja pública. É o que o cliente vê no seu link de agendamento." },
+            { icon: Clock, title: "2. Horários e agenda", text: "Defina os dias e horas que você atende, o intervalo entre horários e se quer aprovar cada agendamento antes de confirmar." },
+            { icon: User, title: "3. Minha conta", text: "Troque seu e-mail e senha de acesso, conecte o Google Agenda e saia da conta quando precisar." },
+          ]}
+        />
 
         {/* ── SUCCESS/ERROR BANNERS ── */}
         {success && (
