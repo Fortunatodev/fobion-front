@@ -8,7 +8,9 @@ import {
   CircleDollarSign, Crown, Sparkles,
   Users, Clock,
   TrendingUp, Star, UserPlus, Rocket, Heart, ChevronRight,
+  Receipt, Copy, Check,
 } from "lucide-react"
+import { toast } from "sonner"
 import { useUser } from "@/contexts/UserContext"
 import { apiGet } from "@/lib/api"
 import { useCrmFilaCount } from "@/lib/useCrmFilaCount"
@@ -189,6 +191,8 @@ function MiniMetric({ icon, iconColor, label, rawValue, isCurrency, sub, delay }
 
 function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
   const growthColor = summary.revenueGrowth >= 0 ? "#10B981" : "#EF4444"
+  // Ticket médio = faturamento ÷ atendimentos concluídos no período (insight pedido pelo dono).
+  const ticketMedio = summary.appointments > 0 ? Math.round(summary.revenue / summary.appointments) : 0
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -206,18 +210,25 @@ function SummaryCardGrid({ summary }: { summary: DashboardSummary }) {
           }
         />
         <MiniMetric
+          icon={<Receipt size={11} />} iconColor="#0EA5E9"
+          label="Ticket médio" rawValue={ticketMedio} isCurrency delay={100}
+          sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>por atendimento</span>}
+        />
+        <MiniMetric
           icon={<Calendar size={11} />} iconColor="#3B82F6"
-          label="Concluídos" rawValue={summary.appointments} delay={100}
+          label="Concluídos" rawValue={summary.appointments} delay={200}
           sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>agendamentos</span>}
         />
         <MiniMetric
           icon={<UserPlus size={11} />} iconColor="#F59E0B"
-          label="Novos clientes" rawValue={summary.newCustomers} delay={200}
+          label="Novos clientes" rawValue={summary.newCustomers} delay={300}
           sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>no período</span>}
         />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
         <MiniMetric
           icon={<Star size={11} />} iconColor="#7C3AED"
-          label="Assinantes" rawValue={summary.activeSubscribers} delay={300}
+          label="Assinantes" rawValue={summary.activeSubscribers} delay={400}
           sub={<span style={{ fontSize: 10, color: "var(--c-text-4)" }}>ativos</span>}
         />
       </div>
@@ -264,6 +275,8 @@ export default function DashboardPage() {
   const [loading,           setLoading]           = useState(true)
   const [error,             setError]             = useState<string | null>(null)
   const [ctaHov,            setCtaHov]            = useState(false)
+  const [storeSlug,         setStoreSlug]         = useState<string | null>(null)
+  const [linkCopied,        setLinkCopied]        = useState(false)
   const [hovRow,            setHovRow]            = useState<string | null>(null)
   // #43 — linha "pressionada" no toque (mobile não tem hover)
   const [pressedRow,        setPressedRow]        = useState<string | null>(null)
@@ -340,6 +353,27 @@ export default function DashboardPage() {
       .catch(() => setPayrollOwed(null))
   }, [isManager])
 
+  // Slug da loja pública (pro atalho "copiar link"). Falha silenciosa → botão não aparece.
+  useEffect(() => {
+    apiGet<{ business: { slug?: string | null } | null }>("/auth/me")
+      .then((r) => setStoreSlug(r.business?.slug ?? null))
+      .catch(() => { /* sem business → sem link */ })
+  }, [])
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
+  const storeUrl = storeSlug ? `${appUrl}/${storeSlug}` : null
+  const copyStoreLink = useCallback(async () => {
+    if (!storeUrl) return
+    try {
+      await navigator.clipboard.writeText(storeUrl)
+      setLinkCopied(true)
+      toast.success("Link da loja copiado! Mande pros seus clientes.")
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      toast.error("Não consegui copiar. Copie da barra de endereço da sua loja.")
+    }
+  }, [storeUrl])
+
   const paidRevenue = schedulesToday
     .filter((s) => s.paymentStatus === "PAID")
     .reduce((acc, s) => acc + s.totalPrice, 0)
@@ -408,6 +442,23 @@ export default function DashboardPage() {
             {formatTodayDate()}
           </p>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {storeUrl && (
+          <button
+            onClick={copyStoreLink}
+            title={storeUrl}
+            style={{
+              display: "flex", alignItems: "center", gap: 7,
+              background: "var(--c-surface)", border: "1px solid var(--c-border)",
+              borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontFamily: "inherit",
+              fontSize: 13, fontWeight: 600, color: linkCopied ? "#10B981" : "var(--c-text-2)",
+              whiteSpace: "nowrap", transition: "color 0.15s",
+            }}
+          >
+            {linkCopied ? <Check size={14} /> : <Copy size={14} />}
+            {linkCopied ? "Link copiado" : "Copiar link da loja"}
+          </button>
+        )}
         <button
           onClick={() => router.push("/dashboard/agendamentos")}
           onMouseEnter={() => setCtaHov(true)}
@@ -425,6 +476,7 @@ export default function DashboardPage() {
           <Sparkles size={14} />
           Nova comanda
         </button>
+        </div>
       </div>
 
       {/* ── O4/O5/O7: checklist de ativação por outcome (some quando 100% ou recolhido) ── */}
