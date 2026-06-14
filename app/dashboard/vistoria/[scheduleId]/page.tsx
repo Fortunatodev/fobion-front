@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings, ExternalLink, MessageCircle, LogIn, LogOut } from "lucide-react"
+import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings, ExternalLink, MessageCircle, LogIn, LogOut, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 /**
@@ -63,6 +63,23 @@ function stageFromInsp(ins: Insp | null): StageState {
   }
 }
 
+/** Vazia = nada digitado/marcado: usado pra decidir se vale oferecer rascunho local. */
+function isStageEmpty(st: StageState): boolean {
+  return st.photoUrls.length === 0 && st.marks.length === 0 && !st.signature && st.notes.trim().length === 0
+}
+
+/** Rascunho local (auto-save) — protege contra perda de dados se a aba fecha/recarrega antes de salvar. */
+interface Draft { photoUrls: string[]; marks: DamageMark[]; notes: string; signature: string | null; savedAt: number }
+const draftKey = (scheduleId: string, stage: Stage) => `forbion_vist_draft:${scheduleId}:${stage}`
+function timeAgo(ts: number): string {
+  const min = Math.floor((Date.now() - ts) / 60000)
+  if (min < 1) return "agora há pouco"
+  if (min < 60) return `há ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h} h`
+  return `há ${Math.floor(h / 24)} d`
+}
+
 /** Monta o link wa.me a partir do telefone do cliente. Retorna null se inválido (mesmo padrão de clientes/[id]). */
 function buildWhatsAppHref(phone: string | null, message: string): string | null {
   const digits = (phone || "").replace(/\D/g, "")
@@ -118,6 +135,9 @@ export default function VistoriaPage() {
   const [stages, setStages] = useState<Record<Stage, StageState>>({ ENTRADA: emptyStage(), SAIDA: emptyStage() })
   const [reportToken, setReportToken] = useState<string | null>(null)
   const [customer, setCustomer] = useState<{ name: string; phone: string } | null>(null)
+  // Rascunhos locais detectados no load (só oferecidos quando a stage no servidor está vazia).
+  const [drafts, setDrafts] = useState<Record<Stage, Draft | null>>({ ENTRADA: null, SAIDA: null })
+  const hydrated = useRef(false) // libera o auto-save só após o load inicial (não sobrescreve o rascunho com vazio)
 
   const [sev, setSev] = useState<Severity>("small")
   const [selMark, setSelMark] = useState<number | null>(null)
@@ -163,10 +183,25 @@ export default function VistoriaPage() {
         }
         const r = await apiGet<InspectionResponse>(`/schedules/${scheduleId}/inspection`)
         if (cancelled) return
-        setStages({ ENTRADA: stageFromInsp(r.entrada), SAIDA: stageFromInsp(r.saida) })
+        const next: Record<Stage, StageState> = { ENTRADA: stageFromInsp(r.entrada), SAIDA: stageFromInsp(r.saida) }
+        setStages(next)
         setReportToken(r.reportToken ?? null)
         setCustomer(r.customer ?? null)
         setGate(null)
+        // Rascunho local: só oferece restaurar quando a stage no servidor está vazia e destravada
+        // (nunca sobrescreve uma vistoria já salva).
+        const found: Record<Stage, Draft | null> = { ENTRADA: null, SAIDA: null }
+        ;(["ENTRADA", "SAIDA"] as Stage[]).forEach((stg) => {
+          if (!isStageEmpty(next[stg]) || next[stg].locked) return
+          try {
+            const raw = localStorage.getItem(draftKey(scheduleId, stg))
+            if (!raw) return
+            const d = JSON.parse(raw) as Draft
+            if (d && (d.photoUrls?.length || d.marks?.length || d.signature || d.notes?.trim())) found[stg] = d
+          } catch { /* rascunho corrompido — ignora */ }
+        })
+        setDrafts(found)
+        hydrated.current = true
       } catch (e) {
         if (cancelled) return
         // O back devolve 403 quando o tier/feature não permite (FEATURE_NOT_AVAILABLE).
@@ -319,6 +354,33 @@ export default function VistoriaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, locked, loading, gate, resizeSigCanvas])
 
+  // Auto-save de rascunho (debounced ~600ms) — fricção nº1 da vistoria é perder o que já preencheu.
+  // Só persiste depois do load (hydrated), com a aba destravada e algo preenchido — assim não apaga
+  // um rascunho existente gravando vazio por cima.
+  useEffect(() => {
+    if (!hydrated.current || locked || isStageEmpty(cur)) return
+    const id = setTimeout(() => {
+      try {
+        const payload: Draft = { photoUrls: cur.photoUrls, marks: cur.marks, notes: cur.notes, signature: cur.signature, savedAt: Date.now() }
+        localStorage.setItem(draftKey(scheduleId, tab), JSON.stringify(payload))
+      } catch { /* quota/indisponível — silencioso */ }
+    }, 600)
+    return () => clearTimeout(id)
+  }, [cur, locked, scheduleId, tab])
+
+  function restoreDraft() {
+    const d = drafts[tab]; if (!d) return
+    patchStage({ photoUrls: d.photoUrls ?? [], marks: d.marks ?? [], notes: d.notes ?? "", signature: d.signature ?? null })
+    // O canvas é imperativo: redesenha a assinatura restaurada (o layout effect não observa signature).
+    if (d.signature) resizeSigCanvas(d.signature)
+    setDrafts((s) => ({ ...s, [tab]: null }))
+    toast.success("Rascunho restaurado.")
+  }
+  function discardDraft() {
+    try { localStorage.removeItem(draftKey(scheduleId, tab)) } catch { /* ignora */ }
+    setDrafts((s) => ({ ...s, [tab]: null }))
+  }
+
   async function save() {
     setSaving(true); setErr(""); setSaved(false)
     try {
@@ -335,6 +397,9 @@ export default function VistoriaPage() {
       }
       // O back gera o token público no primeiro save de qualquer stage e o reusa.
       if (res?.reportToken) setReportToken(res.reportToken)
+      // Salvou no servidor → o rascunho local cumpriu o papel; limpa pra não reaparecer.
+      try { localStorage.removeItem(draftKey(scheduleId, tab)) } catch { /* ignora */ }
+      setDrafts((s) => ({ ...s, [tab]: null }))
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } catch (e) { setErr(e instanceof Error ? e.message : "Erro ao salvar vistoria.") } finally { setSaving(false) }
   }
@@ -456,7 +521,34 @@ export default function VistoriaPage() {
         </div>
       )}
 
+      {/* Rascunho não salvo recuperado do navegador (auto-save) */}
+      {drafts[tab] && !locked && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", marginBottom: 18, borderRadius: 10, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)", flexWrap: "wrap" }}>
+          <RotateCcw size={15} color="#7C3AED" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: "var(--c-text-2)", flex: 1, minWidth: 180 }}>
+            Você tem um rascunho não salvo desta vistoria ({timeAgo(drafts[tab]!.savedAt)}). Continuar de onde parou?
+          </span>
+          <button onClick={restoreDraft} style={{ height: 32, padding: "0 14px", borderRadius: 8, background: "#7C3AED", border: "none", color: "#fff", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Restaurar</button>
+          <button onClick={discardDraft} style={{ height: 32, padding: "0 12px", borderRadius: 8, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-3)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Descartar</button>
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* ANTES/DEPOIS: na saída, mostra as fotos da entrada como referência pra repetir os ângulos */}
+        {isExit && stages.ENTRADA.photoUrls.length > 0 && (
+          <div style={{ ...card, background: "var(--c-surface-2)" }}>
+            <p style={{ ...label, display: "flex", alignItems: "center", gap: 6 }}><LogIn size={13} /> Fotos da entrada (referência)</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8 }}>
+              {stages.ENTRADA.photoUrls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block", aspectRatio: "4/3", borderRadius: 8, overflow: "hidden", border: "1px solid var(--c-border)" }}>
+                  <img src={url} alt={`entrada ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </a>
+              ))}
+            </div>
+            <p style={{ fontSize: 11.5, color: "var(--c-text-4)", margin: "10px 0 0" }}>Fotografe a saída nos mesmos ângulos pra comparar antes/depois.</p>
+          </div>
+        )}
+
         {/* FOTOS */}
         <div style={card}>
           <p style={label}>{photoLabel} ({cur.photoUrls.length}/{MAX_PHOTOS})</p>
