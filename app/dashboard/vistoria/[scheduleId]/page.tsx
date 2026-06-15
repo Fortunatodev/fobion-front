@@ -521,8 +521,9 @@ export default function VistoriaPage() {
         </div>
       )}
 
-      {/* Rascunho não salvo recuperado do navegador (auto-save) */}
-      {drafts[tab] && !locked && (
+      {/* Rascunho não salvo recuperado do navegador (auto-save). Some assim que o usuário
+          começa a preencher esta etapa — evita "Restaurar" sobrescrever o que ele digitou. */}
+      {drafts[tab] && !locked && isStageEmpty(cur) && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", marginBottom: 18, borderRadius: 10, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)", flexWrap: "wrap" }}>
           <RotateCcw size={15} color="#7C3AED" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 13, color: "var(--c-text-2)", flex: 1, minWidth: 180 }}>
