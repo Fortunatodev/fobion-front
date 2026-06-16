@@ -77,6 +77,8 @@ export interface User {
   role: UserRole
   picture?: string
   businessId: string
+  /** true = senha foi emitida temporária (admin/reset) → força troca antes de liberar o painel */
+  mustChangePassword?: boolean
   createdAt: string
   updatedAt: string
 }

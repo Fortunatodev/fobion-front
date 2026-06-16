@@ -6,6 +6,7 @@ import { useUser } from "@/contexts/UserContext"
 import { isAuthenticated } from "@/lib/auth"
 import Sidebar from "@/components/layout/Sidebar"   // import direto, não barrel
 import BillingLockScreen from "@/components/shared/BillingLockScreen"
+import ForcePasswordChangeScreen from "@/components/shared/ForcePasswordChangeScreen"
 import CarlaWidget from "@/components/dashboard/CarlaWidget"
 import TrialCountdownBanner from "@/components/dashboard/TrialCountdownBanner"
 
@@ -16,7 +17,7 @@ export default function DashboardLayout({
 }) {
   const router   = useRouter()
   const pathname = usePathname()
-  const { loading, accountLock, user } = useUser()
+  const { loading, accountLock, user, loadUser } = useUser()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -61,6 +62,14 @@ export default function DashboardLayout({
         }} />
       </div>
     )
+  }
+
+  // ── Troca de senha OBRIGATÓRIA (senha temporária do admin/reset) ─────────────
+  // Bloqueia o painel até o 1º acesso definir senha própria. Prioridade sobre o
+  // lock de plano: é o primeiríssimo passo do dono novo. onDone recarrega o /me
+  // (a flag vira false no back) e o painel libera.
+  if (user?.mustChangePassword) {
+    return <ForcePasswordChangeScreen onDone={loadUser} />
   }
 
   // ── Account locked — show BillingLockScreen ─────────────────────────────────
