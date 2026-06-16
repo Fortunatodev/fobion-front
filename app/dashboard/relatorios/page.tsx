@@ -76,6 +76,22 @@ interface RelatoryData {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+interface ProdCell { day: number; hour: number; pct: number; booked: number; available: number }
+interface ProdutividadeData {
+  period:               string
+  days:                 number
+  capacity:             number
+  receitaPorHoraCents:  number
+  faturamentoDoneCents: number
+  horasTrabalhadas:     number
+  ocupacaoPct:          number
+  horasAgendadas:       number
+  horasDisponiveis:     number
+  horasOciosasSemana:   number
+  heatmap:              ProdCell[]
+  insight:              { day: number; label: string; hourStart: number; hourEnd: number; ocupacaoPct: number } | null
+}
+
 function fmt(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
@@ -476,6 +492,67 @@ function HeatMap({ data, isMobile }: { data: HeatmapCell[]; isMobile: boolean })
   )
 }
 
+// ── Heatmap de OCUPAÇÃO (verde = cheio · vazio = oportunidade) ──────────────────
+
+function OccupancyHeatMap({ data, isMobile }: { data: ProdCell[]; isMobile: boolean }) {
+  const [tip, setTip] = useState<string | null>(null)
+  if (data.length === 0) return null
+  const hours = Array.from(new Set(data.map(d => d.hour))).sort((a, b) => a - b)
+  const days  = Array.from(new Set(data.map(d => d.day))).sort((a, b) => a - b)
+  const cellMap = new Map(data.map(d => [`${d.day}-${d.hour}`, d]))
+
+  return (
+    <Card style={{ padding: isMobile ? "18px 14px" : "20px 24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <Target size={14} color="#10B981" />
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Ocupação por horário</h3>
+      </div>
+      <p style={{ fontSize: 11, color: "var(--c-text-3)", margin: "0 0 12px", minHeight: 16 }}>
+        {tip || "Verde cheio = lotado · vazio = espaço pra encaixar mais clientes"}
+      </p>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `36px repeat(${hours.length}, 1fr)`, gap: 2, minWidth: isMobile ? Math.max(420, hours.length * 30) : "auto" }}>
+          <div />
+          {hours.map(h => (
+            <div key={h} style={{ fontSize: 9, color: "var(--c-text-4)", textAlign: "center", paddingBottom: 2, fontVariantNumeric: "tabular-nums" }}>{`${h}h`}</div>
+          ))}
+          {days.map(day => (
+            <div key={day} style={{ display: "contents" }}>
+              <div style={{ fontSize: 11, color: "var(--c-text-3)", display: "flex", alignItems: "center" }}>{WEEK_LABELS[day]}</div>
+              {hours.map(hour => {
+                const cell = cellMap.get(`${day}-${hour}`)
+                if (!cell) {
+                  // Fora do horário de funcionamento desse dia → célula neutra.
+                  return <div key={`${day}-${hour}`} style={{ aspectRatio: "1", borderRadius: 3, minHeight: 14, backgroundColor: "transparent" }} />
+                }
+                const intensity = Math.min(cell.pct / 100, 1)
+                return (
+                  <div key={`${day}-${hour}`}
+                    onMouseEnter={() => setTip(`${WEEK_LABELS[day]} ${hour}h — ${Math.round(cell.pct)}% ocupado`)}
+                    onMouseLeave={() => setTip(null)}
+                    style={{
+                      aspectRatio: "1", borderRadius: 3, cursor: "crosshair",
+                      backgroundColor: cell.pct > 0 ? `rgba(16,185,129,${0.12 + intensity * 0.88})` : "rgba(255,255,255,0.03)",
+                      transition: "background-color 0.2s", minHeight: 14,
+                    }}
+                  />
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
+        <span style={{ fontSize: 9, color: "var(--c-text-4)" }}>Vazio</span>
+        {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
+          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: v === 0 ? "rgba(255,255,255,0.03)" : `rgba(16,185,129,${0.12 + v * 0.88})` }} />
+        ))}
+        <span style={{ fontSize: 9, color: "var(--c-text-4)" }}>Cheio</span>
+      </div>
+    </Card>
+  )
+}
+
 // ── Insight Card ──────────────────────────────────────────────────────────────
 
 function InsightCard({ icon, title, description, accent }: {
@@ -572,6 +649,7 @@ export default function RelatoriosPage() {
 
 function PainelDeSaude() {
   const [data, setData]       = useState<RelatoryData | null>(null)
+  const [prodData, setProdData] = useState<ProdutividadeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState("")
   const [period, setPeriod]   = useState<Period>("30d")
@@ -586,7 +664,16 @@ function PainelDeSaude() {
 
   const fetchData = useCallback(async (p: Period) => {
     setFadeIn(false); setLoading(true); setError("")
-    try { setData(await apiGet<RelatoryData>(`/analytics/relatorios?period=${p}`)) }
+    try {
+      // Produtividade é best-effort: se o endpoint falhar, a seção some mas o
+      // resto do Painel continua de pé (não derruba a página inteira).
+      const [rel, prod] = await Promise.all([
+        apiGet<RelatoryData>(`/analytics/relatorios?period=${p}`),
+        apiGet<ProdutividadeData>(`/analytics/produtividade?period=${p}`).catch(() => null),
+      ])
+      setData(rel)
+      setProdData(prod)
+    }
     catch (e: unknown) { setError(e instanceof Error ? e.message : "Erro ao carregar dados.") }
     finally { setLoading(false); setTimeout(() => setFadeIn(true), 50) }
   }, [])
@@ -810,6 +897,38 @@ function PainelDeSaude() {
                 <SummaryCard label="Conclusão" value={Math.round(data.taxaConclusao)} suffix="%" sub={`${data.agendamentosConcluidos} concluídos`} icon={<Target size={18} />} color={data.taxaConclusao >= 80 ? "#10B981" : data.taxaConclusao >= 60 ? "#F59E0B" : "#EF4444"} />
               </div>
             </section>
+
+            {/* PRODUTIVIDADE DA AGENDA (diferencial de operador: receita/hora + ocupação) */}
+            {prodData && prodData.horasDisponiveis > 0 && (
+              <section>
+                <SectionTitle icon={<Target size={14} color="#10B981" />} text="Produtividade da Agenda" />
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? 10 : 16 }}>
+                  <SummaryCard label="Receita por hora" value={prodData.receitaPorHoraCents} isCurrency sub={`${Math.round(prodData.horasTrabalhadas)}h trabalhadas no período`} icon={<DollarSign size={18} />} color="#10B981" />
+                  <SummaryCard label="Ocupação média" value={Math.round(prodData.ocupacaoPct)} suffix="%" sub={`${Math.round(prodData.horasAgendadas)}h agendadas de ${Math.round(prodData.horasDisponiveis)}h`} icon={<Target size={18} />} color={prodData.ocupacaoPct >= 70 ? "#10B981" : prodData.ocupacaoPct >= 40 ? "#F59E0B" : "#EF4444"} />
+                  <SummaryCard label="Horas livres/semana" value={prodData.horasOciosasSemana} suffix="h" sub="espaço pra encaixar mais clientes" icon={<Clock size={18} />} color="#0066FF" />
+                </div>
+                <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+                  {prodData.insight ? (
+                    <InsightCard
+                      icon={<Lightbulb size={16} />}
+                      title="Onde dá pra vender mais"
+                      description={`${prodData.insight.label}${prodData.insight.hourEnd - prodData.insight.hourStart > 1 ? `, das ${prodData.insight.hourStart}h às ${prodData.insight.hourEnd}h,` : ` por volta das ${prodData.insight.hourStart}h,`} sua agenda fica só ${Math.round(prodData.insight.ocupacaoPct)}% ocupada — bom momento pra uma promoção ou pra encaixar retornos.`}
+                      accent="#F59E0B"
+                    />
+                  ) : prodData.ocupacaoPct >= 70 ? (
+                    <InsightCard
+                      icon={<CheckCircle size={16} />}
+                      title="Agenda bem ocupada 👏"
+                      description="Seus horários estão cheios. Pense em aumentar a capacidade (mais um box/profissional) ou reajustar preços nos horários de pico."
+                      accent="#10B981"
+                    />
+                  ) : null}
+                  {prodData.heatmap.length > 0 && (
+                    <OccupancyHeatMap data={prodData.heatmap} isMobile={isMobile} />
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* O QUE ESTÁ ACONTECENDO (painel didático pro dono leigo) */}
             <section>
