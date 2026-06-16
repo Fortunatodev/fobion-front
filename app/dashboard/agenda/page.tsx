@@ -439,19 +439,21 @@ function money(cents: number): string {
 }
 
 function ProfessionalAvatar({ employee }: { employee?: { name: string | null; avatarUrl: string | null } | null }) {
+  const [imgOk, setImgOk] = useState(true)
   const base: React.CSSProperties = {
     width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 8, fontWeight: 700, color: "#fff", objectFit: "cover",
   }
-  if (employee?.avatarUrl) {
-    return <img src={employee.avatarUrl} alt={employee.name ?? ""} style={base} />
-  }
   const initials = (employee?.name ?? "")
     .split(" ").filter(Boolean).slice(0, 2).map(n => n[0]).join("").toUpperCase()
+  // Iniciais como base; a foto cobre por cima e, se falhar (onError), volta pras iniciais.
   return (
-    <div style={{ ...base, background: employee ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "var(--c-border-2)" }}>
+    <div style={{ ...base, position: "relative", background: employee ? "linear-gradient(135deg,#0066FF,#7C3AED)" : "var(--c-border-2)" }}>
       {employee ? initials : "•"}
+      {employee?.avatarUrl && imgOk && (
+        <img src={employee.avatarUrl} alt={employee.name ?? ""} onError={() => setImgOk(false)} style={{ ...base, position: "absolute", inset: 0 }} />
+      )}
     </div>
   )
 }
@@ -620,9 +622,12 @@ export default function AgendaPage() {
   // Tempo real: qualquer mudança de agendamento (criar/atualizar/fechar/cancelar) em
   // QUALQUER tela (Pátio/Comanda) ou por outro usuário re-sincroniza o Calendário na
   // hora — antes as 3 telas viviam dessincronizadas (faziam fetch isolado, sem SSE).
+  // Debounce ~400ms: uma rajada de eventos SCHEDULE coalesce num único refetch.
+  const sseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
     if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) {
-      fetchMonth(); fetchDay(selectedDate)
+      if (sseTimer.current) clearTimeout(sseTimer.current)
+      sseTimer.current = setTimeout(() => { fetchMonth(); fetchDay(selectedDate) }, 400)
     }
   }, [fetchMonth, fetchDay, selectedDate]))
 

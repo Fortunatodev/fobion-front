@@ -28,7 +28,7 @@ interface Schedule {
   totalPrice: number
   paymentStatus: "PENDING" | "PAID"
   customer: { name: string }
-  vehicle: { plate: string }
+  vehicle: { plate: string | null }
   scheduleServices: Array<{ service: { name: string } }>
 }
 interface SchedulesResponse { schedules: Schedule[] }
@@ -663,7 +663,7 @@ export default function DashboardPage() {
                         {s.customer.name}
                       </p>
                       <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {serviceName} · {s.vehicle.plate}
+                        {serviceName}{s.vehicle.plate ? ` · ${s.vehicle.plate}` : ""}
                       </p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
@@ -883,7 +883,7 @@ export default function DashboardPage() {
                           {s.customer.name}
                         </td>
                         <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-3)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
-                          {s.vehicle.plate}
+                          {s.vehicle.plate || "—"}
                         </td>
                         <td style={{ padding: "11px 12px", fontSize: 12, color: "var(--c-text-2)" }}>
                           {serviceName}
@@ -951,7 +951,7 @@ export default function DashboardPage() {
                     </p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: 0 }}>
-                        {serviceName} · <span style={{ fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span>
+                        {serviceName}{s.vehicle.plate ? <> · <span style={{ fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>{s.vehicle.plate}</span></> : ""}
                       </p>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
                         {formatCurrency(s.totalPrice)}

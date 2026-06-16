@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, Component, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useState, useCallback, useRef, Component, type CSSProperties, type ReactNode } from "react"
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
@@ -357,8 +357,12 @@ export default function PatioPage() {
 
   // Tempo real: agendamento criado/atualizado/fechado/cancelado em qualquer tela
   // re-sincroniza o Pátio na hora (casa com Calendário e Comanda).
+  const sseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
-    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) fetchData()
+    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) {
+      if (sseTimer.current) clearTimeout(sseTimer.current)
+      sseTimer.current = setTimeout(() => fetchData(), 400) // coalesce rajada
+    }
   }, [fetchData]))
 
   async function advance(id: string, next: Status) {

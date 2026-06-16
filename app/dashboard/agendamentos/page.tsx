@@ -1615,6 +1615,7 @@ function ModalEmployeeCard({
         <img
           src={emp.avatarUrl}
           alt={emp.name}
+          onError={(e) => { e.currentTarget.style.display = "none" }}
           style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover",
             border: selected ? "2px solid #0066FF" : "2px solid var(--c-border-2)",
           }}
@@ -1715,8 +1716,12 @@ export default function AgendamentosPage() {
 
   // Tempo real: casa com Calendário e Pátio — qualquer mudança de agendamento
   // re-sincroniza a lista de comandas na hora.
+  const sseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useNotificationsSSE(useCallback((data: Record<string, unknown>) => {
-    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) fetchSchedules()
+    if (typeof data.type === "string" && data.type.startsWith("SCHEDULE")) {
+      if (sseTimer.current) clearTimeout(sseTimer.current)
+      sseTimer.current = setTimeout(() => fetchSchedules(), 400) // coalesce rajada
+    }
   }, [fetchSchedules]))
 
   // Deep-link de reagendamento pré-montado (vindo do Relacionamento). Lê via
