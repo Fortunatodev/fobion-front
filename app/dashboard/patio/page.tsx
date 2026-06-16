@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Component, type CSSProperties
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User, QrCode, CreditCard, Banknote } from "lucide-react"
 import { toast } from "sonner"
 import {
   DndContext,
@@ -21,6 +21,7 @@ import {
 } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import PromptModal from "@/components/shared/PromptModal"
+import Modal from "@/components/shared/Modal"
 import AutoAnimate from "@/components/shared/AutoAnimate"
 import TabTutorial from "@/components/shared/TabTutorial"
 import { formatScheduleTime } from "@/lib/dateUtils"
@@ -76,6 +77,14 @@ const COLUMNS: Column[] = [
 const COL_OF: Record<ColumnKey, Column> = COLUMNS.reduce((acc, c) => { acc[c.key] = c; return acc }, {} as Record<ColumnKey, Column>)
 /** Mapeia um schedule para a coluna a que pertence hoje (p/ saber a origem do drag) */
 const columnKeyOf = (s: Schedule): ColumnKey | null => COLUMNS.find((c) => c.match(s))?.key ?? null
+
+// Formas de pagamento (mesmo enum do back: PIX | CREDIT_CARD | DEBIT_CARD | CASH).
+const PAY_METHODS: { value: string; label: string; Icon: typeof QrCode }[] = [
+  { value: "PIX",         label: "PIX",      Icon: QrCode },
+  { value: "CREDIT_CARD", label: "Crédito",  Icon: CreditCard },
+  { value: "DEBIT_CARD",  label: "Débito",   Icon: CreditCard },
+  { value: "CASH",        label: "Dinheiro", Icon: Banknote },
+]
 
 // Resiliência por item: um card malformado vira fallback em vez de derrubar o pátio.
 class CardErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -297,6 +306,10 @@ export default function PatioPage() {
   // Filtro por funcionário (mesma lente do Calendário): "all" | "owner" | <employeeId>.
   const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEmp, setSelectedEmp] = useState<string>("all")
+  // Finalização: ao mover pra "Pronto", pede a forma de pagamento e fecha a comanda (/close).
+  const [finalizeFor, setFinalizeFor] = useState<Schedule | null>(null)
+  const [payMethod, setPayMethod] = useState<string>("PIX")
+  const [closing, setClosing] = useState(false)
 
   // sensores: pointer com distância mínima (não rouba cliques) + touch com delay
   // (segura ~180ms p/ começar a arrastar no celular, sem atrapalhar taps/scroll)
@@ -365,7 +378,17 @@ export default function PatioPage() {
     }
   }, [fetchData]))
 
+  // Abre o seletor de pagamento p/ finalizar a comanda (em vez de marcar DONE direto).
+  function openFinalize(id: string) {
+    const card = schedules.find((s) => s.id === id)
+    if (!card) return
+    setPayMethod("PIX")
+    setFinalizeFor(card)
+  }
+
   async function advance(id: string, next: Status) {
+    // CTA "Finalizar" → não marca DONE pelo /status; abre o seletor de pagamento (→ /close).
+    if (next === "DONE") { openFinalize(id); return }
     setMoving(id)
     try { await apiPut(`/schedules/${id}/status`, { status: next }); fetchData() }
     catch { toast.error("Não consegui mover o carro. Tente de novo.") } finally { setMoving(null) }
@@ -375,6 +398,13 @@ export default function PatioPage() {
   async function moveTo(id: string, target: ColumnKey) {
     const card = schedules.find((s) => s.id === id)
     if (!card) return
+    // Comanda finalizada não volta (DONE é terminal). Bloqueia reabrir pelo arrasta-e-solta.
+    if (columnKeyOf(card) === "done" && target !== "done") {
+      toast.error("Comanda finalizada não volta. Se errou, cancele pela aba Agendamentos.")
+      return
+    }
+    // Soltar em "Pronto" = finalizar → pede a forma de pagamento (fecha via /close).
+    if (target === "done") { openFinalize(id); return }
     const newStatus = COL_OF[target].dropStatus
     if (card.status === newStatus) return
     const prevStatus = card.status
@@ -389,6 +419,22 @@ export default function PatioPage() {
       toast.error("Não consegui mover o carro. Tente de novo.")
     } finally {
       setMoving(null)
+    }
+  }
+
+  // Finaliza a comanda COM a forma de pagamento escolhida (canonical: /close).
+  async function confirmFinalize() {
+    if (!finalizeFor) return
+    setClosing(true)
+    try {
+      await apiPut(`/schedules/${finalizeFor.id}/close`, { paymentMethod: payMethod })
+      toast.success("Comanda finalizada e recebida!")
+      setFinalizeFor(null)
+      fetchData()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui finalizar a comanda.")
+    } finally {
+      setClosing(false)
     }
   }
 
@@ -569,6 +615,49 @@ export default function PatioPage() {
           return null
         }}
       />
+
+      {/* Finalizar comanda: escolher a forma de pagamento (fecha via /close) */}
+      <Modal
+        open={finalizeFor !== null}
+        onClose={() => { if (!closing) setFinalizeFor(null) }}
+        title="Finalizar e receber"
+        description={finalizeFor ? `${finalizeFor.customer?.name ?? "Cliente"} · ${fmt(finalizeFor.totalPrice)}` : ""}
+      >
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text-2)", margin: "0 0 10px" }}>Como o cliente pagou?</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {PAY_METHODS.map((m) => {
+              const sel = payMethod === m.value
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setPayMethod(m.value)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 9, height: 46, padding: "0 14px", borderRadius: 10,
+                    border: `1.5px solid ${sel ? "#0066FF" : "var(--c-border-2)"}`,
+                    background: sel ? "rgba(0,102,255,0.08)" : "transparent",
+                    color: sel ? "#0066FF" : "var(--c-text-2)", fontSize: 14, fontWeight: 600,
+                    cursor: "pointer", fontFamily: "inherit", transition: "all .12s",
+                  }}
+                >
+                  <m.Icon size={17} /> {m.label}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+            <button type="button" onClick={() => setFinalizeFor(null)} disabled={closing}
+              style={{ height: 42, padding: "0 18px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: closing ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+              Cancelar
+            </button>
+            <button type="button" onClick={confirmFinalize} disabled={closing}
+              style={{ height: 42, padding: "0 22px", borderRadius: 10, background: "#10B981", border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: closing ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 7 }}>
+              <CheckCircle size={16} /> {closing ? "Finalizando…" : "Finalizar comanda"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
