@@ -490,7 +490,7 @@ function AssinantesContent() {
         {/* ── STATS ─────────────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(5, 1fr)",
+          gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
           gap: isMobile ? 6 : 8,
           marginBottom: isMobile ? 12 : 16,
         }}>

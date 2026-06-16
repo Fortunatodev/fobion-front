@@ -216,7 +216,10 @@ function AgendarContent() {
         setTheme(biz.themeColor ?? "#0066FF")
         const ids      = searchParams.getAll("services")
         const filtered = biz.services.filter((s: PublicService) => ids.includes(s.id))
-        setSelectedServices(filtered.length > 0 ? filtered : biz.services)
+        // Sem serviços na URL (acesso direto / link sem contexto): manda pra vitrine
+        // escolher — antes selecionava TODOS os serviços (Total altíssimo, confundia).
+        if (filtered.length === 0) { router.push(`/${slug}`); return }
+        setSelectedServices(filtered)
       } catch {
         router.push(`/${slug}`)
       } finally {
@@ -883,7 +886,7 @@ function AgendarContent() {
                     )}
 
                     {selectedDate && loadingSlots && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(80px,1fr))", gap: 8 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? 68 : 80}px,1fr))`, gap: 8 }}>
                         {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} style={{
                             height: 34, borderRadius: 10, backgroundColor: "var(--c-surface)",
@@ -900,7 +903,7 @@ function AgendarContent() {
                     )}
 
                     {selectedDate && !loadingSlots && availableSlots.length > 0 && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(80px,1fr))", gap: 8 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? 68 : 80}px,1fr))`, gap: 8 }}>
                         {availableSlots.map(slot => {
                           const sel      = slot.time === selectedSlot
                           // Desabilitar horários que já passaram.

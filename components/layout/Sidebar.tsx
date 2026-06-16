@@ -307,7 +307,7 @@ export default function Sidebar() {
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
-          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)", zIndex: 50 }}
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)", zIndex: 50 }}
         />
       )}
 

@@ -334,7 +334,10 @@ export default function SlugPage() {
           aria-label="Falar no WhatsApp"
           title="Falar no WhatsApp"
           style={{
-            position: "fixed", right: isMobile ? 16 : 24, bottom: isMobile ? 88 : 96, zIndex: 60,
+            position: "fixed", right: isMobile ? 16 : 24,
+            // Sobe quando a barra de resumo (FloatingBar) está visível, pra não sobrepor.
+            bottom: selectedServices.length > 0 ? (isMobile ? 150 : 116) : (isMobile ? 88 : 96),
+            zIndex: 60,
             width: 54, height: 54, borderRadius: "50%", background: "#25D366",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 6px 20px rgba(37,211,102,0.45)", textDecoration: "none",
