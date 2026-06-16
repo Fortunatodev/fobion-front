@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { apiGet } from "@/lib/api"
-import { AlertTriangle, Users, Crown, Repeat, UserPlus, Clock, MessageCircle, AlertCircle, RefreshCw } from "lucide-react"
+import { AlertTriangle, Users, Crown, Repeat, UserPlus, Clock, MessageCircle, AlertCircle, RefreshCw, Phone, CheckCircle2, DollarSign, ArrowRight } from "lucide-react"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 
 /**
@@ -26,6 +26,13 @@ interface RetencaoData {
   receitaEmRisco: number
   recuperaveis: Recuperavel[]
 }
+interface RecallPerf {
+  funnel: { elegiveis: number; contatados: number; contatadosNoPrazo: number; reconvertidos: number }
+  taxaContato: number
+  taxaReconversao: number
+  receitaRecuperadaCents: number
+  pendentesAgora: number
+}
 
 const fmt = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
@@ -45,6 +52,25 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   )
 }
 
+function FunnelStep({ icon, label, value, hint, color }: { icon: React.ReactNode; label: string; value: number; hint?: string; color: string }) {
+  return (
+    <div style={{ flex: 1, minWidth: 110, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <span style={{ color }}>{icon}</span>
+        <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 500 }}>{label}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <p style={{ fontSize: 24, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{value}</p>
+        {hint && <span style={{ fontSize: 12, fontWeight: 700, color }}>{hint}</span>}
+      </div>
+    </div>
+  )
+}
+
+function FunnelArrow() {
+  return <div style={{ display: "flex", alignItems: "center", color: "var(--c-text-4)" }}><ArrowRight size={16} /></div>
+}
+
 const BUCKET_LABEL: Record<string, { label: string; color: string }> = {
   perdido: { label: "Perdido", color: "#EF4444" },
   inativo: { label: "Inativo", color: "#F59E0B" },
@@ -52,6 +78,7 @@ const BUCKET_LABEL: Record<string, { label: string; color: string }> = {
 
 export default function RetencaoPanel() {
   const [data, setData] = useState<RetencaoData | null>(null)
+  const [recall, setRecall] = useState<RecallPerf | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [picker, setPicker] = useState<Recuperavel | null>(null)
@@ -60,8 +87,12 @@ export default function RetencaoPanel() {
   const load = useCallback(() => {
     setLoading(true)
     setError("")
-    apiGet<RetencaoData>("/analytics/retencao")
-      .then(setData)
+    // recall-performance é best-effort: se falhar, o cockpit some mas a retenção fica.
+    Promise.all([
+      apiGet<RetencaoData>("/analytics/retencao"),
+      apiGet<RecallPerf>("/analytics/recall-performance?period=90d").catch(() => null),
+    ])
+      .then(([ret, rp]) => { setData(ret); setRecall(rp) })
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar retenção."))
       .finally(() => setLoading(false))
   }, [])
@@ -119,6 +150,41 @@ export default function RetencaoPanel() {
               é o ticket médio somado de quem parou de vir. Reative no WhatsApp abaixo.
             </span>
           </div>
+
+          {/* COCKPIT de recall — fecha o loop: você chamou → voltou → receita */}
+          {recall && recall.funnel.elegiveis > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 4px" }}>Performance de recall</h3>
+              <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "0 0 12px" }}>
+                Dos {recall.funnel.elegiveis} cliente{recall.funnel.elegiveis !== 1 ? "s" : ""} que venceram retorno (últimos 90 dias): quantos você chamou e quantos voltaram.
+              </p>
+              <div style={{ display: "flex", alignItems: "stretch", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                <FunnelStep icon={<Clock size={15} />} label="Venceram retorno" value={recall.funnel.elegiveis} color="#0066FF" />
+                <FunnelArrow />
+                <FunnelStep icon={<Phone size={15} />} label="Você chamou" value={recall.funnel.contatados} hint={`${recall.taxaContato}%`} color="#F59E0B" />
+                <FunnelArrow />
+                <FunnelStep icon={<CheckCircle2 size={15} />} label="Voltaram" value={recall.funnel.reconvertidos} hint={`${recall.taxaReconversao}%`} color="#10B981" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ backgroundColor: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <DollarSign size={15} color="#10B981" />
+                    <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 500 }}>Receita recuperada</span>
+                  </div>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{fmt(recall.receitaRecuperadaCents)}</p>
+                  <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0" }}>de quem voltou depois do recall</p>
+                </div>
+                <div style={{ backgroundColor: recall.pendentesAgora > 0 ? "rgba(245,158,11,0.06)" : "var(--c-surface)", border: `1px solid ${recall.pendentesAgora > 0 ? "rgba(245,158,11,0.22)" : "var(--c-border)"}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <MessageCircle size={15} color="#F59E0B" />
+                    <span style={{ fontSize: 12, color: "var(--c-text-2)", fontWeight: 500 }}>A chamar agora</span>
+                  </div>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", margin: 0 }}>{recall.pendentesAgora}</p>
+                  <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "2px 0 0" }}>recalls vencidos — chame na aba “Cuidar hoje”</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Buckets */}
           <h3 style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text-2)", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" }}>Por recência</h3>
