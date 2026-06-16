@@ -220,27 +220,6 @@ function ActionButton({ onClick, loading, color, bg, border: bc, children }: {
   )
 }
 
-// ── NfseEmBreveSelo ───────────────────────────────────────────────────────
-// NF-e é recurso Premium ("em breve"). Em vez de um botão desabilitado (que
-// parece quebrado), mostramos só um selo discreto e informativo. O motor de
-// emissão (NfseButton) fica fora até o Premium liberar.
-
-function NfseEmBreveSelo() {
-  return (
-    <span
-      title="Emissão de NF-e chega no plano Premium"
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 5,
-        fontSize: 10, fontWeight: 600, color: "#A5B4FC",
-        background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.25)",
-        borderRadius: 6, padding: "3px 8px", whiteSpace: "nowrap",
-      }}
-    >
-      <FileText size={11} /> NF-e em breve
-    </span>
-  )
-}
-
 // ── FInput ────────────────────────────────────────────────────────────────────
 
 function FInput({ label, value, onChange, placeholder, required, type = "text", disabled, error, inputRef }: {
@@ -1662,6 +1641,8 @@ export default function AgendamentosPage() {
   const { user } = useUser()
   // Estorno de comanda finalizada é privilégio do DONO (OWNER). O back confirma de novo.
   const isOwner = user?.role === "OWNER"
+  // Gestão (dono/gerente) emite NF-e — espelha o requireManager da rota /nfse.
+  const isManager = user?.role === "OWNER" || user?.role === "ADMIN"
   const [schedules,        setSchedules]        = useState<Schedule[]>([])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState<string | null>(null)
@@ -1777,6 +1758,21 @@ export default function AgendamentosPage() {
       setActionLoading(null)
     }
   }, [selectedSchedule, paymentMethod, fetchSchedules])
+
+  // Emissão de NF-e da comanda finalizada (Pro+). Degrada com aviso claro do back se
+  // faltar PLUGNOTAS_API_KEY/CNPJ (422 com a mensagem) — surfaceada no toast.
+  const [emittingNfse, setEmittingNfse] = useState<string | null>(null)
+  const handleEmitNfse = useCallback(async (id: string) => {
+    setEmittingNfse(id)
+    try {
+      const r = await apiPost<{ ok?: boolean; status?: string; protocolo?: string }>(`/nfse/schedule/${id}`, {})
+      toast.success(r?.protocolo ? `NF-e enviada (protocolo ${r.protocolo}).` : "NF-e enviada para processamento.")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui emitir a NF-e.")
+    } finally {
+      setEmittingNfse(null)
+    }
+  }, [])
 
   // Estorno de comanda finalizada (DONE) → DELETE /schedules/:id no back vira CANCELLED,
   // zera o faturado, estorna comissão e apaga recalls. Só OWNER (back confirma de novo).
@@ -2242,7 +2238,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
+                          {s.status === "DONE" && (<>{isManager && (<ActionButton onClick={() => handleEmitNfse(s.id)} loading={emittingNfse === s.id} color="#6366F1" bg="rgba(99,102,241,0.08)" border="rgba(99,102,241,0.2)"><FileText size={13} /> Emitir NF-e</ActionButton>)}{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
@@ -2278,7 +2274,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
+                          {s.status === "DONE" && (<>{isManager && (<ActionButton onClick={() => handleEmitNfse(s.id)} loading={emittingNfse === s.id} color="#6366F1" bg="rgba(99,102,241,0.08)" border="rgba(99,102,241,0.2)"><FileText size={13} /> Emitir NF-e</ActionButton>)}{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
