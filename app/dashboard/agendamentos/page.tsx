@@ -1805,7 +1805,7 @@ export default function AgendamentosPage() {
       if (s.status === "PENDING") pending++
       else if (s.status === "CONFIRMED") confirmed++
       else if (s.status === "IN_PROGRESS") inProgress++
-      if (s.paymentStatus === "PAID") revenue += s.totalPrice
+      if (s.paymentStatus === "PAID" && s.status !== "CANCELLED") revenue += s.totalPrice
     }
     return { pendingCount: pending, confirmedCount: confirmed, inProgressCount: inProgress, totalRevenue: revenue }
   }, [schedules])

@@ -375,7 +375,7 @@ export default function DashboardPage() {
   }, [storeUrl])
 
   const paidRevenue = schedulesToday
-    .filter((s) => s.paymentStatus === "PAID")
+    .filter((s) => s.paymentStatus === "PAID" && s.status !== "CANCELLED")
     .reduce((acc, s) => acc + s.totalPrice, 0)
 
   const nextSchedules = schedulesToday
