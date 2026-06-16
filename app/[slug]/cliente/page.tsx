@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { Crown, Calendar, User, LogOut, AlertCircle, Percent, Clock, Pencil, Check, CalendarCheck, X } from "lucide-react"
+import { Crown, Calendar, User, LogOut, AlertCircle, Percent, Clock, Pencil, Check, CalendarCheck, X, Wallet, RotateCcw } from "lucide-react"
 import {
   removeCustomerToken,
   isCustomerAuthenticated,
@@ -15,6 +15,7 @@ import {
 import type { PlanServiceRule } from "@/types"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import PromptModal from "@/components/shared/PromptModal"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,8 @@ function ClientAreaContent() {
 
   // ── Cancelar assinatura (confirm) ────────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<Plan | null>(null)
+  // ── Cancelar agendamento com motivo (prompt) ─────────────────────────────
+  const [cancelSchedule, setCancelSchedule] = useState<Schedule | null>(null)
 
   // ── Auth guard + tab inicial ─────────────────────────────────────────────
   useEffect(() => {
@@ -353,8 +356,34 @@ function ClientAreaContent() {
     { id: "perfil",       label: "Perfil",       icon: User     },
   ]
 
-  // Telefone da loja (WhatsApp) para a solicitação de cancelamento. Vazio = sem WhatsApp configurado.
+  // Telefone da loja (WhatsApp) para solicitações (cancelar/remarcar). Vazio = sem WhatsApp.
   const cancelWhatsappPhone = normalizeWhatsappPhone(businessPhone)
+
+  // ── Histórico de gasto (atendimentos concluídos) ─────────────────────────
+  const doneSchedules = schedules.filter((s) => s.status === "DONE")
+  const totalSpent = doneSchedules.reduce((acc, s) => acc + s.totalPrice, 0)
+  const totalSaved = schedules.reduce((acc, s) => acc + (s.discountApplied ?? 0), 0)
+
+  function serviceNamesOf(s: Schedule): string {
+    return s.scheduleServices?.map((ss) => ss.service?.name).filter(Boolean).join(", ") || "serviço"
+  }
+  function openWaToBusiness(message: string) {
+    if (!cancelWhatsappPhone) {
+      toast.error("Esta loja ainda não cadastrou um WhatsApp. Fale pelos canais de atendimento da loja.")
+      return
+    }
+    window.open(`https://wa.me/${cancelWhatsappPhone}?text=${encodeURIComponent(message)}`, "_blank")
+  }
+  function handleReschedule(s: Schedule) {
+    openWaToBusiness(`Olá! Quero remarcar meu agendamento de ${serviceNamesOf(s)} marcado para ${formatDateTime(s.scheduledAt)}. Qual horário você tem disponível?`)
+  }
+  function submitCancelSchedule(reason: string) {
+    const s = cancelSchedule
+    if (!s) return
+    const motivo = reason.trim() ? ` Motivo: ${reason.trim()}.` : ""
+    openWaToBusiness(`Olá, preciso cancelar meu agendamento de ${serviceNamesOf(s)} do dia ${formatDateTime(s.scheduledAt)}.${motivo}`)
+    setCancelSchedule(null)
+  }
 
   return (
     <>
@@ -587,6 +616,32 @@ function ClientAreaContent() {
                 <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4 }}>Histórico completo dos seus serviços</p>
               </div>
 
+              {/* ── Histórico de gasto ── */}
+              {doneSchedules.length > 0 && (
+                <div style={{ marginBottom: 16, display: "grid", gridTemplateColumns: totalSaved > 0 ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: 10 }}>
+                  <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--c-text-4)", fontSize: 11, fontWeight: 600 }}>
+                      <Wallet size={12} /> Total gasto
+                    </div>
+                    <p style={{ fontSize: 19, fontWeight: 800, color: "var(--c-text)", margin: "6px 0 0", fontVariantNumeric: "tabular-nums" }}>{formatCurrency(totalSpent)}</p>
+                  </div>
+                  <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--c-text-4)", fontSize: 11, fontWeight: 600 }}>
+                      <Check size={12} /> Visitas
+                    </div>
+                    <p style={{ fontSize: 19, fontWeight: 800, color: "var(--c-text)", margin: "6px 0 0", fontVariantNumeric: "tabular-nums" }}>{doneSchedules.length}</p>
+                  </div>
+                  {totalSaved > 0 && (
+                    <div style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 14, padding: "14px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#10B981", fontSize: 11, fontWeight: 600 }}>
+                        <Percent size={12} /> Você economizou
+                      </div>
+                      <p style={{ fontSize: 19, fontWeight: 800, color: "#10B981", margin: "6px 0 0", fontVariantNumeric: "tabular-nums" }}>{formatCurrency(totalSaved)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ── Banner de assinatura ativa ── */}
               {(() => {
                 const activeSub = profile?.subscriptions?.find((s) => s.status === "ACTIVE")
@@ -715,6 +770,23 @@ function ClientAreaContent() {
                             </div>
                           </div>
                         </div>
+                        {/* Agendamento futuro: remarcar ou cancelar (com motivo) via WhatsApp da loja */}
+                        {(s.status === "PENDING" || s.status === "CONFIRMED") && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
+                            <button
+                              onClick={() => handleReschedule(s)}
+                              style={{ flex: 1, height: 36, borderRadius: 9, background: "transparent", border: "1px solid var(--c-border-2)", color: "var(--c-text-2)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                            >
+                              <RotateCcw size={13} /> Remarcar
+                            </button>
+                            <button
+                              onClick={() => setCancelSchedule(s)}
+                              style={{ flex: 1, height: 36, borderRadius: 9, background: "transparent", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                            >
+                              <X size={13} /> Cancelar
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -969,6 +1041,20 @@ function ClientAreaContent() {
           confirmLabel={cancelWhatsappPhone ? "Falar no WhatsApp" : "Entendi"}
           cancelLabel="Manter plano"
           variant="danger"
+        />
+
+        {/* ── Cancelar agendamento com motivo (abre WhatsApp da loja) ── */}
+        <PromptModal
+          open={cancelSchedule !== null}
+          onClose={() => setCancelSchedule(null)}
+          onSubmit={submitCancelSchedule}
+          title="Cancelar agendamento"
+          description={cancelSchedule ? `Você vai enviar um pedido de cancelamento pela loja (${formatDateTime(cancelSchedule.scheduledAt)}). Conta rapidinho o motivo — ajuda a loja a te reencaixar depois.` : ""}
+          label="Motivo (opcional)"
+          placeholder="Ex: imprevisto, vou remarcar..."
+          confirmLabel="Enviar pelo WhatsApp"
+          cancelLabel="Voltar"
+          validate={() => null}
         />
       </div>
     </>
