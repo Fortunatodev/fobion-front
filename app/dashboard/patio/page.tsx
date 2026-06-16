@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Component, type CSSProperties
 import Link from "next/link"
 import { apiGet, apiPut } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
-import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User, QrCode, CreditCard, Banknote } from "lucide-react"
+import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User, QrCode, CreditCard, Banknote, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 import {
   DndContext,
@@ -36,7 +36,7 @@ interface Schedule {
   id: string; scheduledAt: string
   status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
   totalPrice: number
-  customer?: { name: string | null } | null
+  customer?: { name: string | null; phone?: string | null } | null
   vehicle?: { plate: string | null; model: string | null } | null
   scheduleServices?: Array<{ service: { name: string | null } | null } | null> | null
 }
@@ -115,6 +115,22 @@ class CardErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 }
 
 // ── Card (conteúdo visual, reutilizado no card real e no DragOverlay) ──────────
+// wa.me 1-clique do Pátio: valida + dedup do 55 (mesma convenção da ficha do cliente)
+// + mensagem contextual pela coluna. O destaque é "carro pronto" (coluna Pronto).
+function patioWhatsAppHref(s: Schedule, colKey: ColumnKey): string | null {
+  const digits = (s.customer?.phone || "").replace(/\D/g, "")
+  if (digits.length < 10) return null
+  const nome = (s.customer?.name ?? "").trim().split(" ")[0]
+  const veic = [s.vehicle?.model, s.vehicle?.plate].filter(Boolean).join(" ") || "seu veículo"
+  const oi   = nome ? `Oi ${nome}!` : "Oi!"
+  const msg =
+    colKey === "done"  ? `${oi} Seu ${veic} já está pronto pra retirada 🚗✨`
+  : colKey === "doing" ? `${oi} Passando pra avisar que o seu ${veic} já entrou em atendimento. Qualquer coisa, é só chamar.`
+  :                      `${oi} Recebemos o seu ${veic}. Qualquer dúvida, estou à disposição.`
+  const phone = digits.startsWith("55") ? digits : "55" + digits
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+}
+
 function CardBody({
   s, col, moving, onAdvance, vistoria, dragging,
 }: {
@@ -125,6 +141,7 @@ function CardBody({
   vistoria: VistoriaState
   dragging?: boolean
 }) {
+  const waHref = patioWhatsAppHref(s, col.key)
   return (
     <div
       style={{
@@ -178,6 +195,17 @@ function CardBody({
           <ShieldCheck size={12} /> Vistoria
           <span style={{ fontSize: 9, fontWeight: 700, color: "#F59E0B", backgroundColor: "rgba(245,158,11,0.12)", borderRadius: 5, padding: "1px 5px", letterSpacing: "0.5px" }}>PRO</span>
         </Link>
+      )}
+      {waHref && (
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{ marginTop: 6, height: 28, borderRadius: 8, background: "rgba(37,211,102,0.10)", border: "1px solid rgba(37,211,102,0.3)", color: "#25D366", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
+        >
+          <MessageCircle size={12} /> {col.key === "done" ? "Avisar: pronto!" : "WhatsApp"}
+        </a>
       )}
     </div>
   )
