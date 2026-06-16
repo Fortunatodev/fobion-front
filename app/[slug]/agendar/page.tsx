@@ -372,6 +372,12 @@ function AgendarContent() {
     return () => window.removeEventListener("resize", check)
   }, [])
 
+  // Form completo? (usado pra desabilitar o botão de confirmar — o guard no
+  // handleSubmit ainda valida, isto é só não deixar clicar incompleto.)
+  const agendamentoCompleto =
+    selectedServices.length > 0 && !!selectedDate && !!selectedSlot &&
+    customerName.trim() !== "" && vehicleModel.trim() !== ""
+
   // ── handleSubmit ──────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!customerName.trim()) {
@@ -1150,13 +1156,13 @@ function AgendarContent() {
               {/* Confirmar */}
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || !agendamentoCompleto}
                 style={{
                   width: "100%", height: 48, borderRadius: 14,
-                  background: submitting ? "var(--c-border)" : `linear-gradient(135deg, #10B981, #059669)`,
-                  border: "none", color: submitting ? "var(--c-text-4)" : "var(--c-text)",
+                  background: (submitting || !agendamentoCompleto) ? "var(--c-border)" : `linear-gradient(135deg, #10B981, #059669)`,
+                  border: "none", color: (submitting || !agendamentoCompleto) ? "var(--c-text-4)" : "var(--c-text)",
                   fontSize: 15, fontWeight: 700,
-                  cursor: submitting ? "not-allowed" : "pointer",
+                  cursor: (submitting || !agendamentoCompleto) ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}

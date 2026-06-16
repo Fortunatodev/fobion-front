@@ -135,6 +135,7 @@ export default function SlugPage() {
   const [isMobile,         setIsMobile]         = useState(false)
   const [reviewStats,      setReviewStats]      = useState<ReviewStats | null>(null)
   const [reviews,          setReviews]          = useState<PublicReview[]>([])
+  const [showAllReviews,   setShowAllReviews]   = useState(false)
 
   // Micro-animação: entradas/saídas suaves no grid de serviços
   const [servicesGridRef] = useAutoAnimate<HTMLDivElement>()
@@ -172,7 +173,7 @@ export default function SlugPage() {
       // Prova social: dispara em paralelo com o fetch da loja. Falha aqui é
       // silenciosa — a vitrine nunca quebra por causa das avaliações.
       const reviewsPromise: Promise<{ stats: ReviewStats; reviews: PublicReview[] } | null> =
-        fetch(`${API}/api/public/business/${slug}/reviews?limit=6`)
+        fetch(`${API}/api/public/business/${slug}/reviews?limit=24`)
           .then(res => res.ok ? (res.json() as Promise<{ stats: ReviewStats; reviews: PublicReview[] }>) : null)
           .catch(() => null)
       try {
@@ -670,10 +671,20 @@ export default function SlugPage() {
                 )}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: isMobile ? 12 : 16 }}>
-                {reviews.map(review => (
+                {(showAllReviews ? reviews : reviews.slice(0, 6)).map(review => (
                   <ReviewCard key={review.id} review={review} theme={theme} isMobile={isMobile} />
                 ))}
               </div>
+              {!showAllReviews && reviews.length > 6 && (
+                <div style={{ textAlign: "center", marginTop: 28 }}>
+                  <button
+                    onClick={() => setShowAllReviews(true)}
+                    style={{ height: 44, padding: "0 24px", borderRadius: 12, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-2)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Ver todas as {reviews.length} avaliações
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         )}
