@@ -1771,8 +1771,8 @@ export default function AgendamentosPage() {
       setShowCloseModal(false)
       setSelectedSchedule(null)
       await fetchSchedules()
-    } catch {
-      setError("Erro ao fechar agendamento.")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao fechar a comanda.")
     } finally {
       setActionLoading(null)
     }
