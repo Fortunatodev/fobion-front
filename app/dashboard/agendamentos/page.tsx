@@ -10,9 +10,11 @@ import {
   User, FileText, Bike, Truck, CarFront,
   Link2,
   CalendarCheck, PlayCircle, CheckCircle,
+  Undo2,
 } from "lucide-react"
 import { toast } from "sonner"
-import { apiGet, apiPut, apiPost } from "@/lib/api"
+import { apiGet, apiPut, apiPost, apiDelete } from "@/lib/api"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 import { formatScheduleTime } from "@/lib/dateUtils"
 import { useUser } from "@/contexts/UserContext"
@@ -1657,6 +1659,9 @@ function ModalEmployeeCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AgendamentosPage() {
+  const { user } = useUser()
+  // Estorno de comanda finalizada é privilégio do DONO (OWNER). O back confirma de novo.
+  const isOwner = user?.role === "OWNER"
   const [schedules,        setSchedules]        = useState<Schedule[]>([])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState<string | null>(null)
@@ -1678,6 +1683,9 @@ export default function AgendamentosPage() {
   const [hovBtn,           setHovBtn]           = useState(false)
   const [isMobile,         setIsMobile]         = useState(false)
   const [visibleCount,     setVisibleCount]     = useState(LIST_PAGE_SIZE)
+  // Estorno: comanda finalizada por engano (comanda errada / forma de pagamento errada).
+  const [estornoFor,       setEstornoFor]       = useState<Schedule | null>(null)
+  const [estornando,       setEstornando]       = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -1769,6 +1777,23 @@ export default function AgendamentosPage() {
       setActionLoading(null)
     }
   }, [selectedSchedule, paymentMethod, fetchSchedules])
+
+  // Estorno de comanda finalizada (DONE) → DELETE /schedules/:id no back vira CANCELLED,
+  // zera o faturado, estorna comissão e apaga recalls. Só OWNER (back confirma de novo).
+  const handleEstorno = useCallback(async () => {
+    if (!estornoFor) return
+    setEstornando(true)
+    try {
+      await apiDelete(`/schedules/${estornoFor.id}`)
+      toast.success("Comanda estornada. Saiu do faturado.")
+      setEstornoFor(null)
+      await fetchSchedules()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui estornar. Tente de novo.")
+    } finally {
+      setEstornando(false)
+    }
+  }, [estornoFor, fetchSchedules])
 
   // Handlers de card extraídos para useCallback (estáveis entre renders, passados
   // a filhos dentro do .map da lista). Comportamento idêntico ao inline anterior.
@@ -2217,7 +2242,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && <NfseEmBreveSelo />}
+                          {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
@@ -2253,7 +2278,7 @@ export default function AgendamentosPage() {
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
-                          {s.status === "DONE" && <NfseEmBreveSelo />}
+                          {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
                         </div>
                       </div>
@@ -2375,6 +2400,22 @@ export default function AgendamentosPage() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={!!estornoFor}
+        onClose={() => setEstornoFor(null)}
+        onConfirm={handleEstorno}
+        variant="danger"
+        title="Estornar comanda finalizada?"
+        description={
+          estornoFor
+            ? `Isso cancela a venda de ${customerName(estornoFor)} (${formatCurrency(estornoFor.totalPrice)}): sai do faturado, estorna a comissão e remove o recall. Use só se a comanda foi fechada por engano. Não dá pra desfazer.`
+            : ""
+        }
+        confirmLabel="Estornar comanda"
+        cancelLabel="Voltar"
+        loading={estornando}
+      />
     </>
   )
 }

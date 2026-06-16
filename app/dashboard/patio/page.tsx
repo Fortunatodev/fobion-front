@@ -400,7 +400,7 @@ export default function PatioPage() {
     if (!card) return
     // Comanda finalizada não volta (DONE é terminal). Bloqueia reabrir pelo arrasta-e-solta.
     if (columnKeyOf(card) === "done" && target !== "done") {
-      toast.error("Comanda finalizada não volta. Se errou, cancele pela aba Agendamentos.")
+      toast.error("Comanda finalizada não volta. Se fechou por engano, o dono pode estornar pela aba Agendamentos.")
       return
     }
     // Soltar em "Pronto" = finalizar → pede a forma de pagamento (fecha via /close).
