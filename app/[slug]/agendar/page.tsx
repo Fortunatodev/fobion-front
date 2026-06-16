@@ -384,6 +384,12 @@ function AgendarContent() {
       toast.error("Preencha o modelo do veículo (ex: Corolla).")
       return
     }
+    // Guard: sem data/horário, o split abaixo gera Date inválida e quebra a tela.
+    if (!selectedDate || !selectedSlot) {
+      setSubmitError("Selecione a data e o horário para continuar.")
+      toast.error("Escolha a data e o horário do agendamento.")
+      return
+    }
 
     setSubmitting(true)
     setSubmitError(null)

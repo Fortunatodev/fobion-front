@@ -21,7 +21,9 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // unsafe-eval só em dev (Next dev tools). Em produção sai do CSP pra reduzir
+      // superfície de XSS — o bundle de produção não precisa de eval().
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.googleusercontent.com https://utfs.io https://*.ufs.sh",
       "font-src 'self' https://fonts.gstatic.com data:",
