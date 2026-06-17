@@ -839,7 +839,10 @@ function ConfiguracoesContent() {
             {/* ── FORMULÁRIO + PREVIEW AO VIVO ── */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "1fr 320px",
+              // minmax(0,1fr) (em vez de 1fr): deixa a coluna ENCOLHER abaixo do
+              // min-content. Sem isso, conteúdo nowrap (ex.: a URL no preview)
+              // força a coluna a ficar mais larga que a tela no mobile → corte.
+              gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 320px",
               gap: isMobile ? 24 : 28,
               alignItems: "start",
             }}>

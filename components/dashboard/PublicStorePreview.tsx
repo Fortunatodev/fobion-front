@@ -195,7 +195,7 @@ export default function PublicStorePreview({
           borderRadius: 10, padding: "9px 12px", marginBottom: 10,
         }}>
           <span style={{
-            flex: 1, fontSize: 12.5, color: "var(--c-text)", fontFamily: "monospace",
+            flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--c-text)", fontFamily: "monospace",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
             {displayUrl}
