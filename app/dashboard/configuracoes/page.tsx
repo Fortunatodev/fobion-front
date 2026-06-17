@@ -271,11 +271,13 @@ function HourRow({ hour, onToggle, onOpenChange, onCloseChange }: {
         }} />
       </div>
       {hour.isOpen ? (
-        <>
+        // Trio (abre · até · fecha) num bloco único: quando não cabe na largura
+        // do celular, quebra JUNTO pra linha de baixo (antes o "18:00" caía sozinho).
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <TimeInput value={hour.openTime}  onChange={onOpenChange}  />
           <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>até</span>
           <TimeInput value={hour.closeTime} onChange={onCloseChange} />
-        </>
+        </div>
       ) : (
         <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Fechado</span>
       )}
