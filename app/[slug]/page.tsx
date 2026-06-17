@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { LazyMotion, domAnimation, AnimatePresence, m } from "motion/react"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 import { Clock, MapPin, Phone, Mail, Crown, CheckCircle2, Percent, Tag, Gift, Star, MessageCircle } from "lucide-react"
-import { isCustomerAuthenticated, customerApiGet } from "@/lib/customer-auth"
+import { isCustomerAuthenticated, customerApiGet, getCustomerPayload } from "@/lib/customer-auth"
 import { fetchPublicBusiness, PublicBusinessHttpError, type PublicBusinessData } from "@/lib/public-business"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 import type { PublicBusiness, PlanServiceRule, Service, CustomerPlan, PublicReview, ReviewStats } from "@/types"
@@ -207,6 +207,10 @@ export default function SlugPage() {
   // ── Fetch active subscription when authenticated ──────────────────────────
   useEffect(() => {
     if (!authed) { setActiveSub(null); return } // eslint-disable-line react-hooks/set-state-in-effect
+    // O token do cliente é global (uma sessão pra todas as lojas). Só aplica a
+    // assinatura se o token pertence A ESTA loja — senão um assinante de outra
+    // estética veria desconto/plano que não vale aqui (vazamento cross-tenant).
+    if (getCustomerPayload()?.businessSlug !== slug) { setActiveSub(null); return } // eslint-disable-line react-hooks/set-state-in-effect
     customerApiGet<{ customer: { subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
       .then(({ customer }) => {
         const active = customer.subscriptions?.find((s) => s.status === "ACTIVE")
@@ -221,7 +225,7 @@ export default function SlugPage() {
         }
       })
       .catch(() => setActiveSub(null))
-  }, [authed])
+  }, [authed, slug])
 
   const toggleService = useCallback((id: string) => {
     setSelectedServices(prev =>
