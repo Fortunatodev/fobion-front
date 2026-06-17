@@ -92,8 +92,32 @@ interface ProdutividadeData {
   insight:              { day: number; label: string; hourStart: number; hourEnd: number; ocupacaoPct: number } | null
 }
 
+// ── Histórico & Diagnóstico mensal (GET /analytics/historico) ──────────────────
+interface HistoricoMes {
+  mes: string; label: string; parcial: boolean
+  faturamentoCents: number; agendamentos: number; concluidos: number; cancelados: number
+  taxaConclusao: number; ticketMedioCents: number; novosClientes: number; clientesAtendidos: number
+  ocupacaoPct: number; receitaPorHoraCents: number
+  deltaFaturamentoPct: number | null; deltaTicketPct: number | null
+}
+type DiagCategoria = "preco" | "crescimento" | "retencao" | "alerta" | "positivo"
+interface DiagnosticoItem { categoria: DiagCategoria; titulo: string; detalhe: string; prioridade: number }
+interface HistoricoData {
+  months:   number
+  meses:    HistoricoMes[]
+  resumo:   { faturamento12mCents: number; melhorMes: { label: string; faturamentoCents: number } | null; tendenciaFaturamento: "subindo" | "caindo" | "estavel" }
+  diagnostico: DiagnosticoItem[]
+}
+
 function fmt(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
+// Formato compacto pra rótulo de barra/gráfico mensal (R$2,3k).
+function fmtCompact(cents: number): string {
+  const v = cents / 100
+  if (v >= 1000) return `R$${(v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(".", ",")}k`
+  return `R$${Math.round(v)}`
 }
 
 function fmtShort(iso: string): string {
@@ -647,6 +671,172 @@ export default function RelatoriosPage() {
 // ── Painel ───────────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
 
+// ── Aba Histórico & Diagnóstico ────────────────────────────────────────────────
+const DIAG_STYLE: Record<DiagCategoria, { color: string; icon: React.ReactNode; tag: string }> = {
+  preco:       { color: "#10B981", icon: <DollarSign size={16} />, tag: "Preço" },
+  crescimento: { color: "#0066FF", icon: <TrendingUp size={16} />,  tag: "Crescimento" },
+  retencao:    { color: "#7C3AED", icon: <Repeat size={16} />,      tag: "Retenção" },
+  alerta:      { color: "#EF4444", icon: <AlertCircle size={16} />, tag: "Atenção" },
+  positivo:    { color: "#10B981", icon: <CheckCircle size={16} />, tag: "No caminho" },
+}
+const HIST_MONTHS: { value: number; label: string }[] = [
+  { value: 6, label: "6 meses" }, { value: 12, label: "12 meses" }, { value: 24, label: "24 meses" },
+]
+function occColor(pct: number): string {
+  return pct >= 70 ? "#10B981" : pct >= 40 ? "#F59E0B" : "#EF4444"
+}
+
+function HistoricoView({ isMobile }: { isMobile: boolean }) {
+  const [data, setData]       = useState<HistoricoData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState("")
+  const [months, setMonths]   = useState(12)
+
+  const fetchHist = useCallback(async (m: number) => {
+    setLoading(true); setError("")
+    try { setData(await apiGet<HistoricoData>(`/analytics/historico?months=${m}`)) }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : "Erro ao carregar histórico.") }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => { fetchHist(months) }, [months, fetchHist])
+
+  const completos = (data?.meses ?? []).filter(m => !m.parcial)
+  const ult = completos.length ? completos[completos.length - 1] : null
+  const ant = completos.length >= 2 ? completos[completos.length - 2] : null
+  const maxFat = Math.max(...(data?.meses ?? []).map(m => m.faturamentoCents), 1)
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 16 : 24 }}>
+      {/* Seletor de janela */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
+          {HIST_MONTHS.map(opt => {
+            const active = months === opt.value
+            return <button key={opt.value} onClick={() => setMonths(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)" }}>{opt.label}</button>
+          })}
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 12, padding: "12px 16px" }}>
+          <AlertCircle size={14} color="#EF4444" />
+          <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
+          <button onClick={() => fetchHist(months)} style={{ marginLeft: "auto", fontSize: 12, color: "#EF4444", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>Tentar novamente</button>
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: isMobile ? 10 : 16 }}>
+            {[1,2,3,4].map(i => <SkeletonBlock key={i} h={140} />)}
+          </div>
+          <SkeletonBlock h={260} />
+        </div>
+      )}
+
+      {!loading && data && completos.length === 0 && (
+        <div style={{ textAlign: "center", padding: "56px 0" }}>
+          <Calendar size={40} color="var(--c-border)" style={{ margin: "0 auto 12px", display: "block" }} />
+          <p style={{ fontSize: 15, color: "var(--c-text-3)", margin: 0 }}>Ainda não há um mês fechado pra comparar</p>
+          <p style={{ fontSize: 13, color: "var(--c-text-4)", marginTop: 6 }}>Conforme os meses passam, aqui você compara mês a mês e recebe o diagnóstico do que fazer pra crescer.</p>
+        </div>
+      )}
+
+      {!loading && data && completos.length > 0 && (
+        <>
+          {/* COMPARATIVO — último mês fechado × anterior */}
+          <section>
+            <SectionTitle icon={<Activity size={14} color="#0066FF" />} text={`Comparativo — ${ult!.label} (último mês fechado)${ant ? ` vs ${ant.label}` : ""}`} />
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: isMobile ? 10 : 16 }}>
+              <SummaryCard label="Faturamento" value={ult!.faturamentoCents} isCurrency icon={<DollarSign size={18} />} color="#0066FF" trend={ult!.deltaFaturamentoPct} sub={ant ? `vs ${fmt(ant.faturamentoCents)}` : undefined} />
+              <SummaryCard label="Ticket médio" value={ult!.ticketMedioCents} isCurrency icon={<TrendingUp size={18} />} color="#10B981" trend={ult!.deltaTicketPct} sub={`${ult!.concluidos} concluídos`} />
+              <SummaryCard label="Ocupação" value={Math.round(ult!.ocupacaoPct)} suffix="%" icon={<Target size={18} />} color={occColor(ult!.ocupacaoPct)} sub={`R$/hora: ${fmt(ult!.receitaPorHoraCents)}`} />
+              <SummaryCard label="Novos clientes" value={ult!.novosClientes} icon={<Users size={18} />} color="#7C3AED" sub={`${ult!.clientesAtendidos} atendidos no mês`} />
+            </div>
+          </section>
+
+          {/* DIAGNÓSTICO — o coração: cruza métricas → ações de preço/crescimento */}
+          {data.diagnostico.length > 0 && (
+            <section>
+              <SectionTitle icon={<Lightbulb size={14} color="#F59E0B" />} text="Diagnóstico — o que fazer pra ganhar mais" />
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 10 : 14 }}>
+                {data.diagnostico.map((d, i) => {
+                  const s = DIAG_STYLE[d.categoria] ?? DIAG_STYLE.positivo
+                  return (
+                    <Card key={i} style={{ padding: "16px 18px", borderLeft: `3px solid ${s.color}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <span style={{ color: s.color, display: "flex" }}>{s.icon}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{d.titulo}</span>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: s.color, backgroundColor: `${s.color}1A`, borderRadius: 6, padding: "3px 7px" }}>{s.tag}</span>
+                      </div>
+                      <p style={{ fontSize: 13, color: "var(--c-text-2)", margin: 0, lineHeight: 1.55 }}>{d.detalhe}</p>
+                    </Card>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* TENDÊNCIA — faturamento por mês (barras próprias, mobile-safe) */}
+          <section>
+            <SectionTitle icon={<BarChart2 size={14} color="#0066FF" />} text="Faturamento mês a mês" />
+            <Card style={{ padding: isMobile ? "18px 12px" : "22px 24px" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 6 : 10, overflowX: "auto", paddingBottom: 4 }}>
+                {data.meses.map(m => {
+                  const h = Math.max(4, Math.round((m.faturamentoCents / maxFat) * 150))
+                  return (
+                    <div key={m.mes} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: isMobile ? 34 : 44, flex: "1 0 auto" }} title={`${m.label}: ${fmt(m.faturamentoCents)}${m.parcial ? " (mês em curso)" : ""}`}>
+                      <span style={{ fontSize: 9.5, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fmtCompact(m.faturamentoCents)}</span>
+                      <div style={{ width: isMobile ? 22 : 30, height: h, borderRadius: "5px 5px 0 0", background: m.parcial ? "repeating-linear-gradient(45deg, #0066FF55, #0066FF55 4px, transparent 4px, transparent 8px)" : "linear-gradient(180deg, #0066FF, #0066FFaa)", border: m.parcial ? "1px dashed #0066FF" : "none" }} />
+                      <span style={{ fontSize: 10, color: m.parcial ? "var(--c-text-4)" : "var(--c-text-3)", fontWeight: m.parcial ? 400 : 600, whiteSpace: "nowrap" }}>{m.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "12px 0 0" }}>
+                Total no período: <strong style={{ color: "var(--c-text-2)" }}>{fmt(data.resumo.faturamento12mCents)}</strong>
+                {data.resumo.melhorMes && <> · Melhor mês: <strong style={{ color: "var(--c-text-2)" }}>{data.resumo.melhorMes.label}</strong> ({fmt(data.resumo.melhorMes.faturamentoCents)})</>}
+                {" · "}<span style={{ color: data.resumo.tendenciaFaturamento === "subindo" ? "#10B981" : data.resumo.tendenciaFaturamento === "caindo" ? "#EF4444" : "var(--c-text-3)" }}>tendência {data.resumo.tendenciaFaturamento}</span>
+              </p>
+            </Card>
+          </section>
+
+          {/* TABELA mês a mês */}
+          <section>
+            <SectionTitle icon={<Calendar size={14} color="#7C3AED" />} text="Detalhe mês a mês" />
+            <Card style={{ padding: 0, overflow: "hidden" }}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--c-border)" }}>
+                      {["Mês", "Faturamento", "Agend.", "Ticket", "Ocupação", "Novos", "Conclusão"].map((h, i) => (
+                        <th key={h} style={{ textAlign: i === 0 ? "left" : "right", padding: "11px 14px", color: "var(--c-text-3)", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...data.meses].reverse().map(m => (
+                      <tr key={m.mes} style={{ borderBottom: "1px solid var(--c-border)" }}>
+                        <td style={{ padding: "10px 14px", color: "var(--c-text)", fontWeight: 600, whiteSpace: "nowrap" }}>{m.label}{m.parcial && <span style={{ fontSize: 10, color: "var(--c-text-4)", fontWeight: 400 }}> · em curso</span>}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "var(--c-text)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fmt(m.faturamentoCents)}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums" }}>{m.agendamentos}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fmt(m.ticketMedioCents)}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: occColor(m.ocupacaoPct), fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{m.ocupacaoPct}%</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums" }}>{m.novosClientes}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "var(--c-text-2)", fontVariantNumeric: "tabular-nums" }}>{m.taxaConclusao}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </section>
+        </>
+      )}
+    </div>
+  )
+}
+
 function PainelDeSaude() {
   const [data, setData]       = useState<RelatoryData | null>(null)
   const [prodData, setProdData] = useState<ProdutividadeData | null>(null)
@@ -655,6 +845,7 @@ function PainelDeSaude() {
   const [period, setPeriod]   = useState<Period>("30d")
   const [isMobile, setIsMobile] = useState(false)
   const [fadeIn, setFadeIn]   = useState(true)
+  const [view, setView]       = useState<"painel" | "historico">("painel")
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -837,23 +1028,39 @@ function PainelDeSaude() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Activity size={20} color="#0066FF" />
-              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0 }}>Painel de Saúde</h1>
+              <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "var(--c-text)", letterSpacing: "-0.5px", margin: 0 }}>{view === "historico" ? "Histórico & Diagnóstico" : "Painel de Saúde"}</h1>
             </div>
-            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4, marginLeft: 30 }}>{periodLabel(period)}</p>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 4, marginLeft: 30 }}>{view === "historico" ? "Compare mês a mês e veja o que fazer pra crescer" : periodLabel(period)}</p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={exportCSV} disabled={!data} title="Baixar relatório do período em CSV (Excel)" style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: data ? "var(--c-text-2)" : "var(--c-text-4)", fontSize: 12, fontWeight: 600, cursor: data ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-              <Download size={14} /> Baixar CSV
-            </button>
-            <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
-              {PERIODS.map(opt => {
-                const active = period === opt.value
-                return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
-              })}
+          {view === "painel" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <button onClick={exportCSV} disabled={!data} title="Baixar relatório do período em CSV (Excel)" style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: data ? "var(--c-text-2)" : "var(--c-text-4)", fontSize: 12, fontWeight: 600, cursor: data ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                <Download size={14} /> Baixar CSV
+              </button>
+              <div style={{ display: "flex", gap: 3, backgroundColor: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 3 }}>
+                {PERIODS.map(opt => {
+                  const active = period === opt.value
+                  return <button key={opt.value} onClick={() => setPeriod(opt.value)} style={{ height: 32, padding: "0 14px", borderRadius: 9, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", border: "none", fontFamily: "inherit", backgroundColor: active ? "#0066FF" : "transparent", color: active ? "var(--c-text)" : "var(--c-text-3)", boxShadow: active ? "0 2px 8px rgba(0,102,255,0.25)" : "none" }}>{opt.label}</button>
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
+        {/* Abas: Painel de Saúde · Histórico */}
+        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--c-border)", marginBottom: 20 }}>
+          {([["painel", "Painel de Saúde"], ["historico", "Histórico"]] as const).map(([v, label]) => {
+            const active = view === v
+            return (
+              <button key={v} onClick={() => setView(v)} style={{ position: "relative", height: 40, padding: "0 16px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: active ? 700 : 500, color: active ? "var(--c-text)" : "var(--c-text-3)" }}>
+                {label}
+                {active && <span style={{ position: "absolute", left: 0, right: 0, bottom: -1, height: 2, borderRadius: 2, backgroundColor: "#0066FF" }} />}
+              </button>
+            )
+          })}
+        </div>
+
+        {view === "painel" && (<>
         <TabTutorial
           tabKey="relatorios"
           title="Como ler os Relatórios"
@@ -1093,6 +1300,9 @@ function PainelDeSaude() {
             <p style={{ fontSize: 15, color: "var(--c-text-4)" }}>Nenhum dado encontrado</p>
           </div>
         )}
+        </>)}
+
+        {view === "historico" && <HistoricoView isMobile={isMobile} />}
       </div>
     </>
   )
