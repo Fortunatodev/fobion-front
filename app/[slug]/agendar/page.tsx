@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useReducer } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle, Hourglass } from "lucide-react"
+import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Percent, Gift, MapPin, Clock, Bell, MessageCircle, Hourglass, Calendar as CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
 import type { PublicBusiness, PlanServiceRule, Vehicle } from "@/types"
 import { isCustomerAuthenticated, getCustomerPayload, customerApiGet, AUTH_CHANGE_EVENT } from "@/lib/customer-auth"
@@ -195,6 +195,7 @@ function AgendarContent() {
   const [confirmWhatsappUrl, setConfirmWhatsappUrl] = useState<string | null>(null)
   const [isMobile,      setIsMobile]      = useState(false)
   const [isLoggedIn,    setIsLoggedIn]    = useState(false)
+  const [authChecked,   setAuthChecked]   = useState(false)
   const [activeSub,     setActiveSub]     = useState<{ planName: string; discountPercent: number; planServices: PlanServiceRule[] } | null>(null)
   const [authTick,      forceAuthRefresh] = useReducer((x: number) => x + 1, 0)
 
@@ -258,13 +259,13 @@ function AgendarContent() {
 
   // ── Pre-fill customer data if logged in ───────────────────────────────────
   useEffect(() => {
-    if (!isCustomerAuthenticated()) return
-    const payload = getCustomerPayload()
-    // Só prosseguir se o token é do tipo "customer" e pertence a este business
-    if (!payload || payload.type !== "customer") return
-    if (slug && payload.businessSlug && payload.businessSlug !== slug) return
-    setIsLoggedIn(true)
-    if (payload.name) setCustomerName(payload.name)
+    const payload = isCustomerAuthenticated() ? getCustomerPayload() : null
+    // Só conta como logado se o token é "customer" E pertence a ESTA loja.
+    const validForStore = !!payload && payload.type === "customer" && (!slug || !payload.businessSlug || payload.businessSlug === slug)
+    setIsLoggedIn(validForStore)
+    setAuthChecked(true)
+    if (!validForStore) return
+    if (payload!.name) setCustomerName(payload!.name)
     // email + phone + vehicles + subscriber status from /customer/me
     customerApiGet<{ customer: { email?: string; phone: string; vehicles?: Vehicle[]; subscriptions?: Array<{ status: string; customerPlan?: { name: string; discountPercent: number; planServices?: PlanServiceRule[] } | null }> } }>("/customer/me")
       .then(({ customer }) => {
@@ -376,13 +377,18 @@ function AgendarContent() {
   // handleSubmit ainda valida, isto é só não deixar clicar incompleto.)
   const agendamentoCompleto =
     selectedServices.length > 0 && !!selectedDate && !!selectedSlot &&
-    customerName.trim() !== "" && vehicleModel.trim() !== ""
+    customerName.trim() !== "" && customerPhone.trim() !== "" && vehicleModel.trim() !== ""
 
   // ── handleSubmit ──────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!customerName.trim()) {
       setSubmitError("Nome é obrigatório.")
       toast.error("Preencha seu nome completo para continuar.")
+      return
+    }
+    if (!customerPhone.trim()) {
+      setSubmitError("WhatsApp é obrigatório.")
+      toast.error("Informe seu WhatsApp para confirmar o agendamento.")
       return
     }
     if (!vehicleModel.trim()) {
@@ -428,6 +434,13 @@ function AgendarContent() {
         // customerApiPost retorna o parsed JSON directly — precisamos adaptar
         // para tratar erros HTTP (409, etc.) do mesmo jeito que o fetch manual.
         const token = (await import("@/lib/customer-auth")).getCustomerToken()
+        // Persiste WhatsApp/nome no cadastro antes de agendar — o Google não fornece
+        // telefone, então sem isto o cliente ficaria sem contato e o recall não roda.
+        await fetch(`${API}/api/customer/me`, {
+          method:  "PUT",
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body:    JSON.stringify({ name: customerName.trim(), phone: customerPhone.trim() }),
+        }).catch(() => {})
         res = await fetch(`${API}/api/customer/schedules`, {
           method:  "POST",
           headers: {
@@ -526,7 +539,8 @@ function AgendarContent() {
   const themeRgb = hexToRgb(theme)
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) return (
+  // Espera o auth resolver também — evita piscar o formulário pra quem não logou.
+  if (loading || !authChecked) return (
     <>
       <style>{`@keyframes spinAg{to{transform:rotate(360deg)}}`}</style>
       <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -536,6 +550,51 @@ function AgendarContent() {
   )
 
   if (!business) return null
+
+  // ── Gate: agendar exige login (Google). Mantém a vitrine pública pra navegar,
+  // mas pra confirmar o agendamento o cliente entra — assim todo cliente tem
+  // WhatsApp/conta (recall funciona, sem cadastro duplicado). Os serviços já
+  // escolhidos voltam via forbion_pending_services após o login.
+  if (authChecked && !isLoggedIn) return (
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 18px" }}>
+      <div style={{ width: "100%", maxWidth: 420, backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 20, padding: "32px 26px", textAlign: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", margin: "0 auto 18px", background: `rgba(${themeRgb},0.12)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <CalendarIcon size={26} color={theme} />
+        </div>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", margin: "0 0 8px", letterSpacing: "-0.3px" }}>
+          Entre para agendar
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--c-text-3)", lineHeight: 1.55, margin: "0 0 22px" }}>
+          Para agendar em <strong style={{ color: "var(--c-text-2)" }}>{business.name}</strong>, entre com sua conta Google.
+          Assim você acompanha seus agendamentos, recebe lembretes no WhatsApp e seus dados ficam salvos pra próxima vez.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            // Preserva a seleção pra voltar direto ao agendamento após o login.
+            if (selectedServices.length > 0) {
+              localStorage.setItem("forbion_pending_services", JSON.stringify(selectedServices.map(s => s.id)))
+            }
+            router.push(`/${slug}/login?redirect=agendar`)
+          }}
+          style={{
+            width: "100%", height: 48, borderRadius: 12, border: "none", cursor: "pointer",
+            backgroundColor: theme, color: "var(--c-on-primary)", fontFamily: "inherit",
+            fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          Entrar com Google para agendar
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push(`/${slug}`)}
+          style={{ marginTop: 14, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: "var(--c-text-4)" }}
+        >
+          Voltar para a loja
+        </button>
+      </div>
+    </div>
+  )
 
   const showEmpStep = employees.length > 0
 
@@ -1038,7 +1097,7 @@ function AgendarContent() {
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <FInput label="Nome completo" value={customerName} onChange={setCustomerName} required placeholder="João Silva" />
-                  <FInput label="Telefone / WhatsApp" value={customerPhone} onChange={setCustomerPhone} placeholder="(11) 99999-9999" type="tel" />
+                  <FInput label="Telefone / WhatsApp" value={customerPhone} onChange={setCustomerPhone} required placeholder="(11) 99999-9999" type="tel" />
                   <FInput label={isLoggedIn ? "E-mail (da sua conta)" : "E-mail"} value={customerEmail} onChange={setCustomerEmail} placeholder="joao@email.com" type="email" readOnly={isLoggedIn} />
                 </div>
                 {!isLoggedIn && (
