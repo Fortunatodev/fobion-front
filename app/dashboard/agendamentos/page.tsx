@@ -445,6 +445,8 @@ function isPastDate(dateStr: string): boolean {
   return d < today
 }
 
+type EncaixeCand = { customerId: string; nome: string; phone: string; lastVisitDays: number; relevante: boolean; motivo: string }
+
 function NovoAgendamentoModal({
   isMobile,
   onClose,
@@ -493,6 +495,12 @@ function NovoAgendamentoModal({
   const [customerName,  setCustomerName]  = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+
+  // Encaixe assistido: quando o modal abre pra preencher uma vaga que abriu (prefill de
+  // data/hora/profissional, sem cliente), sugere quem chamar. PRO; em Essencial o endpoint
+  // dá 403 e o painel some sem ruído.
+  const isEncaixe = !!(prefill?.date && prefill?.time && !prefill?.customerId)
+  const [encaixeCandidates, setEncaixeCandidates] = useState<EncaixeCand[]>([])
 
   // Vehicle
   const [existingVehicles,  setExistingVehicles]  = useState<CustomerResult["vehicles"]>([])
@@ -695,6 +703,16 @@ function NovoAgendamentoModal({
     setSelectedVehicleId(null)
     clearVehicle()
   }
+
+  // Busca candidatos a encaixe só no modo encaixe. Tolerante a 403 (Essencial) e erro.
+  useEffect(() => {
+    if (!isEncaixe) return
+    let alive = true
+    apiGet<{ candidates: EncaixeCand[] }>("/crm/encaixe-candidates")
+      .then((r) => { if (alive) setEncaixeCandidates(r.candidates ?? []) })
+      .catch(() => { /* 403 / erro → sem sugestões, sem ruído */ })
+    return () => { alive = false }
+  }, [isEncaixe])
 
   // ── Submit ───────────────────────────────────────────────────────────────────
   async function handleSubmit() {
@@ -1293,7 +1311,27 @@ function NovoAgendamentoModal({
                     </button>
                   </div>
                 ) : (
-                  <CustomerSearch onSelect={handleSelectCustomer} />
+                  <>
+                    {isEncaixe && encaixeCandidates.length > 0 && (
+                      <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.18)" }}>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text-2)", margin: "0 0 8px" }}>Quem chamar pra essa vaga</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {encaixeCandidates.slice(0, 5).map((c) => (
+                            <button
+                              key={c.customerId}
+                              type="button"
+                              onClick={() => handleSelectCustomer({ id: c.customerId, name: c.nome, phone: c.phone, email: "", vehicles: [] } as CustomerResult)}
+                              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, textAlign: "left", padding: "8px 10px", borderRadius: 9, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", cursor: "pointer", fontFamily: "inherit" }}
+                            >
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{c.nome}</span>
+                              <span style={{ fontSize: 11, color: "var(--c-text-4)", flexShrink: 0 }}>{c.relevante ? "já fez o serviço" : `sem voltar há ${c.lastVisitDays}d`}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <CustomerSearch onSelect={handleSelectCustomer} />
+                  </>
                 )}
               </div>
 
