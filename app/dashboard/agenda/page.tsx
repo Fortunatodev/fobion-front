@@ -260,11 +260,12 @@ function ActionBtn({
 // ── DetailModal ───────────────────────────────────────────────────────────────
 
 function DetailModal({
-  schedule, onClose, onStatusChange,
+  schedule, onClose, onStatusChange, employees,
 }: {
   schedule: Schedule
   onClose: () => void
   onStatusChange: (s: Schedule) => void
+  employees: Employee[]
 }) {
   const router = useRouter()
   const [updating,    setUpdating]    = useState(false)
@@ -347,6 +348,20 @@ function DetailModal({
     } catch (e) { toast.error(e instanceof Error ? e.message : "Não consegui atualizar os serviços.") } finally { setUpdating(false) }
   }
 
+  // Reatribuir profissional sem recriar (PUT /schedules/:id/employee). "" = Proprietário (null).
+  async function doReassign(value: string) {
+    const employeeId = value || null
+    if ((schedule.employeeId ?? null) === employeeId) return
+    setUpdating(true)
+    try {
+      const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/employee`, { employeeId })
+      onStatusChange(res.schedule)
+      toast.success("Profissional atualizado.")
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não consegui trocar o profissional.") } finally { setUpdating(false) }
+  }
+  // Só dá pra reatribuir comanda ainda aberta e se a loja tem funcionários cadastrados.
+  const canReassign = employees.length > 0 && schedule.status !== "DONE" && schedule.status !== "CANCELLED"
+
   return (
     <div style={{
       // Enquanto a confirmação de cancelamento está aberta, recuamos o z-index
@@ -385,7 +400,25 @@ function DetailModal({
             <Row label="Serviço"     value={services} />
             <Row label="Duração"     value={`${totalDur}min`} />
             <Row label="Veículo"     value={vehicleSummary(schedule)} />
-            <Row label="Profissional" value={schedule.employee?.name ?? "Proprietário"} />
+            {canReassign ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid var(--c-border)" }}>
+                <span style={{ fontSize: 13, color: "var(--c-text-3)", flexShrink: 0 }}>Profissional</span>
+                <select
+                  value={schedule.employeeId ?? ""}
+                  disabled={updating}
+                  onChange={(e) => doReassign(e.target.value)}
+                  aria-label="Trocar profissional"
+                  style={{ maxWidth: "62%", height: 34, padding: "0 8px", borderRadius: 9, border: "1px solid var(--c-border-2)", background: "var(--c-surface-2)", color: "var(--c-text)", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: updating ? "not-allowed" : "pointer" }}
+                >
+                  <option value="">Proprietário</option>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>{e.name ?? "Funcionário"}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <Row label="Profissional" value={schedule.employee?.name ?? "Proprietário"} />
+            )}
             {schedule.notes && <Row label="Obs" value={schedule.notes} />}
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", borderTop: "1px solid var(--c-border)", marginTop: 4 }}>
               <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>Total</span>
@@ -1121,6 +1154,7 @@ export default function AgendaPage() {
             schedule={modalSchedule}
             onClose={() => setModalSchedule(null)}
             onStatusChange={handleStatusChange}
+            employees={employees}
           />
         </CardErrorBoundary>
       )}
