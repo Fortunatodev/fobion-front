@@ -965,6 +965,21 @@ export default function AgendaPage() {
                         {day.date.getDate()}
                       </div>
 
+                      {/* Heatmap de carga: barra colorida (verde/âmbar/vermelho) pra bater o
+                          olho e ver dia livre vs cheio. (Vagas exatas = endpoint de capacidade.) */}
+                      {day.isCurrentMonth && (() => {
+                        const ativos = day.schedules.filter(s => s.status !== "CANCELLED").length
+                        if (ativos === 0) return null
+                        const cor = ativos <= 2 ? "#16A34A" : ativos <= 4 ? "#D97706" : "#DC2626"
+                        const carga = ativos <= 2 ? "tranquilo" : ativos <= 4 ? "movimentado" : "cheio"
+                        return (
+                          <div
+                            title={`${ativos} agendamento${ativos !== 1 ? "s" : ""} — ${carga}`}
+                            style={{ height: 3, borderRadius: 2, backgroundColor: cor, opacity: 0.9, margin: "0 auto 4px", width: `${Math.min(100, 28 + ativos * 14)}%` }}
+                          />
+                        )
+                      })()}
+
                       {day.isCurrentMonth && day.schedules.length > 0 && !isMobile && day.schedules.length <= 2 && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           {day.schedules.map(s => {
