@@ -712,6 +712,8 @@ export default function AgendaPage() {
   const router = useRouter()
 
   const [schedules,      setSchedules]      = useState<Schedule[]>([])
+  // Vagas livres por dia (GET /schedules/capacity-summary): date → {free,total,open}.
+  const [capacity,       setCapacity]       = useState<Record<string, { free: number; total: number; open: boolean }>>({})
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState<string | null>(null)
   const [currentMonth,   setCurrentMonth]   = useState(() => { const d = new Date(); d.setDate(1); return d })
@@ -753,6 +755,14 @@ export default function AgendaPage() {
       if (selectedEmp !== "all") params.employeeId = selectedEmp
       const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setSchedules(res.schedules ?? [])
+      // Vagas livres por dia — best-effort, não bloqueia a agenda se falhar.
+      apiGet<{ summary: { date: string; open: boolean; total: number; free: number }[] }>(
+        "/schedules/capacity-summary", { from: fmt(fromD), to: fmt(toD) },
+      ).then((cap) => {
+        const map: Record<string, { free: number; total: number; open: boolean }> = {}
+        for (const d of cap.summary ?? []) map[d.date] = { free: d.free, total: d.total, open: d.open }
+        setCapacity(map)
+      }).catch(() => { /* sem capacidade → sem badge de vagas */ })
     } catch {
       setError("Erro ao carregar agenda.")
     } finally {
@@ -965,18 +975,20 @@ export default function AgendaPage() {
                         {day.date.getDate()}
                       </div>
 
-                      {/* Heatmap de carga: barra colorida (verde/âmbar/vermelho) pra bater o
-                          olho e ver dia livre vs cheio. (Vagas exatas = endpoint de capacidade.) */}
+                      {/* Vagas livres reais do dia (GET /schedules/capacity-summary): o dono
+                          bate o olho e vê quanto ainda cabe. Verde=folga, âmbar=apertado, vermelho=cheio. */}
                       {day.isCurrentMonth && (() => {
-                        const ativos = day.schedules.filter(s => s.status !== "CANCELLED").length
-                        if (ativos === 0) return null
-                        const cor = ativos <= 2 ? "#16A34A" : ativos <= 4 ? "#D97706" : "#DC2626"
-                        const carga = ativos <= 2 ? "tranquilo" : ativos <= 4 ? "movimentado" : "cheio"
+                        const cap = capacity[day.dateStr]
+                        if (!cap || !cap.open || cap.total === 0) return null
+                        const ratio = cap.free / cap.total
+                        const cor = cap.free === 0 ? "#DC2626" : ratio <= 0.34 ? "#D97706" : "#16A34A"
                         return (
                           <div
-                            title={`${ativos} agendamento${ativos !== 1 ? "s" : ""} — ${carga}`}
-                            style={{ height: 3, borderRadius: 2, backgroundColor: cor, opacity: 0.9, margin: "0 auto 4px", width: `${Math.min(100, 28 + ativos * 14)}%` }}
-                          />
+                            title={`${cap.free} de ${cap.total} horários livres`}
+                            style={{ fontSize: 9, fontWeight: 700, color: cor, lineHeight: 1.2, marginBottom: 4, whiteSpace: "nowrap" }}
+                          >
+                            {cap.free === 0 ? "cheio" : `${cap.free} ${cap.free === 1 ? "vaga" : "vagas"}`}
+                          </div>
                         )
                       })()}
 
