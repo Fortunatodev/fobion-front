@@ -7,6 +7,7 @@ import { apiGet } from "@/lib/api"
 import TabTutorial from "@/components/shared/TabTutorial"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import { hasProAccess } from "@/lib/plan"
 
 /**
  * Índice de Vistorias (feature PRO) — a vistoria é POR COMANDA (entrada/saída do veículo).
@@ -39,7 +40,7 @@ function ymd(d: Date): string {
 /** Gate de plano: Vistoria é PRO. Essencial vê o convite de upgrade. */
 export default function VistoriaIndexPage() {
   const { planStatus } = useUser()
-  if (planStatus?.plan !== "PRO") {
+  if (!hasProAccess(planStatus)) {
     return (
       <ProFeatureGate
         featureName="Vistoria"

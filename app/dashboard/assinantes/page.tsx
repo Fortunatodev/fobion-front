@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPost, apiPut } from "@/lib/api"
+import { hasProAccess } from "@/lib/plan"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
@@ -199,7 +200,7 @@ export default function AssinantesPage() {
     return <AccessDenied />
   }
 
-  if (planStatus && planStatus.plan !== "PRO") {
+  if (planStatus && !hasProAccess(planStatus)) {
     return (
       <ProFeatureGate
         featureName="Assinantes"

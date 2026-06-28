@@ -9,6 +9,7 @@ import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard
 import TabTutorial from "@/components/shared/TabTutorial"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import { hasProAccess } from "@/lib/plan"
 
 /**
  * V2-B3 — Orçamentos (feature PRO). Cliente do CRM + itens do catálogo → proposta → envia
@@ -18,7 +19,7 @@ import ProFeatureGate from "@/components/shared/ProFeatureGate"
 /** Gate de plano: Orçamentos é PRO. Essencial vê o convite de upgrade. */
 export default function OrcamentosPage() {
   const { planStatus } = useUser()
-  if (planStatus?.plan !== "PRO") {
+  if (!hasProAccess(planStatus)) {
     return (
       <ProFeatureGate
         featureName="Orçamentos"

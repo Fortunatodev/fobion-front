@@ -32,6 +32,8 @@ export type BusinessPlan = "FREE" | "BASIC" | "PRO"
 /** Status do plano retornado por /api/auth/me */
 export interface PlanStatus {
   plan: BusinessPlan
+  /** Tier EFETIVO resolvido pelo backend — fonte do gating PRO (use hasProAccess()). */
+  effectiveTier?: "essencial" | "pro" | "premium" | null
   isTrial: boolean
   planExpiresAt: string | null
   isExpired: boolean

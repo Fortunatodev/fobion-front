@@ -18,6 +18,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist"
 import RevenueActionsCard from "@/components/dashboard/RevenueActionsCard"
 import WelcomeModal from "@/components/dashboard/WelcomeModal"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
+import { hasProAccess } from "@/lib/plan"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -263,7 +264,7 @@ export default function DashboardPage() {
   const router   = useRouter()
   const { user, planStatus } = useUser()
 
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
   const isManager = user?.role === "OWNER" || user?.role === "ADMIN"
 
   const [schedulesToday,    setSchedulesToday]    = useState<Schedule[]>([])

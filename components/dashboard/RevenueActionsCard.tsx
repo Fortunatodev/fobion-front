@@ -5,6 +5,7 @@ import Link from "next/link"
 import { apiGet } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import { ShieldCheck, Users, ArrowRight, CircleDollarSign } from "lucide-react"
+import { hasProAccess } from "@/lib/plan"
 
 /**
  * V2-B3 — "Ações de receita" no dashboard: surfacia o dinheiro a perseguir HOJE
@@ -42,7 +43,7 @@ function ActionCard({ icon, color, title, sub, href }: { icon: React.ReactNode; 
 
 export default function RevenueActionsCard() {
   const { planStatus } = useUser()
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
   const [recalls, setRecalls] = useState<number | null>(null)
   const [recuperaveis, setRecuperaveis] = useState<number | null>(null)
   const [risco, setRisco] = useState(0)

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { apiGet, apiPost } from "@/lib/api"
+import { hasProAccess } from "@/lib/plan"
 import { useUser } from "@/contexts/UserContext"
 import { Camera, ArrowLeft, Lock, Trash2, Save, Loader2, Check, X, PenLine, ShieldCheck, Crown, Settings, ExternalLink, MessageCircle, LogIn, LogOut, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
@@ -126,7 +127,7 @@ export default function VistoriaPage() {
   const { scheduleId } = useParams<{ scheduleId: string }>()
   const router = useRouter()
   const { planStatus, loading: userLoading } = useUser()
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
 
   const [loading, setLoading] = useState(true)
   const [gate, setGate] = useState<Gate | null>(null)

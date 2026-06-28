@@ -11,6 +11,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import { hasProAccess } from "@/lib/plan"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -345,7 +346,7 @@ export default function PlanosPage() {
 
   // Trata null como não-PRO até carregar (espelha relatorios/page.tsx) — evita
   // flash de conteúdo PRO pra quem não tem direito.
-  if (!planStatus || planStatus.plan !== "PRO") {
+  if (!hasProAccess(planStatus)) {
     return (
       <ProFeatureGate
         featureName="Planos de assinatura"

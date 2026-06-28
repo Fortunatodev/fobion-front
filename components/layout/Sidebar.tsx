@@ -14,6 +14,7 @@ import NotificationBell from "@/components/dashboard/NotificationBell"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 import ThemeToggle from "@/components/shared/ThemeToggle"
 import { useCrmFilaCount } from "@/lib/useCrmFilaCount"
+import { hasProAccess } from "@/lib/plan"
 
 // PRO-only paths — shown with a badge on BASIC plan (decisão do dono: estes 6 são PRO).
 const PRO_ONLY_PATHS = new Set([
@@ -83,7 +84,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const { user, planStatus, logout } = useUser()
   const crmCount = useCrmFilaCount()
 
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
 
   function isActive(href: string) {
     if (href === "/dashboard") return pathname === "/dashboard"

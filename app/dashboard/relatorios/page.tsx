@@ -15,6 +15,7 @@ import {
   CartesianGrid, Tooltip as RTooltip,
 } from "recharts"
 import { apiGet } from "@/lib/api"
+import { hasProAccess } from "@/lib/plan"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
 import TabTutorial from "@/components/shared/TabTutorial"
@@ -653,7 +654,7 @@ function WhatsHappeningCard({ items, isMobile }: { items: WhatsHappening[]; isMo
 
 export default function RelatoriosPage() {
   const { planStatus } = useUser()
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
 
   if (!isPro) {
     return (

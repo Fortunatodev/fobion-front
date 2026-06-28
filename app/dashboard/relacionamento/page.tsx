@@ -9,6 +9,7 @@ import RetencaoPanel from "@/components/dashboard/RetencaoPanel"
 import TabTutorial from "@/components/shared/TabTutorial"
 import { useUser } from "@/contexts/UserContext"
 import ProFeatureGate from "@/components/shared/ProFeatureGate"
+import { hasProAccess } from "@/lib/plan"
 
 /**
  * Aba Pós-venda (Relacionamento) — CRM do dono: fila do dia, garantia/recall, retenção (RFM).
@@ -88,7 +89,7 @@ function RelacionamentoContent() {
 export default function RelacionamentoPage() {
   const { planStatus } = useUser()
   // Pós-venda é PRO. Essencial vê o convite de upgrade (e o backend /crm/* também barra).
-  if (planStatus?.plan !== "PRO") {
+  if (!hasProAccess(planStatus)) {
     return (
       <ProFeatureGate
         featureName="Pós-venda"

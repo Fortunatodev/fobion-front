@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { apiGet, apiPut } from "@/lib/api"
 import { promptEncaixe, encaixeUrl } from "@/lib/encaixe"
+import { hasProAccess } from "@/lib/plan"
 import { useUser } from "@/contexts/UserContext"
 import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User, QrCode, CreditCard, Banknote } from "lucide-react"
 import { toast } from "sonner"
@@ -291,7 +292,7 @@ function DroppableColumn({
 
 export default function PatioPage() {
   const { planStatus } = useUser()
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
