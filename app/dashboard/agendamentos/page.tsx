@@ -27,6 +27,7 @@ import TabTutorial from "@/components/shared/TabTutorial"
 interface Schedule {
   id: string
   scheduledAt: string
+  employeeId?: string | null   // lane do agendamento (usado pelo encaixe; "owner" se null)
   status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
   totalPrice: number
   paymentStatus: "PENDING" | "PAID"
@@ -482,6 +483,10 @@ function NovoAgendamentoModal({
   const [selectedSlot,   setSelectedSlot]   = useState("")
   const [availableSlots, setAvailableSlots] = useState<SlotItem[]>([])
   const [loadingSlots,   setLoadingSlots]   = useState(false)
+  // Horário "desejado" (encaixe pré-preenchido OU último escolhido pelo dono). O fetchSlots
+  // refaz a lista ao trocar serviço/funcionário e PRESERVA este horário se ainda estiver
+  // livre — senão o encaixe perdia a vaga ao escolher o serviço.
+  const desiredSlotRef = useRef("")
 
   // Customer
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -548,7 +553,7 @@ function NovoAgendamentoModal({
     if (prefill.serviceIds?.length) setSelectedServices(prefill.serviceIds)
     // Encaixe: data/hora/profissional da vaga liberada (o dono só escolhe cliente).
     if (prefill.date)       setSelectedDate(prefill.date)
-    if (prefill.time)       setSelectedSlot(prefill.time)
+    if (prefill.time)     { setSelectedSlot(prefill.time); desiredSlotRef.current = prefill.time }
     if (prefill.employeeId) setSelectedEmployee(prefill.employeeId)
     if (prefill.customerId && prefill.customerName) {
       apiGet<{ customers: CustomerResult[] }>(`/customers?search=${encodeURIComponent(prefill.customerName)}&limit=10`)
@@ -591,7 +596,6 @@ function NovoAgendamentoModal({
     }
 
     setLoadingSlots(true)
-    setSelectedSlot("")
 
     const serviceParams = svcs.map(s => `serviceIds=${encodeURIComponent(s)}`).join("&")
     const empParam =
@@ -607,17 +611,20 @@ function NovoAgendamentoModal({
       const data = await res.json()
       const raw: unknown = data.slots
 
-      if (!Array.isArray(raw)) { setAvailableSlots([]); return }
+      if (!Array.isArray(raw)) { setAvailableSlots([]); setSelectedSlot(""); return }
 
-      if (raw.length === 0) {
-        setAvailableSlots([])
-      } else if (typeof raw[0] === "string") {
-        setAvailableSlots((raw as string[]).map(t => ({ time: t, available: true })))
-      } else {
-        setAvailableSlots(raw as SlotItem[])
-      }
+      const next: SlotItem[] =
+        raw.length === 0            ? [] :
+        typeof raw[0] === "string"  ? (raw as string[]).map(t => ({ time: t, available: true })) :
+                                      (raw as SlotItem[])
+      setAvailableSlots(next)
+      // Preserva o horário desejado (encaixe / último escolhido) se ainda estiver livre;
+      // senão limpa (ex.: trocou pra um dia/serviço onde ele não cabe mais).
+      const keep = desiredSlotRef.current && next.some(s => s.time === desiredSlotRef.current && s.available)
+      setSelectedSlot(keep ? desiredSlotRef.current : "")
     } catch {
       setAvailableSlots([])
+      setSelectedSlot("")
     } finally {
       setLoadingSlots(false)
     }
@@ -635,12 +642,14 @@ function NovoAgendamentoModal({
     if (isPastDate(dateStr)) return
     setSelectedDate(dateStr)
     setSelectedSlot("")
+    desiredSlotRef.current = ""   // trocou de dia → não restaura a vaga do encaixe anterior
     fetchSlots(dateStr)
   }
 
   function handleSelectEmployee(empId: string) {
     setSelectedEmployee(empId)
     setSelectedSlot("")
+    desiredSlotRef.current = ""
     setSelectedDate("")
     setAvailableSlots([])
   }
@@ -1155,7 +1164,7 @@ function NovoAgendamentoModal({
                           return (
                             <button
                               key={slot.time}
-                              onClick={() => !disabled && setSelectedSlot(slot.time)}
+                              onClick={() => { if (!disabled) { setSelectedSlot(slot.time); desiredSlotRef.current = slot.time } }}
                               disabled={disabled}
                               title={disabled ? "Horário indisponível" : undefined}
                               style={{
@@ -1197,7 +1206,7 @@ function NovoAgendamentoModal({
                             <input
                               type="time"
                               value={selectedSlot}
-                              onChange={(e) => setSelectedSlot(e.target.value)}
+                              onChange={(e) => { setSelectedSlot(e.target.value); desiredSlotRef.current = e.target.value }}
                               style={{
                                 height: 32, borderRadius: 8, fontSize: 12, padding: "0 10px",
                                 background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",

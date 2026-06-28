@@ -20,6 +20,7 @@ import TabTutorial from "@/components/shared/TabTutorial"
 interface Schedule {
   id:           string
   scheduledAt:  string
+  employeeId?:  string | null   // lane (usado pelo encaixe ao fechar)
   status:       string
   totalPrice:   number
   notes?:       string | null

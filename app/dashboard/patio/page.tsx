@@ -36,7 +36,7 @@ import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
  * Drag-and-drop entre colunas (@dnd-kit) com pointer + touch; botões mantidos como fallback.
  */
 interface Schedule {
-  id: string; scheduledAt: string
+  id: string; scheduledAt: string; employeeId?: string | null
   status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "DONE" | "CANCELLED"
   totalPrice: number
   customer?: { name: string | null } | null

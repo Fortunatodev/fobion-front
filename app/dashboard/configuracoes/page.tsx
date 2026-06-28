@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react"
 import { toast } from "sonner"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@/contexts/UserContext"
+import { hasProAccess } from "@/lib/plan"
 import type { BusinessPlan } from "@/types"
 import { apiGet, apiPut, apiDelete } from "@/lib/api"
 import PasswordCard from "@/components/settings/PasswordCard"
@@ -388,7 +389,7 @@ export default function ConfiguracoesPage() {
 function ConfiguracoesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, logout, loading: userLoading } = useUser()
+  const { user, logout, loading: userLoading, planStatus } = useUser()
 
   const [config,      setConfig]      = useState<BusinessConfig | null>(null)
   const [loading,     setLoading]     = useState(true)
@@ -696,7 +697,7 @@ function ConfiguracoesContent() {
   const displayUrl  = `${/localhost|127\.0\.0\.1/.test(displayHost) ? "app.forbion.digital" : displayHost}/${slug}`
   const openDays  = hours.filter((h) => h.isOpen).length
   const themeRgb  = hexToRgb(themeColor)
-  const isPro     = config?.plan === "PRO"
+  const isPro     = hasProAccess(planStatus)   // gating por effectiveTier (trial/pago-essencial corretos)
 
   // ── Guard de role: área exclusiva do dono (espelha ownerOnly do Sidebar) ──
   if (!userLoading && user?.role === "EMPLOYEE") {
