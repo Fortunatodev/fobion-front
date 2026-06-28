@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api"
-import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw, CheckCircle, Calendar, Download } from "lucide-react"
+import { FileText, Plus, Check, X, Trash2, ShoppingCart, Send, Search, Tag, AlertCircle, RefreshCw, CheckCircle, Calendar, Download, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
@@ -15,6 +15,7 @@ import TabTutorial from "@/components/shared/TabTutorial"
 interface QuoteItem { serviceId?: string | null; name: string; price: number }
 interface Quote {
   id: string; customerName: string | null; plate: string | null
+  customerId?: string | null; vehicleId?: string | null
   customerPhone?: string | null
   items: QuoteItem[]; totalPrice: number; notes: string | null
   status: string; validUntil: string | null; createdAt: string
@@ -76,6 +77,7 @@ export default function OrcamentosPage() {
   const [fItems, setFItems] = useState<{ serviceId?: string | null; name: string; price: string }[]>([{ name: "", price: "" }])
   const [saving, setSaving] = useState(false)
   const [fErr, setFErr] = useState("")
+  const [editingId, setEditingId] = useState<string | null>(null)  // null = criar; id = editar
 
   // busca de cliente
   const [custQuery, setCustQuery] = useState("")
@@ -130,8 +132,21 @@ export default function OrcamentosPage() {
   const total = fItems.reduce((a, it) => a + (Number(it.price) > 0 ? Math.round(Number(it.price) * 100) : 0), 0)
 
   function resetForm() {
+    setEditingId(null)
     setFName(""); setFPlate(""); setFCustomerId(null); setFVehicleId(null)
     setFNotes(""); setFValid(""); setFItems([{ name: "", price: "" }]); setCustQuery(""); setCustResults([])
+  }
+
+  // Abre o modal pré-preenchido pra EDITAR um orçamento (só DRAFT/SENT mostram o botão).
+  function openEdit(q: Quote) {
+    setEditingId(q.id)
+    setFName(q.customerName ?? ""); setFPlate(q.plate ?? "")
+    setFCustomerId(q.customerId ?? null); setFVehicleId(q.vehicleId ?? null)
+    setFNotes(q.notes ?? "")
+    setFValid(q.validUntil ? new Date(q.validUntil).toISOString().slice(0, 10) : "")
+    setFItems((q.items ?? []).map((it) => ({ serviceId: it.serviceId ?? null, name: it.name, price: (it.price / 100).toString() })))
+    setFErr(""); setCustQuery(""); setCustResults([])
+    setModal(true)
   }
 
   async function handleCreate() {
@@ -145,14 +160,16 @@ export default function OrcamentosPage() {
     }
     setSaving(true); setFErr("")
     try {
-      await apiPost("/quotes", {
+      const payload = {
         customerId: fCustomerId, vehicleId: fVehicleId,
         customerName: fName.trim() || null, plate: fPlate.trim() || null,
         items, notes: fNotes.trim() || null,
         validUntil: fValid ? new Date(fValid).toISOString() : null,
-      })
+      }
+      if (editingId) await apiPut(`/quotes/${editingId}`, payload)
+      else await apiPost("/quotes", payload)
       setModal(false); resetForm(); fetchQuotes()
-      toast.success("Orçamento criado.")
+      toast.success(editingId ? "Orçamento atualizado." : "Orçamento criado.")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro ao salvar."
       setFErr(msg); toast.error(msg)
@@ -315,6 +332,7 @@ ${q.notes ? `<p style="font-size:12px;margin-top:8px">${esc(q.notes)}</p>` : ""}
           {quotes.map((q) => {
             const st = STATUS[q.status] ?? { label: q.status, color: "var(--c-text-3)" }
             const expired = isExpired(q)
+            const pastValid = !!q.validUntil && new Date(q.validUntil) < new Date()  // venceu (qualquer status)
             return (
               <div key={q.id} style={{ background: "var(--c-elevated)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "14px 16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -332,13 +350,14 @@ ${q.notes ? `<p style="font-size:12px;margin-top:8px">${esc(q.notes)}</p>` : ""}
                   {(q.status === "DRAFT" || q.status === "SENT") && (
                     <>
                       <button onClick={() => openSendPicker(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> {q.status === "DRAFT" ? "Enviar no WhatsApp" : "Reenviar"}</button>
-                      <button onClick={() => setStatus(q.id, "APPROVED")} style={pill("rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)", "#10B981")}><Check size={13} /> Aprovar</button>
+                      <button onClick={() => openEdit(q)} style={pill("transparent", "var(--c-border-2)", "var(--c-text-2)")}><Pencil size={13} /> Editar</button>
+                      <button onClick={() => setStatus(q.id, "APPROVED")} disabled={!!expired} title={expired ? "Orçamento vencido — edite a validade antes de aprovar" : undefined} style={{ ...pill("rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)", "#10B981"), opacity: expired ? 0.45 : 1, cursor: expired ? "not-allowed" : "pointer" }}><Check size={13} /> Aprovar</button>
                       <button onClick={() => setStatus(q.id, "REJECTED")} style={ghostBtn}><X size={13} /> Recusar</button>
                     </>
                   )}
                   {q.status === "APPROVED" && (
                     <>
-                      <button onClick={() => { setConvertQuote(q); setConvertDate("") }} style={pill("rgba(124,58,237,0.12)", "rgba(124,58,237,0.3)", "#A78BFA")}><Calendar size={13} /> Agendar</button>
+                      <button onClick={() => { setConvertQuote(q); setConvertDate("") }} disabled={pastValid} title={pastValid ? "Orçamento vencido — edite a validade antes de agendar" : undefined} style={{ ...pill("rgba(124,58,237,0.12)", "rgba(124,58,237,0.3)", "#A78BFA"), opacity: pastValid ? 0.45 : 1, cursor: pastValid ? "not-allowed" : "pointer" }}><Calendar size={13} /> Agendar</button>
                       <button onClick={() => setStatus(q.id, "CONVERTED")} style={pill("rgba(245,158,11,0.12)", "rgba(245,158,11,0.25)", "#F59E0B")}><ShoppingCart size={13} /> Marcar como vendido</button>
                       <button onClick={() => openSendPicker(q)} style={pill("rgba(0,102,255,0.12)", "rgba(0,102,255,0.25)", "#0066FF")}><Send size={13} /> Reenviar</button>
                     </>
@@ -356,7 +375,7 @@ ${q.notes ? `<p style="font-size:12px;margin-top:8px">${esc(q.notes)}</p>` : ""}
       {modal && (
         <div onClick={() => setModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
           <div onClick={(e) => { e.stopPropagation(); setShowCust(false); setShowCatalog(false) }} style={{ width: "100%", maxWidth: 480, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 22, maxHeight: "90vh", overflowY: "auto" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>Novo orçamento</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: "0 0 16px" }}>{editingId ? "Editar orçamento" : "Novo orçamento"}</h2>
 
             {/* Cliente do CRM */}
             {fCustomerId ? (
@@ -422,7 +441,7 @@ ${q.notes ? `<p style="font-size:12px;margin-top:8px">${esc(q.notes)}</p>` : ""}
               <span style={{ fontSize: 15, fontWeight: 800, color: "var(--c-text)" }}>Total: {fmt(total)}</span>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setModal(false)} style={ghostBtn}>Cancelar</button>
-                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : "Criar"}</button>
+                <button onClick={handleCreate} disabled={saving} style={{ height: 40, padding: "0 18px", borderRadius: 10, background: saving ? "var(--c-border)" : "#0066FF", color: saving ? "var(--c-text-4)" : "white", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{saving ? "Salvando…" : (editingId ? "Salvar" : "Criar")}</button>
               </div>
             </div>
           </div>
