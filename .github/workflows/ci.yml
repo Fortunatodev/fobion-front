@@ -1,0 +1,32 @@
+name: CI
+
+# Gate do front: build de produção (que já roda ESLint + type-check do Next).
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: next build (lint + types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install (frozen lockfile)
+        run: yarn install --frozen-lockfile
+      - name: Build de produção (Next roda ESLint + tsc)
+        run: yarn build
+        env:
+          # build estático não precisa de segredos reais; valores placeholder evitam
+          # falha por env ausente em páginas que leem NEXT_PUBLIC_* em build-time.
+          NEXT_TELEMETRY_DISABLED: "1"
+      - name: Audit de dependências (informativo — não bloqueia)
+        run: yarn audit --groups dependencies || true
