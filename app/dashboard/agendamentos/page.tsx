@@ -1320,7 +1320,7 @@ function NovoAgendamentoModal({
                             <button
                               key={c.customerId}
                               type="button"
-                              onClick={() => handleSelectCustomer({ id: c.customerId, name: c.nome, phone: c.phone, email: "", vehicles: [] } as CustomerResult)}
+                              onClick={() => handleSelectCustomer({ id: c.customerId, name: c.nome, phone: c.phone, email: "", vehicles: [] })}
                               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, textAlign: "left", padding: "8px 10px", borderRadius: 9, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", cursor: "pointer", fontFamily: "inherit" }}
                             >
                               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{c.nome}</span>

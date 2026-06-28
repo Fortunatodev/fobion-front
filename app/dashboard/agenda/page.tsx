@@ -714,6 +714,8 @@ export default function AgendaPage() {
   const [schedules,      setSchedules]      = useState<Schedule[]>([])
   // Vagas livres por dia (GET /schedules/capacity-summary): date → {free,total,open}.
   const [capacity,       setCapacity]       = useState<Record<string, { free: number; total: number; open: boolean }>>({})
+  // Token p/ descartar resposta de capacidade fora de ordem (troca rápida de mês/filtro).
+  const capReqRef = useRef(0)
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState<string | null>(null)
   const [currentMonth,   setCurrentMonth]   = useState(() => { const d = new Date(); d.setDate(1); return d })
@@ -755,10 +757,15 @@ export default function AgendaPage() {
       if (selectedEmp !== "all") params.employeeId = selectedEmp
       const res = await apiGet<{ schedules: Schedule[] }>("/schedules", params)
       setSchedules(res.schedules ?? [])
-      // Vagas livres por dia — best-effort, não bloqueia a agenda se falhar.
+      // Vagas livres por dia — best-effort, não bloqueia a agenda se falhar. Zera antes
+      // (some o badge do mês/filtro anterior) e usa um token: se o usuário trocar de mês/
+      // filtro antes da resposta chegar, a resposta velha é descartada (não pinta o mês errado).
+      const reqId = ++capReqRef.current
+      setCapacity({})
       apiGet<{ summary: { date: string; open: boolean; total: number; free: number }[] }>(
-        "/schedules/capacity-summary", { from: fmt(fromD), to: fmt(toD) },
+        "/schedules/capacity-summary", { from: fmt(fromD), to: fmt(toD) }, // business-wide (não filtra por funcionário)
       ).then((cap) => {
+        if (reqId !== capReqRef.current) return // resposta fora de ordem → descarta
         const map: Record<string, { free: number; total: number; open: boolean }> = {}
         for (const d of cap.summary ?? []) map[d.date] = { free: d.free, total: d.total, open: d.open }
         setCapacity(map)
