@@ -462,6 +462,7 @@ function NovoAgendamentoModal({
   // Services
   const [services,         setServices]         = useState<PublicService[]>([])
   const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [durationOverride, setDurationOverride] = useState<number | null>(null)
   const [loadingServices,  setLoadingServices]  = useState(true)
 
   // Employees
@@ -636,6 +637,7 @@ function NovoAgendamentoModal({
 
   function toggleService(id: string) {
     setSelectedServices((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id])
+    setDurationOverride(null) // muda a seleção → volta pra duração-padrão do catálogo
   }
 
   // ── Customer helpers ─────────────────────────────────────────────────────────
@@ -724,6 +726,10 @@ function NovoAgendamentoModal({
         // de owner (apiPost manda Authorization: Bearer). Mandar no body permitia
         // criar agendamento em outra loja (cross-tenant).
         serviceIds: selectedServices,
+        // Duração ajustada pelo dono (encurtar/alongar este job). Só envia quando difere do catálogo.
+        ...(durationOverride != null && durationOverride > 0 && durationOverride !== defaultDuration
+          ? { durationMinutes: durationOverride }
+          : {}),
         scheduledAt,
         ...(selectedEmployee !== "owner" ? { employeeId: selectedEmployee } : {}),
         ...(selectedCustomerId
@@ -768,6 +774,13 @@ function NovoAgendamentoModal({
   const totalPrice = services
     .filter((s) => selectedServices.includes(s.id))
     .reduce((a, s) => a + s.price, 0)
+
+  // Duração: soma do catálogo (default) que o DONO pode ajustar (encurtar/alongar) por
+  // agendamento. durationOverride=null usa o default; muda só quando o dono edita o campo.
+  const defaultDuration = services
+    .filter((s) => selectedServices.includes(s.id))
+    .reduce((a, s) => a + s.durationMinutes, 0)
+  const effectiveDuration = durationOverride ?? defaultDuration
 
   const isCustomerLocked = !!selectedCustomerId
   const showEmpStep = employees.length > 0
@@ -1117,10 +1130,16 @@ function NovoAgendamentoModal({
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(70px,1fr))", gap: 6 }}>
                         {availableSlots.map(slot => {
                           const sel      = slot.time === selectedSlot
-                          const isPastSlot = selectedDate === new Date().toISOString().split("T")[0] && (() => {
-                            const [h, m] = slot.time.split(":").map(Number)
-                            const now = new Date()
-                            return h * 60 + m <= now.getHours() * 60 + now.getMinutes()
+                          // Passado? Compara na MESMA convenção UTC-naive/BRT do backend
+                          // (Date.now() − 3h), não na hora LOCAL do navegador. Sem isso, em
+                          // fuso ≠ BRT ou na virada do minuto o front escondia slots válidos —
+                          // era a causa do "não consigo agendar 10h quando são 9h30". (P0)
+                          const isPastSlot = (() => {
+                            const [y, mo, dd] = selectedDate.split("-").map(Number)
+                            const [h, m]      = slot.time.split(":").map(Number)
+                            const slotFakeUtcMs = Date.UTC(y, mo - 1, dd, h, m, 0)
+                            const nowFakeUtcMs  = Date.now() - 3 * 60 * 60 * 1000
+                            return slotFakeUtcMs <= nowFakeUtcMs
                           })()
                           const disabled = !slot.available || isPastSlot
                           return (
@@ -1154,6 +1173,49 @@ function NovoAgendamentoModal({
                       <p style={{ fontSize: 11, color: "var(--c-text-4)", margin: "8px 0 0", textAlign: "center" }}>
                         Nenhum horário disponível para este profissional neste dia.
                       </p>
+                    )}
+
+                    {/* Encaixe — o dono pode digitar QUALQUER horário (fora da grade/expediente).
+                        O backend permite encaixe pro dono; o cliente pelo link público segue limitado. */}
+                    {selectedDate && !loadingSlots && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--c-border-2)" }}>
+                        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                          <div>
+                            <label style={{ fontSize: 11, color: "var(--c-text-3)", display: "block", marginBottom: 6 }}>
+                              Encaixe — outro horário
+                            </label>
+                            <input
+                              type="time"
+                              value={selectedSlot}
+                              onChange={(e) => setSelectedSlot(e.target.value)}
+                              style={{
+                                height: 32, borderRadius: 8, fontSize: 12, padding: "0 10px",
+                                background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+                                color: "var(--c-text)", fontFamily: "inherit", fontVariantNumeric: "tabular-nums",
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: "var(--c-text-3)", display: "block", marginBottom: 6 }}>
+                              Duração (min)
+                            </label>
+                            <input
+                              type="number" min={1} max={1440}
+                              value={effectiveDuration || ""}
+                              onChange={(e) => setDurationOverride(Math.max(1, Math.min(1440, Math.floor(Number(e.target.value)) || 1)))}
+                              style={{
+                                width: 90, height: 32, borderRadius: 8, fontSize: 12, padding: "0 10px",
+                                background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)",
+                                color: "var(--c-text)", fontFamily: "inherit", fontVariantNumeric: "tabular-nums",
+                                boxSizing: "border-box" as const,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <p style={{ fontSize: 10, color: "var(--c-text-4)", margin: "8px 0 0", lineHeight: 1.4 }}>
+                          Encaixe fora da grade/capacidade e ajuste o tempo deste serviço (encurtar/alongar). Padrão: {defaultDuration}min. O cliente pelo link público continua limitado aos horários livres.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1678,6 +1740,14 @@ export default function AgendamentosPage() {
   const [prefill, setPrefill] = useState<{ customerId: string; customerName: string; serviceIds: string[] } | null>(null)
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [paymentMethod,    setPaymentMethod]    = useState("PIX")
+  // Desconto manual no fechamento da comanda (R$ ou %) + se repassa pro funcionário.
+  const [discountValue,     setDiscountValue]     = useState("")
+  const [discountIsPercent, setDiscountIsPercent] = useState(false)
+  const [discountRepasse,   setDiscountRepasse]   = useState(false)
+  // Editar serviços de uma comanda aberta (Fase 3)
+  const [editComanda,  setEditComanda]  = useState<Schedule | null>(null)
+  const [editSvcIds,   setEditSvcIds]   = useState<string[]>([])
+  const [editCatalog,  setEditCatalog]  = useState<{ id: string; name: string; price: number; durationMinutes: number }[]>([])
   const [searchFocused,    setSearchFocused]    = useState(false)
   const [hovCard,          setHovCard]          = useState<string | null>(null)
   const [hovBtn,           setHovBtn]           = useState(false)
@@ -1767,7 +1837,14 @@ export default function AgendamentosPage() {
     if (!selectedSchedule) return
     setActionLoading(selectedSchedule.id)
     try {
-      await apiPut(`/schedules/${selectedSchedule.id}/close`, { paymentMethod })
+      const payload: Record<string, unknown> = { paymentMethod }
+      const raw = Number(discountValue.replace(",", "."))
+      if (discountValue.trim() && Number.isFinite(raw) && raw > 0) {
+        if (discountIsPercent) payload.manualDiscountPercent = raw
+        else payload.manualDiscountCents = Math.round(raw * 100)
+        payload.discountAffectsCommission = discountRepasse
+      }
+      await apiPut(`/schedules/${selectedSchedule.id}/close`, payload)
       setShowCloseModal(false)
       setSelectedSchedule(null)
       await fetchSchedules()
@@ -1776,7 +1853,7 @@ export default function AgendamentosPage() {
     } finally {
       setActionLoading(null)
     }
-  }, [selectedSchedule, paymentMethod, fetchSchedules])
+  }, [selectedSchedule, paymentMethod, discountValue, discountIsPercent, discountRepasse, fetchSchedules])
 
   // Estorno de comanda finalizada (DONE) → DELETE /schedules/:id no back vira CANCELLED,
   // zera o faturado, estorna comissão e apaga recalls. Só OWNER (back confirma de novo).
@@ -1799,8 +1876,40 @@ export default function AgendamentosPage() {
   // a filhos dentro do .map da lista). Comportamento idêntico ao inline anterior.
   const handleOpenClose = useCallback((s: Schedule) => {
     setSelectedSchedule(s)
+    setDiscountValue("")
+    setDiscountIsPercent(false)
+    setDiscountRepasse(false)
     setShowCloseModal(true)
   }, [])
+
+  // Editar serviços de uma comanda aberta (Fase 3): abre o modal pré-marcando os atuais.
+  const handleOpenEditServices = useCallback((s: Schedule) => {
+    setEditComanda(s)
+    setEditSvcIds((s.scheduleServices ?? []).map((ss) => ss?.service?.id).filter((x): x is string => !!x))
+    setEditCatalog((prev) => {
+      if (prev.length === 0) {
+        apiGet<{ services: { id: string; name: string; price: number; durationMinutes: number }[] }>("/services")
+          .then((r) => setEditCatalog(r.services ?? []))
+          .catch(() => {})
+      }
+      return prev
+    })
+  }, [])
+
+  const handleSaveEditServices = useCallback(async () => {
+    if (!editComanda || editSvcIds.length === 0) return
+    setActionLoading(editComanda.id)
+    try {
+      await apiPut(`/schedules/${editComanda.id}/services`, { serviceIds: editSvcIds })
+      setEditComanda(null)
+      await fetchSchedules()
+      toast.success("Serviços atualizados.")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao atualizar serviços.")
+    } finally {
+      setActionLoading(null)
+    }
+  }, [editComanda, editSvcIds, fetchSchedules])
 
   const handleHoverCard = useCallback((id: string | null) => {
     setHovCard(id)
@@ -2241,6 +2350,7 @@ export default function AgendamentosPage() {
                         <div style={{ display: "flex", gap: 8 }}>
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /> Cancelar</ActionButton></>)}
+                          {["PENDING","CONFIRMED","IN_PROGRESS"].includes(s.status) && (<ActionButton onClick={() => handleOpenEditServices(s)} loading={false} color="#0066FF" bg="rgba(0,102,255,0.08)" border="rgba(0,102,255,0.2)"><Plus size={13} /> Serviços</ActionButton>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
@@ -2277,6 +2387,7 @@ export default function AgendamentosPage() {
                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                           {s.status === "PENDING" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "CONFIRMED")} loading={isActing} color="#3B82F6" bg="rgba(59,130,246,0.08)" border="rgba(59,130,246,0.2)"><CheckCircle2 size={13} /> Confirmar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
                           {s.status === "CONFIRMED" && (<><ActionButton onClick={() => handleUpdateStatus(s.id, "IN_PROGRESS")} loading={isActing} color="#8B5CF6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)"><Clock size={13} /> Iniciar</ActionButton><ActionButton onClick={() => handleUpdateStatus(s.id, "CANCELLED")} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><XCircle size={13} /></ActionButton></>)}
+                          {["PENDING","CONFIRMED","IN_PROGRESS"].includes(s.status) && (<ActionButton onClick={() => handleOpenEditServices(s)} loading={false} color="#0066FF" bg="rgba(0,102,255,0.08)" border="rgba(0,102,255,0.2)"><Plus size={13} /> Serviços</ActionButton>)}
                           {s.status === "IN_PROGRESS" && (<ActionButton onClick={() => handleOpenClose(s)} loading={isActing} color="#10B981" bg="rgba(16,185,129,0.08)" border="rgba(16,185,129,0.2)"><CreditCard size={13} /> Fechar comanda</ActionButton>)}
                           {s.status === "DONE" && (<><NfseEmBreveSelo />{isOwner && (<ActionButton onClick={() => setEstornoFor(s)} loading={isActing} color="#EF4444" bg="rgba(239,68,68,0.06)" border="rgba(239,68,68,0.15)"><Undo2 size={13} /> Estornar</ActionButton>)}</>)}
                           {s.status === "CANCELLED" && (<span style={{ fontSize: 12, color: "var(--c-text-4)" }}>Cancelado</span>)}
@@ -2362,6 +2473,62 @@ export default function AgendamentosPage() {
                 </div>
               )}
             </div>
+
+            {/* Desconto manual no fechamento (R$ ou %) — "fiz por R$80 em vez de R$100" */}
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.05em" }}>DESCONTO (OPCIONAL)</p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid var(--c-border-2)" }}>
+                  {[{ k: false, lbl: "R$" }, { k: true, lbl: "%" }].map((opt) => (
+                    <button key={String(opt.k)} onClick={() => setDiscountIsPercent(opt.k)} style={{
+                      padding: "9px 13px", fontSize: 13, fontWeight: discountIsPercent === opt.k ? 700 : 500,
+                      background: discountIsPercent === opt.k ? "rgba(16,185,129,0.12)" : "var(--c-bg)",
+                      color: discountIsPercent === opt.k ? "#10B981" : "var(--c-text-3)",
+                      border: "none", cursor: "pointer", fontFamily: "inherit",
+                    }}>{opt.lbl}</button>
+                  ))}
+                </div>
+                <input
+                  type="number" min={0} step={discountIsPercent ? 1 : 0.01}
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                  placeholder={discountIsPercent ? "Ex.: 10" : "Ex.: 20,00"}
+                  style={{
+                    flex: 1, height: 40, padding: "0 12px", borderRadius: 8,
+                    background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+                    color: "var(--c-text)", fontSize: 14, fontFamily: "inherit",
+                    boxSizing: "border-box" as const, fontVariantNumeric: "tabular-nums",
+                  }}
+                />
+              </div>
+              {(() => {
+                const raw = Number(discountValue.replace(",", "."))
+                if (!discountValue.trim() || !Number.isFinite(raw) || raw <= 0) return null
+                const total = selectedSchedule.totalPrice
+                const cents = discountIsPercent
+                  ? Math.floor((total * Math.min(100, raw)) / 100)
+                  : Math.round(raw * 100)
+                const clamped = Math.max(0, Math.min(cents, total))
+                return (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                      <span style={{ fontSize: 13, color: "var(--c-text-3)" }}>
+                        {formatCurrency(total)} <span style={{ color: "var(--c-text-4)" }}>→</span>{" "}
+                        <strong style={{ color: "#10B981", fontVariantNumeric: "tabular-nums" }}>{formatCurrency(total - clamped)}</strong>
+                      </span>
+                      <span style={{ fontSize: 12, color: "#10B981", fontVariantNumeric: "tabular-nums" }}>−{formatCurrency(clamped)}</span>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer" }}>
+                      <input type="checkbox" checked={discountRepasse} onChange={(e) => setDiscountRepasse(e.target.checked)} style={{ marginTop: 2, cursor: "pointer" }} />
+                      <span style={{ fontSize: 12, color: "var(--c-text-3)", lineHeight: 1.45 }}>
+                        Descontar também da comissão do funcionário. Por padrão o desconto é só seu — o funcionário recebe sobre o preço cheio.
+                      </span>
+                    </label>
+                  </>
+                )
+              })()}
+            </div>
+
             <p style={{ fontSize: 11, fontWeight: 500, color: "var(--c-text-4)", margin: "0 0 10px", letterSpacing: "0.05em" }}>FORMA DE PAGAMENTO</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {PAYMENT_METHODS.map((m) => {
@@ -2396,6 +2563,59 @@ export default function AgendamentosPage() {
               {actionLoading === selectedSchedule.id
                 ? <><Spinner size={16} color="white" /> Processando...</>
                 : <><CheckCircle2 size={16} /> Confirmar pagamento</>}
+            </button>
+          </div>
+        </>
+      )}
+
+      {editComanda && (
+        <>
+          <div onClick={() => setEditComanda(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "calc(100% - 32px)", maxWidth: 440, maxHeight: "85vh", overflowY: "auto", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 16, padding: 20, zIndex: 1001 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", margin: 0 }}>Editar serviços</h2>
+              <button onClick={() => setEditComanda(null)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--c-border)", border: "1px solid var(--c-border-2)", borderRadius: 8, cursor: "pointer", color: "var(--c-text-3)", fontFamily: "inherit" }}>✕</button>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+              Adicione ou remova serviços com o carro já no box. O total e o tempo se ajustam (o desconto é no fechamento).
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+              {editCatalog.length === 0 && <p style={{ fontSize: 12, color: "var(--c-text-4)" }}>Carregando serviços…</p>}
+              {editCatalog.map((svc) => {
+                const sel = editSvcIds.includes(svc.id)
+                return (
+                  <button key={svc.id} onClick={() => setEditSvcIds((p) => p.includes(svc.id) ? p.filter((x) => x !== svc.id) : [...p, svc.id])} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 12px", borderRadius: 9, cursor: "pointer", textAlign: "left",
+                    background: sel ? "rgba(0,102,255,0.08)" : "var(--c-bg)",
+                    border: `1px solid ${sel ? "rgba(0,102,255,0.35)" : "var(--c-border-2)"}`, fontFamily: "inherit",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: sel ? "#0066FF" : "transparent", border: sel ? "none" : "1px solid var(--c-border-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {sel && <CheckCircle2 size={11} color="white" />}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: sel ? 600 : 400 }}>{svc.name}</span>
+                        <span style={{ fontSize: 11, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>{svc.durationMinutes}min</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(svc.price)}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
+              <span style={{ fontSize: 13, color: "var(--c-text-4)" }}>Novo total (estimado)</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>
+                {formatCurrency(editCatalog.filter((s) => editSvcIds.includes(s.id)).reduce((a, s) => a + s.price, 0))}
+              </span>
+            </div>
+            <button onClick={handleSaveEditServices} disabled={editSvcIds.length === 0 || actionLoading === editComanda.id} style={{
+              width: "100%", height: 46, border: "none", borderRadius: 12, color: "white", fontSize: 14, fontWeight: 600,
+              background: editSvcIds.length === 0 ? "var(--c-border)" : "linear-gradient(135deg,#0066FF,#7C3AED)",
+              cursor: editSvcIds.length === 0 ? "not-allowed" : "pointer", fontFamily: "inherit",
+            }}>
+              {actionLoading === editComanda.id ? "Salvando…" : "Salvar serviços"}
             </button>
           </div>
         </>

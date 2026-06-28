@@ -53,6 +53,9 @@ interface BusinessConfig {
   requireApproval?: boolean | null
   whatsapp?: string | null
   inspectionEnabled?: boolean | null
+  capacity?: number | null
+  agendaMode?: string | null
+  overbookPolicy?: string | null
   hours: BusinessHour[]
 }
 
@@ -431,6 +434,9 @@ function ConfiguracoesContent() {
   const [slotMinutes,     setSlotMinutes]     = useState<SlotMinutes>(30)
   const [requireApproval, setRequireApproval] = useState(false)
   const [inspectionEnabled, setInspectionEnabled] = useState(false)
+  const [agendaMode,      setAgendaMode]      = useState<"CAPACITY" | "PER_EMPLOYEE" | "QUEUE">("CAPACITY")
+  const [capacity,        setCapacity]        = useState(1)
+  const [overbookPolicy,  setOverbookPolicy]  = useState<"WARN" | "BLOCK">("WARN")
   const [formWhatsapp,    setFormWhatsapp]    = useState("")
   const [waSource,        setWaSource]        = useState<"phone" | "other">("other")
   const [hours,           setHours]           = useState<BusinessHour[]>([])
@@ -463,6 +469,9 @@ function ConfiguracoesContent() {
       setSlotMinutes((SLOT_OPTIONS.includes(slot as SlotMinutes) ? slot : 30) as SlotMinutes)
       setRequireApproval(biz.requireApproval ?? false)
       setInspectionEnabled(biz.inspectionEnabled ?? false)
+      setAgendaMode(biz.agendaMode === "PER_EMPLOYEE" ? "PER_EMPLOYEE" : biz.agendaMode === "QUEUE" ? "QUEUE" : "CAPACITY")
+      setCapacity(Math.max(1, biz.capacity ?? 1))
+      setOverbookPolicy(biz.overbookPolicy === "BLOCK" ? "BLOCK" : "WARN")
       // WhatsApp inteligente: se ainda não há whatsapp e existe phone cadastrado,
       // sugere o phone (modo "phone"). Se já há whatsapp, mantém o valor (modo "other").
       const bizWhatsapp = (biz.whatsapp ?? "").trim()
@@ -601,7 +610,7 @@ function ConfiguracoesContent() {
       const whatsapp = (waSource === "phone" ? formPhone : formWhatsapp).replace(/\D/g, "")
       await Promise.all([
         apiPut("/auth/business/hours", { hours }),
-        apiPut("/auth/business", { slotMinutes, requireApproval, whatsapp }),
+        apiPut("/auth/business", { slotMinutes, requireApproval, whatsapp, agendaMode, capacity, overbookPolicy }),
       ])
       showSuccess("Horários e agenda salvos com sucesso!")
     } catch (e) {
@@ -1204,6 +1213,118 @@ function ConfiguracoesContent() {
                     hours={hours}
                     accent={themeColor}
                   />
+                </div>
+
+                {/* Modo da agenda — como a disponibilidade é contada */}
+                <div>
+                  <FieldLabel>Como sua agenda funciona</FieldLabel>
+                  <select
+                    value={agendaMode}
+                    onChange={(e) => setAgendaMode(e.target.value as "CAPACITY" | "PER_EMPLOYEE" | "QUEUE")}
+                    style={{
+                      width: "100%", height: 42, padding: "0 14px",
+                      backgroundColor: "var(--c-bg)",
+                      border: "1px solid var(--c-border-2)",
+                      borderRadius: 10, fontSize: 14, color: "var(--c-text)",
+                      outline: "none", fontFamily: "inherit",
+                      boxSizing: "border-box" as const, cursor: "pointer",
+                    }}
+                  >
+                    <option value="CAPACITY">Por vagas simultâneas (vários carros ao mesmo tempo)</option>
+                    <option value="QUEUE">Por vagas/fila (tempo é só referência, não trava)</option>
+                    <option value="PER_EMPLOYEE">Por profissional (cada um com a própria agenda)</option>
+                  </select>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0", lineHeight: 1.5 }}>
+                    {agendaMode === "CAPACITY"
+                      ? "Vários atendimentos em paralelo. Um serviço longo não trava o dia inteiro — cabe tudo que couber na sua capacidade."
+                      : agendaMode === "QUEUE"
+                      ? "Fila por vagas: o tempo do serviço é só referência e NÃO trava a agenda. O limite é só quantos carros entram no mesmo horário — bom pra lava-rápido de alto volume."
+                      : "Cada funcionário tem a própria agenda; o cliente escolhe o profissional (estilo barbearia)."}
+                  </p>
+
+                  {agendaMode !== "PER_EMPLOYEE" && (
+                    <div style={{ marginTop: 14 }}>
+                      <FieldLabel>Quantos carros ao mesmo tempo (vagas / boxes)</FieldLabel>
+                      <input
+                        type="number" min={1} max={200}
+                        value={capacity}
+                        onChange={(e) => setCapacity(Math.max(1, Math.min(200, Math.floor(Number(e.target.value)) || 1)))}
+                        style={{
+                          width: 120, height: 42, padding: "0 14px",
+                          backgroundColor: "var(--c-bg)",
+                          border: "1px solid var(--c-border-2)",
+                          borderRadius: 10, fontSize: 14, color: "var(--c-text)",
+                          outline: "none", fontFamily: "inherit",
+                          boxSizing: "border-box" as const,
+                        }}
+                      />
+                      <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "6px 0 0", lineHeight: 1.5 }}>
+                        Ex.: 4 = até 4 atendimentos no mesmo horário. Usamos no mínimo o número de funcionários ativos.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Política de encaixe (overbooking) do dono */}
+                <div>
+                  <FieldLabel>Encaixe além da capacidade</FieldLabel>
+                  <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "0 0 10px", lineHeight: 1.5 }}>
+                    Como o sistema age quando <strong>você</strong> tenta agendar acima da capacidade. O link público é sempre travado na capacidade.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {/* WARN */}
+                    <div
+                      onClick={() => setOverbookPolicy("WARN")}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                        backgroundColor: overbookPolicy === "WARN" ? "rgba(16,185,129,0.08)" : "var(--c-bg)",
+                        border: `1px solid ${overbookPolicy === "WARN" ? "rgba(16,185,129,0.35)" : "var(--c-border-2)"}`,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <Zap size={15} color={overbookPolicy === "WARN" ? "#10B981" : "var(--c-text-4)"} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>Avisar e deixar passar</span>
+                          {overbookPolicy === "WARN" && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#10B981", backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 6, padding: "2px 7px", letterSpacing: "0.5px" }}>
+                              ATIVO
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "3px 0 0", lineHeight: 1.5 }}>
+                          Avisa {"“já tem X carros nesse horário”"}, mas deixa você encaixar. Você manda na sua loja.
+                        </p>
+                      </div>
+                    </div>
+                    {/* BLOCK */}
+                    <div
+                      onClick={() => setOverbookPolicy("BLOCK")}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                        backgroundColor: overbookPolicy === "BLOCK" ? `rgba(${themeRgb},0.08)` : "var(--c-bg)",
+                        border: `1px solid ${overbookPolicy === "BLOCK" ? `rgba(${themeRgb},0.4)` : "var(--c-border-2)"}`,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <Shield size={15} color={overbookPolicy === "BLOCK" ? themeColor : "var(--c-text-4)"} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>Bloquear na capacidade</span>
+                          {overbookPolicy === "BLOCK" && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: themeColor, backgroundColor: `rgba(${themeRgb},0.14)`, borderRadius: 6, padding: "2px 7px", letterSpacing: "0.5px" }}>
+                              ATIVO
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--c-text-3)", margin: "3px 0 0", lineHeight: 1.5 }}>
+                          Ninguém passa do limite, nem você. Pra encaixar mais, aumente a capacidade.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Exigir aprovação */}

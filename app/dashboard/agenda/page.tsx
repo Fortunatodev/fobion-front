@@ -27,7 +27,7 @@ interface Schedule {
   // (placa/marca do veículo, nome do cliente, profissional não atribuído).
   customer:     { id: string; name: string | null; phone: string | null } | null
   vehicle:      { plate: string | null; brand: string | null; model: string | null; color: string | null } | null
-  scheduleServices?: ({ service: { name: string | null; durationMinutes: number | null } | null } | null)[] | null
+  scheduleServices?: ({ service: { id: string; name: string | null; durationMinutes: number | null } | null } | null)[] | null
   employee?:    { id: string; name: string | null; avatarUrl: string | null } | null
 }
 
@@ -266,8 +266,13 @@ function DetailModal({
 }) {
   const [updating,    setUpdating]    = useState(false)
   const [closingWith, setClosingWith] = useState("")
-  const [phase,       setPhase]       = useState<"view" | "close">("view")
+  const [phase,       setPhase]       = useState<"view" | "close" | "resize" | "edit_services">("view")
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [resizeStart, setResizeStart] = useState("")
+  const [resizeDur,   setResizeDur]   = useState("")
+  // Editar serviços da comanda aberta (catálogo + seleção)
+  const [catalog,     setCatalog]     = useState<{ id: string; name: string; price: number; durationMinutes: number }[]>([])
+  const [editServiceIds, setEditServiceIds] = useState<string[]>([])
   const services = serviceNamesOf(schedule) || "—"
 
   // B05 — ESC fecha + trava o scroll do fundo enquanto o modal está aberto.
@@ -300,6 +305,41 @@ function DetailModal({
       onStatusChange(res.schedule)
       onClose()
     } catch { toast.error("Não consegui fechar a comanda. Tente de novo.") } finally { setUpdating(false) }
+  }
+
+  async function doResize() {
+    if (!resizeStart || !resizeDur) return
+    setUpdating(true)
+    try {
+      const d = new Date(schedule.scheduledAt)
+      const [hh, mm] = resizeStart.split(":").map(Number)
+      const startISO = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hh, mm, 0)).toISOString()
+      const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/time`, {
+        startISO, durationMinutes: Math.max(1, Math.min(1440, Math.floor(Number(resizeDur)) || 1)),
+      })
+      onStatusChange(res.schedule)
+      onClose()
+      toast.success("Horário atualizado.")
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não consegui atualizar o horário.") } finally { setUpdating(false) }
+  }
+
+  // Carrega o catálogo quando entra no modo "editar serviços".
+  useEffect(() => {
+    if (phase !== "edit_services" || catalog.length > 0) return
+    apiGet<{ services: { id: string; name: string; price: number; durationMinutes: number }[] }>("/services")
+      .then((r) => setCatalog(r.services ?? []))
+      .catch(() => {})
+  }, [phase, catalog.length])
+
+  async function doEditServices() {
+    if (editServiceIds.length === 0) return
+    setUpdating(true)
+    try {
+      const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/services`, { serviceIds: editServiceIds })
+      onStatusChange(res.schedule)
+      setPhase("view")
+      toast.success("Serviços atualizados.")
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não consegui atualizar os serviços.") } finally { setUpdating(false) }
   }
 
   return (
@@ -378,6 +418,20 @@ function DetailModal({
               {schedule.status === "IN_PROGRESS" && (
                 <ActionBtn label="Finalizar" color="#10B981" onClick={() => setPhase("close")} loading={false} />
               )}
+              {(schedule.status === "PENDING" || schedule.status === "CONFIRMED" || schedule.status === "IN_PROGRESS") && (
+                <ActionBtn label="Editar serviços" color="#0066FF" onClick={() => {
+                  setEditServiceIds((schedule.scheduleServices ?? []).map(ss => ss?.service?.id).filter((x): x is string => !!x))
+                  setPhase("edit_services")
+                }} loading={false} outline />
+              )}
+              {(schedule.status === "PENDING" || schedule.status === "CONFIRMED" || schedule.status === "IN_PROGRESS") && (
+                <ActionBtn label="Ajustar horário" color="#0066FF" onClick={() => {
+                  const d = new Date(schedule.scheduledAt)
+                  setResizeStart(`${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`)
+                  setResizeDur(String(totalDur))
+                  setPhase("resize")
+                }} loading={false} outline />
+              )}
               {schedule.status !== "REQUESTED" && schedule.status !== "CANCELLED" && schedule.status !== "DONE" && (
                 <ActionBtn label="Cancelar" color="#EF4444" onClick={() => setConfirmCancel(true)} loading={updating} outline />
               )}
@@ -410,6 +464,74 @@ function DetailModal({
             <div style={{ display: "flex", gap: 8 }}>
               <ActionBtn label="← Voltar" color="var(--c-text-4)" onClick={() => setPhase("view")} loading={false} outline />
               <ActionBtn label="Confirmar pagamento" color="#10B981" onClick={doClose} loading={updating} disabled={!closingWith} />
+            </div>
+          </>
+        )}
+
+        {phase === "resize" && (
+          <>
+            <p style={{ fontSize: 13, color: "var(--c-text-2)", marginBottom: 12 }}>
+              Ajuste o início e a duração deste atendimento:
+            </p>
+            <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+              <div>
+                <label style={{ fontSize: 11, color: "var(--c-text-3)", display: "block", marginBottom: 6 }}>Início</label>
+                <input
+                  type="time" value={resizeStart} onChange={(e) => setResizeStart(e.target.value)}
+                  style={{ height: 40, borderRadius: 9, fontSize: 13, padding: "0 12px", background: "var(--c-bg)", border: "1px solid var(--c-border-2)", color: "var(--c-text)", fontFamily: "inherit", fontVariantNumeric: "tabular-nums" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "var(--c-text-3)", display: "block", marginBottom: 6 }}>Duração (min)</label>
+                <input
+                  type="number" min={1} max={1440} value={resizeDur} onChange={(e) => setResizeDur(e.target.value)}
+                  style={{ width: 110, height: 40, borderRadius: 9, fontSize: 13, padding: "0 12px", background: "var(--c-bg)", border: "1px solid var(--c-border-2)", color: "var(--c-text)", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", boxSizing: "border-box" as const }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <ActionBtn label="← Voltar" color="var(--c-text-4)" onClick={() => setPhase("view")} loading={false} outline />
+              <ActionBtn label="Salvar horário" color="#0066FF" onClick={doResize} loading={updating} disabled={!resizeStart || !resizeDur} />
+            </div>
+          </>
+        )}
+
+        {phase === "edit_services" && (
+          <>
+            <p style={{ fontSize: 13, color: "var(--c-text-2)", marginBottom: 12 }}>
+              Adicione ou remova serviços desta comanda (o total e o tempo se ajustam):
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "46vh", overflowY: "auto", marginBottom: 14 }}>
+              {catalog.length === 0 && (
+                <p style={{ fontSize: 12, color: "var(--c-text-4)" }}>Carregando serviços…</p>
+              )}
+              {catalog.map((svc) => {
+                const sel = editServiceIds.includes(svc.id)
+                return (
+                  <button key={svc.id} onClick={() => setEditServiceIds(p => p.includes(svc.id) ? p.filter(x => x !== svc.id) : [...p, svc.id])} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 12px", borderRadius: 9, cursor: "pointer", textAlign: "left",
+                    backgroundColor: sel ? "rgba(0,102,255,0.08)" : "var(--c-bg)",
+                    border: `1px solid ${sel ? "rgba(0,102,255,0.35)" : "var(--c-border-2)"}`,
+                    fontFamily: "inherit",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, backgroundColor: sel ? "#0066FF" : "transparent", border: sel ? "none" : "1px solid var(--c-border-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {sel && <CheckCircle2 size={11} color="white" />}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: sel ? 600 : 400 }}>{svc.name}</span>
+                        <span style={{ fontSize: 11, color: "var(--c-text-4)", fontVariantNumeric: "tabular-nums" }}>{svc.durationMinutes}min</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(svc.price)}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <ActionBtn label="← Voltar" color="var(--c-text-4)" onClick={() => setPhase("view")} loading={false} outline />
+              <ActionBtn label="Salvar serviços" color="#0066FF" onClick={doEditServices} loading={updating} disabled={editServiceIds.length === 0} />
             </div>
           </>
         )}

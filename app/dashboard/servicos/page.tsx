@@ -23,6 +23,7 @@ interface Service {
   warrantyDays?: number | null
   recallDays?: number | null
   priceByVehicleType?: Record<string, number> | null
+  durationByVehicleType?: Record<string, number> | null
   createdAt: string
 }
 
@@ -148,6 +149,8 @@ export default function ServicosPage() {
   const [formRecall, setFormRecall] = useState("")  // CRM: re-chamar o cliente a cada N dias (vazio = não lembrar)
   // V2-B4: preço por porte (R$, string vazia = usa preço base). CAR/MOTO/TRUCK/SUV
   const [formPorte, setFormPorte] = useState<Record<"CAR" | "MOTORCYCLE" | "TRUCK" | "SUV", string>>({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
+  // Duração por porte (minutos, string vazia = usa a duração base). CAR/MOTO/TRUCK/SUV
+  const [formPorteDur, setFormPorteDur] = useState<Record<"CAR" | "MOTORCYCLE" | "TRUCK" | "SUV", string>>({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchServices = useCallback(async () => {
@@ -248,6 +251,7 @@ export default function ServicosPage() {
     setFormWarranty("")
     setFormRecall("")
     setFormPorte({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
+    setFormPorteDur({ CAR: "", MOTORCYCLE: "", TRUCK: "", SUV: "" })
     setFormError(null)
     setShowModal("create")
   }
@@ -280,6 +284,9 @@ export default function ServicosPage() {
       const p = s.priceByVehicleType || {}
       const c = (v: number | undefined) => (v != null ? String(v / 100) : "")
       setFormPorte({ CAR: c(p.CAR), MOTORCYCLE: c(p.MOTORCYCLE), TRUCK: c(p.TRUCK), SUV: c(p.SUV) })
+      const pd = s.durationByVehicleType || {}
+      const cd = (v: number | undefined) => (v != null ? String(v) : "")
+      setFormPorteDur({ CAR: cd(pd.CAR), MOTORCYCLE: cd(pd.MOTORCYCLE), TRUCK: cd(pd.TRUCK), SUV: cd(pd.SUV) })
     }
     setFormError(null)
     setShowModal("edit")
@@ -338,6 +345,15 @@ export default function ServicosPage() {
           for (const k of ["CAR", "MOTORCYCLE", "TRUCK", "SUV"] as const) {
             const v = formPorte[k].trim()
             if (v && !isNaN(Number(v)) && Number(v) > 0) out[k] = Math.round(Number(v) * 100)
+          }
+          return Object.keys(out).length ? out : null
+        })(),
+        // Duração por porte (minutos preenchidos; null se nenhum).
+        durationByVehicleType: (() => {
+          const out: Record<string, number> = {}
+          for (const k of ["CAR", "MOTORCYCLE", "TRUCK", "SUV"] as const) {
+            const v = formPorteDur[k].trim()
+            if (v && !isNaN(Number(v)) && Number(v) > 0) out[k] = Math.round(Number(v))
           }
           return Object.keys(out).length ? out : null
         })(),
@@ -914,6 +930,42 @@ export default function ServicosPage() {
                           outline: "none", fontFamily: "inherit",
                         }}
                       />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duração por porte de veículo ──────────────────────────────── */}
+              <div style={{
+                background: "var(--c-bg)", border: "1px solid var(--c-border-2)",
+                borderRadius: 10, padding: "12px 14px",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", margin: 0 }}>
+                    Duração por porte <span style={{ color: "var(--c-text-3)", fontWeight: 400 }}>(opcional)</span>
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 2 }}>
+                    Moto costuma ser mais rápido, SUV mais demorado. Deixe vazio pra usar a duração base.
+                  </p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                  {([["CAR", "Carro"], ["MOTORCYCLE", "Moto"], ["TRUCK", "Caminhonete"], ["SUV", "SUV"]] as const).map(([key, label]) => (
+                    <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, color: "var(--c-text-2)", width: 88, flexShrink: 0 }}>{label}</span>
+                      <input
+                        type="number" min={1} step="1"
+                        value={formPorteDur[key]}
+                        onChange={(e) => setFormPorteDur(prev => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={formDuration || "base"}
+                        style={{
+                          flex: 1, minWidth: 0, height: 34, padding: "0 10px",
+                          background: "var(--c-surface)", border: "1px solid var(--c-border-2)",
+                          borderRadius: 8, color: "var(--c-text)", fontSize: 13,
+                          outline: "none", fontFamily: "inherit",
+                        }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--c-text-4)" }}>min</span>
                     </div>
                   ))}
                 </div>

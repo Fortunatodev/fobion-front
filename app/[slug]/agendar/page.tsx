@@ -986,8 +986,12 @@ function AgendarContent() {
                           const isPastSlot = (() => {
                             const [y, mo, d] = selectedDate.split("-").map(Number)
                             const [h, m]     = slot.time.split(":").map(Number)
-                            const slotMs     = Date.UTC(y, mo - 1, d, h, m, 0)
-                            return slotMs <= Date.now()
+                            const slotFakeUtcMs = Date.UTC(y, mo - 1, d, h, m, 0)
+                            // "agora" na MESMA convenção UTC-naive/BRT do backend (Date.now() − 3h).
+                            // Sem o −3h, slots de até 3h à frente apareciam como "passados" e sumiam
+                            // pro cliente (ex.: às 9h30 o slot das 10h desaparecia). (P0)
+                            const nowFakeUtcMs  = Date.now() - 3 * 60 * 60 * 1000
+                            return slotFakeUtcMs <= nowFakeUtcMs
                           })()
                           const disabled = !slot.available || isPastSlot
 
