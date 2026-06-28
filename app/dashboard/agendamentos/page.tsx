@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { apiGet, apiPut, apiPost, apiDelete } from "@/lib/api"
+import { promptEncaixe } from "@/lib/encaixe"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 import { formatScheduleTime } from "@/lib/dateUtils"
@@ -450,7 +451,12 @@ function NovoAgendamentoModal({
   prefill,
 }: {
   isMobile: boolean; onClose: () => void; onSuccess: () => void
-  prefill?: { customerId: string; customerName: string; serviceIds: string[] } | null
+  // prefill: reagendamento (cliente+serviços, vindo do Relacionamento) E/OU encaixe
+  // (data+hora+profissional da vaga que abriu ao fechar comanda). Campos são opcionais.
+  prefill?: {
+    customerId?: string; customerName?: string; serviceIds?: string[]
+    date?: string; time?: string; employeeId?: string
+  } | null
 }) {
   const { user } = useUser()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
@@ -539,7 +545,11 @@ function NovoAgendamentoModal({
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!prefill) return
-    if (prefill.serviceIds.length) setSelectedServices(prefill.serviceIds)
+    if (prefill.serviceIds?.length) setSelectedServices(prefill.serviceIds)
+    // Encaixe: data/hora/profissional da vaga liberada (o dono só escolhe cliente).
+    if (prefill.date)       setSelectedDate(prefill.date)
+    if (prefill.time)       setSelectedSlot(prefill.time)
+    if (prefill.employeeId) setSelectedEmployee(prefill.employeeId)
     if (prefill.customerId && prefill.customerName) {
       apiGet<{ customers: CustomerResult[] }>(`/customers?search=${encodeURIComponent(prefill.customerName)}&limit=10`)
         .then((r) => {
@@ -1737,7 +1747,10 @@ export default function AgendamentosPage() {
   const [showCloseModal,   setShowCloseModal]   = useState(false)
   const [showNovoModal,    setShowNovoModal]    = useState(false)   // ← novo
   // Reagendamento pré-montado vindo do Relacionamento (?customerId&customerName&serviceIds)
-  const [prefill, setPrefill] = useState<{ customerId: string; customerName: string; serviceIds: string[] } | null>(null)
+  const [prefill, setPrefill] = useState<{
+    customerId?: string; customerName?: string; serviceIds?: string[]
+    date?: string; time?: string; employeeId?: string
+  } | null>(null)
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [paymentMethod,    setPaymentMethod]    = useState("PIX")
   // Desconto manual no fechamento da comanda (R$ ou %) + se repassa pro funcionário.
@@ -1809,11 +1822,18 @@ export default function AgendamentosPage() {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search)
     const customerId = sp.get("customerId")
-    if (!customerId) return
+    const data = sp.get("data")   // encaixe: data da vaga (YYYY-MM-DD)
+    const hora = sp.get("hora")   // encaixe: horário da vaga (HH:MM)
+    // Abre o modal no reagendamento (customerId, vindo do Relacionamento) OU no
+    // encaixe (data/hora, vindo do "abriu vaga" ao fechar comanda no Pátio/Calendário).
+    if (!customerId && !data) return
     setPrefill({
-      customerId,
-      customerName: sp.get("customerName") ?? "",
-      serviceIds: (sp.get("serviceIds") ?? "").split(",").filter(Boolean),
+      customerId:   customerId ?? undefined,
+      customerName: sp.get("customerName") ?? undefined,
+      serviceIds:   (sp.get("serviceIds") ?? "").split(",").filter(Boolean),
+      date:         data ?? undefined,
+      time:         hora ?? undefined,
+      employeeId:   sp.get("emp") ?? undefined,
     })
     setShowNovoModal(true)
     window.history.replaceState(null, "", window.location.pathname)
@@ -1845,9 +1865,16 @@ export default function AgendamentosPage() {
         payload.discountAffectsCommission = discountRepasse
       }
       await apiPut(`/schedules/${selectedSchedule.id}/close`, payload)
+      const closed = selectedSchedule   // captura antes de limpar (pro encaixe)
       setShowCloseModal(false)
       setSelectedSchedule(null)
       await fetchSchedules()
+      // Encaixe: a vaga foi liberada — oferecer encaixar alguém nesse horário (abre o
+      // modal de novo agendamento já com data/hora/profissional da vaga).
+      promptEncaixe(closed, (slot) => {
+        setPrefill({ date: slot.date, time: slot.time, employeeId: slot.employeeId })
+        setShowNovoModal(true)
+      })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao fechar a comanda.")
     } finally {

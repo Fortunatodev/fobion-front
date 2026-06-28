@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef, Component, type CSSProperties, type ReactNode } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { apiGet, apiPut } from "@/lib/api"
+import { promptEncaixe, encaixeUrl } from "@/lib/encaixe"
 import { useUser } from "@/contexts/UserContext"
 import { LayoutGrid, Clock, Car, ChevronRight, RefreshCw, ShieldCheck, AlertCircle, GripVertical, ArrowRight, CheckCircle, User, QrCode, CreditCard, Banknote } from "lucide-react"
 import { toast } from "sonner"
@@ -308,6 +310,7 @@ export default function PatioPage() {
   const [selectedEmp, setSelectedEmp] = useState<string>("all")
   // Finalização: ao mover pra "Pronto", pede a forma de pagamento e fecha a comanda (/close).
   const [finalizeFor, setFinalizeFor] = useState<Schedule | null>(null)
+  const router = useRouter()
   const [payMethod, setPayMethod] = useState<string>("PIX")
   const [closing, setClosing] = useState(false)
 
@@ -428,9 +431,11 @@ export default function PatioPage() {
     setClosing(true)
     try {
       await apiPut(`/schedules/${finalizeFor.id}/close`, { paymentMethod: payMethod })
-      toast.success("Comanda finalizada e recebida!")
+      const closed = finalizeFor   // captura antes de limpar (pro encaixe)
       setFinalizeFor(null)
       fetchData()
+      // Encaixe: abriu vaga — oferecer encaixar (leva pras Comandas com o modal pré-preenchido).
+      promptEncaixe(closed, (slot) => router.push(encaixeUrl(slot)))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não consegui finalizar a comanda.")
     } finally {

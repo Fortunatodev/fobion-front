@@ -15,12 +15,14 @@ import ForbionLogo from "@/components/shared/ForbionLogo"
 import ThemeToggle from "@/components/shared/ThemeToggle"
 import { useCrmFilaCount } from "@/lib/useCrmFilaCount"
 
-// PRO-only paths — shown with a badge on BASIC plan.
-// (Relacionamento/Pós-venda saíram: relacionamento é de TODOS os planos.)
+// PRO-only paths — shown with a badge on BASIC plan (decisão do dono: estes 6 são PRO).
 const PRO_ONLY_PATHS = new Set([
   "/dashboard/planos",
   "/dashboard/assinantes",
   "/dashboard/relatorios",
+  "/dashboard/orcamentos",
+  "/dashboard/relacionamento",
+  "/dashboard/vistoria",
 ])
 
 const navSections = [

@@ -7,12 +7,12 @@ import RelationshipQueue from "@/components/dashboard/RelationshipQueue"
 import RecallsPanel from "@/components/dashboard/RecallsPanel"
 import RetencaoPanel from "@/components/dashboard/RetencaoPanel"
 import TabTutorial from "@/components/shared/TabTutorial"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 /**
- * Aba Relacionamento — o CRM do dono, pra TODOS os planos (sem gate).
- * 3 sub-abas: "Pra cuidar hoje" (fila única do dia), "Garantia & Recall" e
- * "Retenção (RFM)". A URL (?aba=) é a fonte da verdade. Substitui a antiga
- * Pós-venda (que era PRO) — agora liberada e turbinada com a fila do dia.
+ * Aba Pós-venda (Relacionamento) — CRM do dono: fila do dia, garantia/recall, retenção (RFM).
+ * Feature PRO (decisão do dono). 3 sub-abas; a URL (?aba=) é a fonte da verdade.
  */
 
 type Aba = "hoje" | "garantia" | "retencao"
@@ -86,6 +86,16 @@ function RelacionamentoContent() {
 }
 
 export default function RelacionamentoPage() {
+  const { planStatus } = useUser()
+  // Pós-venda é PRO. Essencial vê o convite de upgrade (e o backend /crm/* também barra).
+  if (planStatus?.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Pós-venda"
+        description="Traga o cliente de volta: fila do dia, recall de garantia e retenção (RFM). Disponível no plano Pro."
+      />
+    )
+  }
   return (
     <Suspense fallback={null}>
       <RelacionamentoContent />

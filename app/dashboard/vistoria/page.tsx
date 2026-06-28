@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation"
 import { ClipboardCheck, Search, AlertCircle, RefreshCw, ChevronRight, Car, Camera, Share2 } from "lucide-react"
 import { apiGet } from "@/lib/api"
 import TabTutorial from "@/components/shared/TabTutorial"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 /**
- * Índice de Vistorias — a vistoria é POR COMANDA (entrada/saída do veículo).
+ * Índice de Vistorias (feature PRO) — a vistoria é POR COMANDA (entrada/saída do veículo).
  * Esta tela lista os atendimentos numa janela recente (e os próximos) pra o dono
  * escolher um e abrir a vistoria em /dashboard/vistoria/[scheduleId].
  * (O back não tem listagem geral de vistorias; reusamos GET /schedules.)
@@ -34,7 +36,21 @@ function ymd(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
 }
 
+/** Gate de plano: Vistoria é PRO. Essencial vê o convite de upgrade. */
 export default function VistoriaIndexPage() {
+  const { planStatus } = useUser()
+  if (planStatus?.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Vistoria"
+        description="Registre o estado do veículo na entrada e saída, com fotos, marcação de avarias e laudo pro cliente. Disponível no plano Pro."
+      />
+    )
+  }
+  return <VistoriaIndexInner />
+}
+
+function VistoriaIndexInner() {
   const router = useRouter()
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)

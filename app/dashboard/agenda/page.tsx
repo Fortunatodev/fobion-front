@@ -8,6 +8,7 @@ import {
   Loader2, ArrowRight, RefreshCw, Bell,
 } from "lucide-react"
 import { apiGet, apiPut } from "@/lib/api"
+import { promptEncaixe, encaixeUrl } from "@/lib/encaixe"
 import { useNotificationsSSE } from "@/lib/useNotificationsSSE"
 import { formatScheduleTime, formatScheduleDate } from "@/lib/dateUtils"
 import { toast } from "sonner"
@@ -264,6 +265,7 @@ function DetailModal({
   onClose: () => void
   onStatusChange: (s: Schedule) => void
 }) {
+  const router = useRouter()
   const [updating,    setUpdating]    = useState(false)
   const [closingWith, setClosingWith] = useState("")
   const [phase,       setPhase]       = useState<"view" | "close" | "resize" | "edit_services">("view")
@@ -304,6 +306,8 @@ function DetailModal({
       const res = await apiPut<{ schedule: Schedule }>(`/schedules/${schedule.id}/close`, { paymentMethod: closingWith })
       onStatusChange(res.schedule)
       onClose()
+      // Encaixe: abriu vaga — oferecer encaixar (leva pras Comandas com o modal pré-preenchido).
+      promptEncaixe(schedule, (slot) => router.push(encaixeUrl(slot)))
     } catch { toast.error("Não consegui fechar a comanda. Tente de novo.") } finally { setUpdating(false) }
   }
 

@@ -7,11 +7,27 @@ import { toast } from "sonner"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
 import TabTutorial from "@/components/shared/TabTutorial"
+import { useUser } from "@/contexts/UserContext"
+import ProFeatureGate from "@/components/shared/ProFeatureGate"
 
 /**
- * V2-B3 — Orçamentos. Cliente do CRM + itens do catálogo → proposta → envia no
- * WhatsApp → aprova → vira venda. Ref: CERA (módulo de 1ª classe).
+ * V2-B3 — Orçamentos (feature PRO). Cliente do CRM + itens do catálogo → proposta → envia
+ * no WhatsApp → aprova → vira agendamento. Ref: CERA (módulo de 1ª classe).
  */
+
+/** Gate de plano: Orçamentos é PRO. Essencial vê o convite de upgrade. */
+export default function OrcamentosPage() {
+  const { planStatus } = useUser()
+  if (planStatus?.plan !== "PRO") {
+    return (
+      <ProFeatureGate
+        featureName="Orçamentos"
+        description="Monte propostas, envie no WhatsApp e converta em agendamento com o preço acordado. Disponível no plano Pro."
+      />
+    )
+  }
+  return <OrcamentosInner />
+}
 interface QuoteItem { serviceId?: string | null; name: string; price: number }
 interface Quote {
   id: string; customerName: string | null; plate: string | null
@@ -50,7 +66,7 @@ function quoteMessage(q: { customerName: string | null; items: { name: string; p
   return lines.filter((l) => l !== "").join("\n")
 }
 
-export default function OrcamentosPage() {
+function OrcamentosInner() {
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")

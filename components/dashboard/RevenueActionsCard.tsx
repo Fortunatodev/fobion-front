@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { apiGet } from "@/lib/api"
+import { useUser } from "@/contexts/UserContext"
 import { ShieldCheck, Users, ArrowRight, CircleDollarSign } from "lucide-react"
 
 /**
@@ -40,20 +41,25 @@ function ActionCard({ icon, color, title, sub, href }: { icon: React.ReactNode; 
 }
 
 export default function RevenueActionsCard() {
+  const { planStatus } = useUser()
+  const isPro = planStatus?.plan === "PRO"
   const [recalls, setRecalls] = useState<number | null>(null)
   const [recuperaveis, setRecuperaveis] = useState<number | null>(null)
   const [risco, setRisco] = useState(0)
 
   useEffect(() => {
+    // Pós-venda/recall é PRO — no Essencial nem busca (daria 403 e poluiria o console).
+    if (!isPro) return
     apiGet<{ recalls: unknown[] }>("/services/recalls")
       .then((r) => setRecalls(Array.isArray(r.recalls) ? r.recalls.length : 0))
       .catch(() => setRecalls(0))
     apiGet<{ recuperaveis: unknown[]; receitaEmRisco: number }>("/analytics/retencao")
       .then((r) => { setRecuperaveis(Array.isArray(r.recuperaveis) ? r.recuperaveis.length : 0); setRisco(r.receitaEmRisco ?? 0) })
       .catch(() => setRecuperaveis(0))
-  }, [])
+  }, [isPro])
 
-  // ainda carregando, ou nada a fazer → não polui o dashboard
+  // Essencial não vê este card (pós-venda é PRO); e ainda carregando / nada a fazer → não polui.
+  if (!isPro) return null
   if (recalls === null || recuperaveis === null) return null
   if (recalls === 0 && recuperaveis === 0) return null
 
