@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { apiGet } from "@/lib/api"
 import { useUser } from "@/contexts/UserContext"
+import { hasProAccess } from "@/lib/plan"
 
 /**
  * Conta quantos clientes estão "pra cuidar hoje" (badge no menu + card no home).
@@ -15,7 +16,7 @@ import { useUser } from "@/contexts/UserContext"
 export function useCrmFilaCount(): number {
   const [total, setTotal] = useState(0)
   const { planStatus } = useUser()
-  const isPro = planStatus?.plan === "PRO"
+  const isPro = hasProAccess(planStatus)
 
   useEffect(() => {
     if (!isPro) { setTotal(0); return }
