@@ -45,8 +45,10 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      // Env inline no comando: o objeto `env` do webServer nem sempre chega no
-      // processo do next dev (e o .env.local apontaria pro backend 3000).
+      // `next dev` (NÃO build+start): em produção o CSP cai pra `'self' https: wss:` e BLOQUEIA
+      // http://localhost:3100 (o back e2e é http) — só o dev libera localhost. Inline do
+      // NEXT_PUBLIC_API_URL pra não herdar o .env.local (3000). Warmup das rotas no 00-warmup
+      // evita o cold-compile do dev estourar timeout.
       command:
         "NEXT_DIST_DIR=.next-e2e NEXT_PUBLIC_API_URL=http://localhost:3100 NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN=false npx next dev -p 3101",
       url: "http://localhost:3101",

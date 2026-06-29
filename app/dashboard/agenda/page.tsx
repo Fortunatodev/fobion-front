@@ -991,7 +991,7 @@ export default function AgendaPage() {
                         const cor = cap.free === 0 ? "#DC2626" : ratio <= 0.34 ? "#D97706" : "#16A34A"
                         return (
                           <div
-                            title={`${cap.free} de ${cap.total} horários livres`}
+                            title={`${cap.free} de ${cap.total} vagas livres no dia (capacidade × horários)`}
                             style={{ fontSize: 9, fontWeight: 700, color: cor, lineHeight: 1.2, marginBottom: 4, whiteSpace: "nowrap" }}
                           >
                             {cap.free === 0 ? "cheio" : `${cap.free} ${cap.free === 1 ? "vaga" : "vagas"}`}

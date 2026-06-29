@@ -1,6 +1,7 @@
 import type { TokenPayload } from "@/types"
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { decodeJwtPayload } from "@/lib/jwt"
 
 // ── Tailwind merge ──────────────────────────────────────────────────────────
 
@@ -30,15 +31,8 @@ export function removeToken(): void {
 }
 
 export function decodeToken(token: string): TokenPayload | null {
-  try {
-    const parts = token.split(".")
-    if (parts.length !== 3) return null
-    const payload = parts[1]
-    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-    return JSON.parse(decoded) as TokenPayload
-  } catch {
-    return null
-  }
+  if (token.split(".").length !== 3) return null
+  return decodeJwtPayload<TokenPayload>(token) // UTF-8-safe (nomes acentuados)
 }
 
 export function isAuthenticated(): boolean {

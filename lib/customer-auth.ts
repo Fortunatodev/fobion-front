@@ -2,6 +2,7 @@
  * Utilitários de autenticação para o CLIENTE FINAL da loja pública.
  * Separado completamente do auth do proprietário (lib/auth.ts).
  */
+import { decodeJwtPayload } from "@/lib/jwt"
 
 const KEY = "forbion_customer_token"
 const AUTH_EVENT = "forbion_customer_auth_change"
@@ -28,18 +29,14 @@ export const getCustomerToken = (): string | null => {
 export const isCustomerAuthenticated = (): boolean => {
   const token = getCustomerToken()
   if (!token) return false
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]))
-    const now = Math.floor(Date.now() / 1000)
-    if (payload.exp && payload.exp < now) {
-      removeCustomerToken()
-      return false
-    }
-    return true
-  } catch {
+  const payload = decodeJwtPayload<{ exp?: number }>(token)
+  if (!payload) { removeCustomerToken(); return false }
+  const now = Math.floor(Date.now() / 1000)
+  if (payload.exp && payload.exp < now) {
     removeCustomerToken()
     return false
   }
+  return true
 }
 
 export const getCustomerPayload = (): {
@@ -53,17 +50,18 @@ export const getCustomerPayload = (): {
 } | null => {
   const token = getCustomerToken()
   if (!token) return null
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]))
-    const now = Math.floor(Date.now() / 1000)
-    if (payload.exp && payload.exp < now) {
-      removeCustomerToken()
-      return null
-    }
-    return payload
-  } catch {
+  // UTF-8-safe: o token carrega `name` (acentuado) — atob lia como Latin-1 ("VinÃ­cius").
+  const payload = decodeJwtPayload<{
+    sub: string; name: string; picture: string | null
+    businessSlug: string; businessId: string; type: string; exp: number
+  }>(token)
+  if (!payload) return null
+  const now = Math.floor(Date.now() / 1000)
+  if (payload.exp && payload.exp < now) {
+    removeCustomerToken()
     return null
   }
+  return payload
 }
 
 // Alias para compatibilidade

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { getToken, removeToken, setToken } from "@/lib/auth"
+import { getToken, removeToken, setToken, decodeToken } from "@/lib/auth"
 import ForbionLogo from "@/components/shared/ForbionLogo"
 
 // ── Feature flag — controlada pela env var na Vercel ─────────────────────────
@@ -49,9 +49,9 @@ function LoginContent() {
     const token = getToken()
     if (!token) return
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]))
+      const payload = decodeToken(token)
       const now     = Math.floor(Date.now() / 1000)
-      if (payload.exp && payload.exp > now) {
+      if (payload?.exp && payload.exp > now) {
         router.replace("/dashboard")
       } else {
         removeToken()

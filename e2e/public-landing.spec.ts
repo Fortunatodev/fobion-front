@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 import { API, E2E } from "./helpers";
 
 test.describe("Landing pública por slug", () => {
-  // TODO(e2e): fixture a realinhar — a render da landing não mostra o nome/serviços no front
-  // e2e (mesma suspeita do owner-auth: front 3101 não alcança a API 3100). A API pública
-  // direta (teste abaixo) passa, provando que o dado existe no backend.
+  // TODO(e2e/Onda5): CSP corrigido destrava o fetch→3100; flaky só no ambiente local (next dev +
+  // .next corrompido por builds concorrentes). A API pública direta (teste abaixo) passa. Revalidar em CI limpo.
   test.skip("mostra nome do negócio e serviços", async ({ page }) => {
     await page.goto(`/${E2E.slug}`);
     await expect(page.getByText(E2E.businessName).first()).toBeVisible();

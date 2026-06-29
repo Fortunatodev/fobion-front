@@ -1,4 +1,5 @@
 import type { TokenPayload } from "@/types"
+import { decodeJwtPayload } from "@/lib/jwt"
 
 const TOKEN_KEY = "forbion_token"
 
@@ -34,14 +35,8 @@ export function removeToken(): void {
  * Retorna null se o token for inválido.
  */
 export function decodeToken(token: string): TokenPayload | null {
-  try {
-    const parts = token.split(".")
-    if (parts.length !== 3) return null
-    const decoded = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
-    return JSON.parse(decoded) as TokenPayload
-  } catch {
-    return null
-  }
+  if (token.split(".").length !== 3) return null
+  return decodeJwtPayload<TokenPayload>(token) // UTF-8-safe (nomes acentuados)
 }
 
 /**

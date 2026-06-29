@@ -3,10 +3,12 @@ import type { NextConfig } from "next";
 const isDev = process.env.NODE_ENV !== "production";
 
 // connect-src precisa permitir o back. Em prod = só HTTPS (Railway + futuros
-// api.forbion.digital). Em dev = também http://localhost:3000 (back local).
+// api.forbion.digital). Em dev = QUALQUER porta localhost (back local 3000, e2e 3100,
+// e futuros) — dev é local-only, então liberar localhost:* é seguro e evita o CSP
+// bloquear o fetch quando NEXT_PUBLIC_API_URL aponta pra outra porta (era 3000 fixo).
 // Sem isso, CSP bloqueia fetch e front mostra "Erro na autenticação".
 const connectSrc = isDev
-  ? "'self' https: wss: http://localhost:3000 http://127.0.0.1:3000"
+  ? "'self' https: wss: ws://localhost:* http://localhost:* http://127.0.0.1:*"
   : "'self' https: wss:";
 
 const securityHeaders = [
