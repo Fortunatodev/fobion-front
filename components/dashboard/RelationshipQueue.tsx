@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User, Copy } from "lucide-react"
-import { apiGet, apiPatch } from "@/lib/api"
+import { MessageCircle, CalendarPlus, Check, AlertCircle, RefreshCw, Heart, User, Copy, CheckCircle2 } from "lucide-react"
+import { apiGet, apiPatch, apiPost } from "@/lib/api"
 import { waMessage, TIPO_META, type FilaItem, type FilaResponse, type FilaTipo } from "@/lib/crm"
 import RelationshipModal from "@/components/dashboard/RelationshipModal"
 import MessageTemplatePicker, { type TemplateVars } from "@/components/dashboard/MessageTemplatePicker"
@@ -37,6 +37,8 @@ export default function RelationshipQueue() {
   const [error, setError] = useState("")
   const [filtro, setFiltro] = useState<FilaTipo | "todos">("todos")
   const [done, setDone] = useState<Set<string>>(new Set())
+  // Check-ins NOVOS nesta sessão (somam à meta sem precisar recarregar; reset no load()).
+  const [extraFeitos, setExtraFeitos] = useState(0)
   const [ficha, setFicha] = useState<{ id: string; nome: string; phone: string | null } | null>(null)
   const [picker, setPicker] = useState<FilaItem | null>(null)
   const [loja, setLoja] = useState("")
@@ -44,11 +46,20 @@ export default function RelationshipQueue() {
   const load = useCallback(() => {
     setLoading(true)
     setError("")
+    setExtraFeitos(0) // server já conta os touches de hoje; zera o incremento local
     apiGet<FilaResponse>("/crm/fila")
       .then((r) => setData(r))
       .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar a fila."))
       .finally(() => setLoading(false))
   }, [])
+
+  // Check-in: registra que o cliente foi cuidado hoje (persiste + tira da fila + conta na meta).
+  function checkIn(item: FilaItem, status: "DONE" | "DISMISSED" = "DONE") {
+    const key = `${item.tipo}:${item.refId}`
+    void apiPost("/crm/touch", { tipo: item.tipo, refId: item.refId, customerId: item.customerId, status }).catch(() => {})
+    setDone((prev) => new Set(prev).add(key))
+    if (status === "DONE") setExtraFeitos((n) => n + 1)
+  }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
@@ -65,7 +76,9 @@ export default function RelationshipQueue() {
     try {
       if (item.tipo === "recall") await apiPatch(`/crm/recalls/${item.refId}`, { status: "DONE" })
       else if (item.tipo === "follow_up") await apiPatch(`/crm/followups/${item.refId}`, { status: "DONE" })
+      void apiPost("/crm/touch", { tipo: item.tipo, refId: item.refId, customerId: item.customerId, status: "DONE" }).catch(() => {})
       setDone((prev) => new Set(prev).add(key))
+      setExtraFeitos((n) => n + 1)
       toast.success("Marcado como feito 👍")
     } catch {
       toast.error("Não consegui marcar como feito.")
@@ -94,12 +107,18 @@ export default function RelationshipQueue() {
     const key = `${item.tipo}:${item.refId}`
     if (item.tipo === "recall") void apiPatch(`/crm/recalls/${item.refId}`, { status: "DONE" }).catch(() => {})
     else if (item.tipo === "follow_up") void apiPatch(`/crm/followups/${item.refId}`, { status: "DONE" }).catch(() => {})
+    void apiPost("/crm/touch", { tipo: item.tipo, refId: item.refId, customerId: item.customerId, status: "DONE" }).catch(() => {})
     setDone((prev) => new Set(prev).add(key))
     agendar(item)
   }
 
   const itens = (data?.itens ?? []).filter((i) => filtro === "todos" || i.tipo === filtro)
   const total = data?.total ?? 0
+  // Meta diária + progresso (server conta os touches de hoje; extraFeitos soma os desta sessão).
+  const feitosHoje = (data?.feitosHoje ?? 0) + extraFeitos
+  const meta = data?.meta ?? 0
+  const metaPct = meta > 0 ? Math.min(100, Math.round((feitosHoje / meta) * 100)) : 0
+  const metaBatida = meta > 0 && feitosHoje >= meta
 
   return (
     <div>
@@ -112,6 +131,24 @@ export default function RelationshipQueue() {
       <p style={{ fontSize: 13, color: "var(--c-text-3)", margin: "0 0 18px" }}>
         Quem chamar hoje, por quê, e a mensagem pronta. Um toque no WhatsApp e pronto.
       </p>
+
+      {/* Meta diária — quantos clientes cuidar hoje (check-in). */}
+      {!loading && !error && meta > 0 && (
+        <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, background: metaBatida ? "rgba(16,185,129,0.10)" : "var(--c-bg)", border: `1px solid ${metaBatida ? "rgba(16,185,129,0.3)" : "var(--c-border)"}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text-2)", display: "flex", alignItems: "center", gap: 6 }}>
+              <CheckCircle2 size={15} color={metaBatida ? "#10B981" : "var(--c-text-3)"} />
+              {metaBatida ? "Meta de hoje batida! 🎉" : "Meta de hoje"}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: metaBatida ? "#10B981" : "var(--c-text)" }}>
+              {feitosHoje} de {meta}
+            </span>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: "var(--c-border)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${metaPct}%`, background: metaBatida ? "#10B981" : "#0066FF", borderRadius: 999, transition: "width .3s" }} />
+          </div>
+        </div>
+      )}
 
       {/* Filtros por tipo */}
       {!loading && !error && total > 0 && (
@@ -235,6 +272,15 @@ export default function RelationshipQueue() {
                         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-3)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
                       >
                         <Check size={17} /> Concluir
+                      </button>
+                    )}
+                    {!canConcluir && !isDone && (
+                      <button
+                        onClick={() => { checkIn(item, "DONE"); toast.success("Feito! Cliente cuidado hoje 👍") }}
+                        title="Já cuidei deste cliente hoje — tirar da fila e contar na meta"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 11, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      >
+                        <CheckCircle2 size={17} /> Feito
                       </button>
                     )}
                   </div>

@@ -34,6 +34,8 @@ export interface FilaResponse {
   itens: FilaItem[]
   counts: FilaCounts
   total: number
+  feitosHoje?: number  // quantos clientes já foram cuidados hoje (check-in)
+  meta?: number        // meta diária da loja (crmDailyGoal)
 }
 
 /** Rótulo + cor por tipo (faixa do card + chip de filtro). */
