@@ -109,6 +109,7 @@ export default function RelationshipQueue() {
     else if (item.tipo === "follow_up") void apiPatch(`/crm/followups/${item.refId}`, { status: "DONE" }).catch(() => {})
     void apiPost("/crm/touch", { tipo: item.tipo, refId: item.refId, customerId: item.customerId, status: "DONE" }).catch(() => {})
     setDone((prev) => new Set(prev).add(key))
+    setExtraFeitos((n) => n + 1) // reagendar também conta na meta de hoje (igual concluir/feito)
     agendar(item)
   }
 

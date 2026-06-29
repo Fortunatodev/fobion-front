@@ -104,10 +104,28 @@ function OrcamentosInner() {
 
   const fetchQuotes = () => {
     setLoading(true); setError("")
-    apiGet<{ quotes: Quote[] }>("/quotes")
-      .then((r) => setQuotes(r.quotes ?? []))
-      .catch((e) => setError(e instanceof Error ? e.message : "Erro ao carregar."))
-      .finally(() => setLoading(false))
+    // Backend pagina (default 50, era take:200 fixo). Busca TODAS as páginas em loop e acumula
+    // (limit 100, teto 50 págs = 5000) — a lista/filtro client-side seguem sobre a base completa.
+    ;(async () => {
+      try {
+        const LIMIT = 100, MAX_PAGES = 50
+        let all: Quote[] = []
+        let page = 1, total = Infinity
+        while (all.length < total && page <= MAX_PAGES) {
+          const r = await apiGet<{ quotes: Quote[]; total?: number }>(`/quotes?page=${page}&limit=${LIMIT}`)
+          const batch = r.quotes ?? []
+          all = all.concat(batch)
+          total = typeof r.total === "number" ? r.total : all.length
+          if (batch.length < LIMIT) break
+          page++
+        }
+        setQuotes(all)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erro ao carregar.")
+      } finally {
+        setLoading(false)
+      }
+    })()
   }
   useEffect(fetchQuotes, [])
   // B05 (ext) — ESC fecha + trava scroll do fundo quando o modal está aberto
