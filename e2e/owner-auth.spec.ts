@@ -2,10 +2,7 @@ import { test, expect } from "@playwright/test";
 import { E2E, loginAsOwner } from "./helpers";
 
 test.describe("Autenticação do dono", () => {
-  // TODO(e2e/Onda5): CSP corrigido (dev libera localhost:*) destrava o fetch→3100, mas a suíte
-  // de página é flaky NESTE ambiente local (next dev: NEXT_DIST_DIR ignorado pelo next.config +
-  // .next corrompe com builds concorrentes). Revalidar em CI limpo (1 processo, sem build paralelo).
-  test.skip("login email/senha leva ao dashboard", async ({ page }) => {
+  test("login email/senha leva ao dashboard", async ({ page }) => {
     await loginAsOwner(page);
     await expect(page).toHaveURL(/\/dashboard/);
   });

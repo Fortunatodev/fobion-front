@@ -2,9 +2,7 @@ import { test, expect } from "@playwright/test";
 import { API, E2E } from "./helpers";
 
 test.describe("Landing pública por slug", () => {
-  // TODO(e2e/Onda5): CSP corrigido destrava o fetch→3100; flaky só no ambiente local (next dev +
-  // .next corrompido por builds concorrentes). A API pública direta (teste abaixo) passa. Revalidar em CI limpo.
-  test.skip("mostra nome do negócio e serviços", async ({ page }) => {
+  test("mostra nome do negócio e serviços", async ({ page }) => {
     await page.goto(`/${E2E.slug}`);
     await expect(page.getByText(E2E.businessName).first()).toBeVisible();
     await expect(page.getByText("Lavagem Completa").first()).toBeVisible();

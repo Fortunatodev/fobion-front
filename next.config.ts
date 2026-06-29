@@ -38,6 +38,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Permite isolar o build da suíte e2e (NEXT_DIST_DIR=.next-e2e) do .next do dev/prod.
+  // Sem isto o NEXT_DIST_DIR era IGNORADO → o front e2e usava .next e colidia com `next build`
+  // (chunks 404/corrompidos). Agora a config Playwright realmente roda num dist separado.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
