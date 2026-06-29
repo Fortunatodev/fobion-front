@@ -127,8 +127,23 @@ export default function ClientesPage() {
   const fetchCustomers = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await apiGet<{ customers: Customer[] }>("/customers")
-      setCustomers(res.customers ?? [])
+      // O backend pagina (default 50, max 100) — antes o front pegava só os 50 primeiros e a
+      // base maior ficava inacessível. Buscamos TODAS as páginas em loop (limit 100) e
+      // acumulamos; a busca/filtro/"carregar mais" client-side seguem sobre a base completa.
+      // Teto de segurança (50 páginas = 5000 clientes) evita loop infinito.
+      const LIMIT = 100, MAX_PAGES = 50
+      let all: Customer[] = []
+      let page = 1
+      let total = Infinity
+      while (all.length < total && page <= MAX_PAGES) {
+        const res = await apiGet<{ customers: Customer[]; total?: number }>(`/customers?page=${page}&limit=${LIMIT}`)
+        const batch = res.customers ?? []
+        all = all.concat(batch)
+        total = typeof res.total === "number" ? res.total : all.length
+        if (batch.length < LIMIT) break
+        page++
+      }
+      setCustomers(all)
       setError(null)
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro ao carregar clientes. Verifique sua conexão."
